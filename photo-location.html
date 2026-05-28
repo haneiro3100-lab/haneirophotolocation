@@ -383,20 +383,35 @@ function App(){
   const RESET_MS = 5 * 60 * 1000;
   useEffect(()=>{
     const LS_KEY = 'photo-loc-active';
-    // 起動時：前回の終了時刻をチェック
-    const last = parseInt(localStorage.getItem(LS_KEY)||'0', 10);
-    if(last && Date.now() - last >= RESET_MS){
-      setView('record');
-      setSelFolder(null);
-      setSelDate(null);
+
+    function checkAndReset(){
+      const last = parseInt(localStorage.getItem(LS_KEY)||'0', 10);
+      if(last && Date.now() - last >= RESET_MS){
+        setView('record');
+        setSelFolder(null);
+        setSelDate(null);
+      }
+      localStorage.setItem(LS_KEY, Date.now());
     }
-    // 定期的に「生存時刻」を更新（10秒ごと）
+
+    // 初回チェック
+    checkAndReset();
+
+    // バックグラウンドから復帰したとき（iOSで最も確実）
+    window.addEventListener('pageshow', checkAndReset);
+    // visibilitychange も念のため併用
+    function onVisible(){ if(!document.hidden) checkAndReset(); }
+    document.addEventListener('visibilitychange', onVisible);
+    // アクティブ中は30秒ごとに時刻更新
     const timer = setInterval(()=>{
       localStorage.setItem(LS_KEY, Date.now());
-    }, 10000);
-    // 即時も記録
-    localStorage.setItem(LS_KEY, Date.now());
-    return ()=>clearInterval(timer);
+    }, 30000);
+
+    return ()=>{
+      window.removeEventListener('pageshow', checkAndReset);
+      document.removeEventListener('visibilitychange', onVisible);
+      clearInterval(timer);
+    };
   },[]);
 
   // update theme-color meta
@@ -1077,15 +1092,41 @@ function App(){
             })
           ),
           h('div',{style:{marginTop:20,padding:'14px 16px',borderRadius:8,background:th.cardBg,border:`1px solid ${th.accentBorder}`}},
-            h('div',{style:{fontSize:11,color:th.textMuted,letterSpacing:2,marginBottom:8}},'今月の記録'),
+            h('div',{style:{fontSize:11,color:th.textMuted,letterSpacing:2,marginBottom:12}},'今月のフォルダー別件数'),
             (()=>{
               const key=`${calY}-${String(calM+1).padStart(2,'0')}`;
               const recs=activeRecs.filter(r=>r.date.startsWith(key));
-              return recs.length>0
-                ? h('div',{style:{fontFamily:'DM Mono',fontSize:18,color:th.accent}},
-                    recs.length,h('span',{style:{fontSize:12,color:th.textMuted,marginLeft:4}},'件'),
-                    h('span',{style:{fontSize:11,color:th.textFaint,marginLeft:10}},[...new Set(recs.map(r=>r.date))].length+'日間'))
-                : h('div',{style:{fontSize:13,color:th.textFaint}},'この月の記録はありません');
+              if(recs.length===0) return h('div',{style:{fontSize:13,color:th.textFaint}},'この月の記録はありません');
+              const counts = {};
+              recs.forEach(r=>{ const fid=r.folderId||'none'; counts[fid]=(counts[fid]||0)+1; });
+              const total = recs.length;
+              const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+              const [showAll, setShowAll] = React.useState(false);
+              const visible = showAll ? sorted : sorted.slice(0,3);
+              const rest = sorted.length - 3;
+              const renderRow = ([fid,cnt])=>{
+                const fol=folders.find(f=>f.id===fid);
+                const pct=Math.round(cnt/total*100);
+                return h('div',{key:fid,style:{marginBottom:10}},
+                  h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}},
+                    h('div',{style:{display:'flex',alignItems:'center',gap:7}},
+                      h('div',{style:{width:8,height:8,borderRadius:'50%',background:fol?fol.color:th.textFaint,flexShrink:0}}),
+                      h('span',{style:{fontSize:13,color:th.text}},fol?fol.name:'未分類')
+                    ),
+                    h('span',{style:{fontFamily:'DM Mono',fontSize:12,color:th.accent}},cnt+'件')
+                  ),
+                  h('div',{style:{height:4,borderRadius:2,background:th.divider,overflow:'hidden'}},
+                    h('div',{style:{height:'100%',borderRadius:2,width:pct+'%',background:fol?fol.color:th.textFaint,transition:'width .3s'}})
+                  )
+                );
+              };
+              return h('div',null,
+                visible.map(renderRow),
+                rest>0 && h('button',{onClick:()=>setShowAll(v=>!v),
+                  style:{background:'none',border:'none',color:th.accent,fontSize:12,
+                    cursor:'pointer',fontFamily:'inherit',padding:'2px 0',marginTop:2}},
+                  showAll?'▲ 折りたたむ':`▼ 他${rest}フォルダーを表示`)
+              );
             })()
           ),
           h('div',{style:{marginTop:8,fontSize:11,color:th.textFaint,textAlign:'center'}},'● のある日付をタップすると詳細が見られます')
