@@ -1001,14 +1001,14 @@ function App(){
           return h('div',{key:f.id,style:{display:'flex',alignItems:'center',gap:14,padding:16,
             borderRadius:12,background:th.cardBg,border:`1px solid ${th.cardBorder}`,marginBottom:10}},
             h('div',{style:{width:4,height:40,borderRadius:2,background:f.color,flexShrink:0}}),
-            h('div',{style:{flex:1,minWidth:0,cursor:'pointer'},onClick:()=>{setSelFolder(f);setView('calendar');}},
+            h('div',{style:{flex:1,minWidth:0,cursor:'pointer'},onClick:()=>{setSelFolder(f);setView('list');}},
               h('div',{style:{fontSize:14,color:th.text,marginBottom:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},f.name),
               h('div',{style:{fontSize:11,color:th.textMuted,fontFamily:'DM Mono'}},cnt+'件の撮影地')
             ),
             h('button',{onClick:e=>{e.stopPropagation();openEditFolder(f);},
               style:{background:'none',border:'none',color:th.textSub,fontSize:16,padding:4}},'✎'),
             h('span',{style:{color:th.textFaint,fontSize:18,cursor:'pointer'},
-              onClick:()=>{setSelFolder(f);setView('calendar');}},'›')
+              onClick:()=>{setSelFolder(f);setView('list');}},'›')
           );
         }),
         folders.length===0 && h('div',{style:{textAlign:'center',color:th.textMuted,fontSize:13,padding:40}},
