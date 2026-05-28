@@ -541,7 +541,7 @@ function App(){
 
         const rec={id:Date.now(),folderId:fid,date:toYMD(now),time:fmt(now),
           lat,lng,accuracy:Math.round(pos.coords.accuracy),
-          memo:memo.trim(),weather,place};
+          memo:buildMemoWithWeather(memo.trim(),weather),weather,place};
         setRecords(p=>[rec,...p]);
         setGpsPos({lat,lng,acc:Math.round(pos.coords.accuracy)});
         setMemo('');setFlash(true);
@@ -626,7 +626,7 @@ function App(){
       if(place&&a.state&&a.state!==place) place=a.state+' '+place;
     }catch{}
     const rec={id:Date.now(),folderId:fid,date:toYMD(now),time:fmt(now),
-      lat:coords.lat,lng:coords.lng,accuracy:null,memo:memo.trim(),weather,place};
+      lat:coords.lat,lng:coords.lng,accuracy:null,memo:buildMemoWithWeather(memo.trim(),weather),weather,place};
     setRecords(p=>[rec,...p]);
     setGpsPos({lat:coords.lat,lng:coords.lng,acc:null});
     setManualCoords(''); setMemo(''); setFlash(true); setShowManualInput(false);
@@ -643,6 +643,16 @@ function App(){
     if(!coords){ setLocErr('URLまたは座標の形式が正しくありません'); return; }
     setRecords(p=>p.map(r=>r.id===id?{...r,lat:coords.lat,lng:coords.lng,accuracy:null}:r));
     setEditingCoords(null);
+  }
+
+  // 天気テキストをメモに付加/更新するヘルパー
+  const WEATHER_SEP = '\n--- 天気: ';
+  function buildMemoWithWeather(memoText, weatherId){
+    const base = (memoText||'').replace(/\n?--- 天気:.*$/s,'').trimEnd();
+    if(!weatherId) return base;
+    const wt = WEATHERS.find(w=>w.id===weatherId);
+    if(!wt) return base;
+    return (base ? base+WEATHER_SEP : '--- 天気: ')+wt.icon+' '+wt.label;
   }
 
   // calendar
@@ -890,9 +900,9 @@ function App(){
           h('div',{style:{fontSize:11,color:th.accent,letterSpacing:2,marginBottom:10}},'検索のヒント'),
           [
             ['メモ・場所名',    '「公園」「海」など場所のキーワード'],
+            ['天気',           '「晴れ」「雨」など'],
             ['年月で絞り込み',  '「2026-05」で2026年5月の記録'],
             ['日付で絞り込み',  '「2026-05-28」で特定の日'],
-            ['天気で探したい時','メモに「晴れ」「雨」など文字で記入しておくと検索できます'],
           ].map(([label,desc])=>h('div',{key:label,style:{
             display:'flex',gap:10,marginBottom:8,alignItems:'flex-start'
           }},
@@ -1037,14 +1047,16 @@ function App(){
         view==='list' && h('div',null,
           h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}},
             h('div',{style:{fontSize:11,color:th.textMuted,letterSpacing:2}},
-              '全'+records.length+'件'),
+              selFolder
+                ? selFolder.name+' · '+activeRecs.length+'件'
+                : '全'+activeRecs.length+'件'),
             h('button',{onClick:()=>setView('calendar'),
               style:{background:'none',border:`1px solid ${th.accentBorder}`,borderRadius:6,
                 color:th.accent,padding:'5px 10px',fontSize:11,cursor:'pointer',fontFamily:'inherit'}},
               '📅 カレンダーで見る')
           ),
-          records.length===0 && h('div',{style:{textAlign:'center',color:th.textFaint,fontSize:13,padding:40}},'記録がありません'),
-          [...records].sort((a,b)=>b.id-a.id).map((r,idx)=>{
+          activeRecs.length===0 && h('div',{style:{textAlign:'center',color:th.textFaint,fontSize:13,padding:40}},'記録がありません'),
+          [...activeRecs].sort((a,b)=>b.id-a.id).map((r,idx)=>{
             const fol=folders.find(f=>f.id===r.folderId);
             const wt=r.weather?WEATHERS.find(w=>w.id===r.weather):null;
             return h('div',{key:r.id,style:{marginBottom:10,padding:'13px 14px',borderRadius:10,
@@ -1268,7 +1280,11 @@ function App(){
                         const cur=r.weather;
                         const idx2=WEATHERS.findIndex(w=>w.id===cur);
                         const next=WEATHERS[(idx2+1)%WEATHERS.length];
-                        setRecords(p=>p.map(rec=>rec.id===r.id?{...rec,weather:next.id}:rec));
+                        setRecords(p=>p.map(rec=>rec.id===r.id?{
+                          ...rec,
+                          weather:next.id,
+                          memo:buildMemoWithWeather(rec.memo,next.id)
+                        }:rec));
                       },
                       title:'タップして天気を変更',
                       style:{fontSize:11,cursor:'pointer',padding:'1px 7px',borderRadius:4,
