@@ -543,7 +543,7 @@ function App(){
   function deleteRecord(id){ setRecords(p=>p.filter(r=>r.id!==id)); }
   function moveRecord(id,newFid){ setRecords(p=>p.map(r=>r.id===id?{...r,folderId:newFid}:r));setMoveModal(null); }
 
-  // 座標パース："34.262, 135.375" or "34.262 135.375" などに対応
+  // 座標パース："34.262, 135.375" などに対応
   function parseCoords(str){
     const cleaned = str.replace(/[（）()]/g,'').trim();
     const m = cleaned.match(/(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
@@ -554,11 +554,33 @@ function App(){
     return {lat,lng};
   }
 
-  // 手入力座標で記録
+  // 住所→座標変換（Nominatim geocoding）
+  async function geocodeAddress(address){
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&accept-language=ja`,
+      {headers:{'Accept-Language':'ja'}}
+    );
+    const data = await res.json();
+    if(!data||data.length===0) return null;
+    return {lat:parseFloat(data[0].lat), lng:parseFloat(data[0].lon)};
+  }
+
+  // 手入力（座標 or 住所）で記録
   async function saveManualRecord(){
-    const coords = parseCoords(manualCoords);
-    if(!coords){ setLocErr('座標の形式が正しくありません（例：34.262, 135.375）'); return; }
+    const input = manualCoords.trim();
+    if(!input) return;
     setLocating(true); setLocErr(null); setOkMsg(null);
+
+    let coords = parseCoords(input);
+    // 座標でなければ住所として検索
+    if(!coords){
+      try{ coords = await geocodeAddress(input); }catch{}
+      if(!coords){
+        setLocErr('座標または住所が見つかりませんでした');
+        setLocating(false); return;
+      }
+    }
+
     const now=new Date();
     const fid=tgtFolder||folders[0]?.id||null;
     let place=null;
@@ -575,15 +597,19 @@ function App(){
     setGpsPos({lat:coords.lat,lng:coords.lng,acc:null});
     setManualCoords(''); setMemo(''); setFlash(true); setShowManualInput(false);
     const fn=folders.find(f=>f.id===fid)?.name||'未分類';
-    setOkMsg(`📍 手入力で記録${place?' — '+place:''} → ${fn}`);
+    setOkMsg(`📍 記録${place?' — '+place:''} → ${fn}`);
     setTimeout(()=>setFlash(false),600);
     setLocating(false);
   }
 
-  // 既存記録の座標を更新
-  function saveEditCoords(id){
-    const coords=parseCoords(editingCoords.text);
-    if(!coords){ alert('座標の形式が正しくありません'); return; }
+  // 既存記録の座標を更新（座標 or 住所）
+  async function saveEditCoords(id){
+    const input = editingCoords.text.trim();
+    let coords = parseCoords(input);
+    if(!coords){
+      try{ coords = await geocodeAddress(input); }catch{}
+      if(!coords){ setLocErr('座標または住所が見つかりませんでした'); return; }
+    }
     setRecords(p=>p.map(r=>r.id===id?{...r,lat:coords.lat,lng:coords.lng,accuracy:null}:r));
     setEditingCoords(null);
   }
@@ -1309,9 +1335,9 @@ function App(){
               h('div',{style:{fontSize:11,color:th.textFaint,marginBottom:8}},
                 'Googleマップで場所を長押し → 座標をタップしてコピー'),
               h('input',{value:manualCoords,onChange:e=>setManualCoords(e.target.value),
-                placeholder:'例: 34.26274, 135.37541',
+                placeholder:'住所 または 34.262, 135.375',
                 onKeyDown:e=>e.key==='Enter'&&saveManualRecord(),
-                style:{...inputSt,fontFamily:'DM Mono',fontSize:13,marginBottom:8}}),
+                style:{...inputSt,fontFamily:'inherit',fontSize:13,marginBottom:8}}),
               h('button',{onClick:saveManualRecord,disabled:locating||!manualCoords.trim(),
                 style:{width:'100%',background:th.accentBg,border:`1px solid ${th.accentBorder}`,
                   borderRadius:8,color:th.accent,padding:'9px',fontSize:13,cursor:'pointer',
