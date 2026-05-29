@@ -838,6 +838,11 @@ function App(){
           h('h1',{style:{fontSize:21,fontWeight:300,letterSpacing:1,color:th.text}},'撮影地カレンダー')
         ),
         h('div',{style:{display:'flex',gap:8,alignItems:'flex-start',marginTop:4}},
+          h('a',{href:'https://maps.google.com',target:'_blank',
+            style:{background:th.accentBg,border:`1px solid ${th.accentBorder}`,borderRadius:8,
+              color:th.accent,padding:'7px 10px',fontSize:16,lineHeight:1,
+              textDecoration:'none',display:'flex',alignItems:'center'}},
+            '🗺'),
           h('button',{onClick:()=>{setShowDataModal(true);setImportMsg(null);},
             style:{background:th.accentBg,border:`1px solid ${th.accentBorder}`,borderRadius:8,
               color:th.accent,padding:'7px 10px',fontSize:16,lineHeight:1}},
@@ -1019,10 +1024,29 @@ function App(){
           )
         ),
         h('div',{style:{height:1,background:th.divider,marginBottom:14}}),
-        folders.map(f=>{
+        folders.map((f,idx)=>{
           const cnt=records.filter(r=>r.folderId===f.id).length;
-          return h('div',{key:f.id,style:{display:'flex',alignItems:'center',gap:14,padding:16,
+          return h('div',{key:f.id,style:{display:'flex',alignItems:'center',gap:10,padding:'12px 14px',
             borderRadius:12,background:th.cardBg,border:`1px solid ${th.cardBorder}`,marginBottom:10}},
+            // 並び替えボタン
+            h('div',{style:{display:'flex',flexDirection:'column',gap:1,flexShrink:0}},
+              h('button',{onClick:()=>{
+                  if(idx===0) return;
+                  const next=[...folders];
+                  [next[idx-1],next[idx]]=[next[idx],next[idx-1]];
+                  setFolders(next);
+                },
+                style:{background:'none',border:'none',fontSize:13,lineHeight:1,padding:'2px 4px',
+                  color:idx===0?th.textFaint:th.textSub,cursor:idx===0?'default':'pointer'}},'▲'),
+              h('button',{onClick:()=>{
+                  if(idx===folders.length-1) return;
+                  const next=[...folders];
+                  [next[idx],next[idx+1]]=[next[idx+1],next[idx]];
+                  setFolders(next);
+                },
+                style:{background:'none',border:'none',fontSize:13,lineHeight:1,padding:'2px 4px',
+                  color:idx===folders.length-1?th.textFaint:th.textSub,cursor:idx===folders.length-1?'default':'pointer'}},'▼')
+            ),
             h('div',{style:{width:4,height:40,borderRadius:2,background:f.color,flexShrink:0}}),
             h('div',{style:{flex:1,minWidth:0,cursor:'pointer'},onClick:()=>{setSelFolder(f);setView('list');}},
               h('div',{style:{fontSize:14,color:th.text,marginBottom:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},f.name),
