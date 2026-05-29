@@ -443,8 +443,14 @@ function App(){
   const [gpsPos,setGpsPos] = useState(null);
 
   // weather
-  const [weather,setWeather]           = useState(null); // selected WEATHERS item id
+  const [weather,setWeather] = useState(()=>localStorage.getItem('photo-loc-weather')||null);
   const [showWeatherPicker,setShowWeatherPicker] = useState(false);
+
+  // 天気選択を保存
+  useEffect(()=>{
+    if(weather) localStorage.setItem('photo-loc-weather',weather);
+    else localStorage.removeItem('photo-loc-weather');
+  },[weather]);
 
   // modals
   const [showFolderModal,setShowFolderModal] = useState(false);
@@ -1608,7 +1614,7 @@ function App(){
             h('div',{style:{fontSize:15,color:th.text,fontWeight:300,marginBottom:3}},
               locating?'位置情報取得中...':`タップして記録`),
             h('div',{style:{fontSize:11,color:th.textMuted}},
-              locating?'しばらくお待ちください':'現在地・天気を自動取得')
+              locating?'しばらくお待ちください':'現在地を自動取得')
           ),
 
           // error / success
