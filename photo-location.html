@@ -1593,12 +1593,10 @@ function App(){
               h('label',{style:{fontSize:11,color:th.textSub,letterSpacing:2,display:'block',marginBottom:6}},
                 '📋 座標・URLで記録（忘れた時・GPS修正）'),
               h('div',{style:{fontSize:11,color:th.text,marginBottom:8,lineHeight:1.8,opacity:0.8}},
-                '【Googleマップ】何もない場所を長押し',h('br'),
-                '→ 下のカードの座標を長押しコピー → 貼り付け',h('br'),
+                'Googleマップ・Appleマップで建物付近を長押し',h('br'),
+                '→ 座標をコピー → ここに貼り付けて記録',h('br'),
                 h('span',{style:{color:'rgba(255,150,80,0.9)',fontSize:10}},
-                  '※ 施設・建物は座標が表示されないので近くの何もない場所を長押し'),h('br'),h('br'),
-                '【Appleマップ】施設・建物でも座標が表示されます',h('br'),
-                '→ 詳細画面の「座標」欄を長押しコピー → 貼り付け'
+                  '※ 建物・施設を直接タップしても座標は表示されません')
               ),
               h('input',{value:manualCoords,onChange:e=>setManualCoords(e.target.value),
                 placeholder:'座標を貼り付け',
