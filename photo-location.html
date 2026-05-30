@@ -486,46 +486,6 @@ function App(){
     a.click(); URL.revokeObjectURL(url);
   }
 
-  function exportKML(){
-    const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const lines = [
-      '<?xml version="1.0" encoding="UTF-8"?>',
-      '<kml xmlns="http://www.opengis.net/kml/2.2">',
-      '<Document>',
-      '<name>撮影地カレンダー</name>',
-    ];
-    // フォルダー別にスタイル定義
-    folders.forEach(f=>{
-      const hex = f.color.replace('#','');
-      // KMLはABGR形式
-      const r=hex.slice(0,2),g=hex.slice(2,4),b=hex.slice(4,6);
-      lines.push(`<Style id="folder-${f.id}"><IconStyle><color>ff${b}${g}${r}</color><Icon><href>http://maps.google.com/mapfiles/ms/icons/red-dot.png</href></Icon></IconStyle></Style>`);
-    });
-    records.forEach(r=>{
-      const fol = folders.find(f=>f.id===r.folderId);
-      const name = esc(r.place || r.memo || r.date+' '+r.time);
-      const desc = [
-        r.date+' '+r.time,
-        fol?'フォルダー: '+fol.name:'',
-        r.memo?'メモ: '+r.memo:'',
-        r.place?'場所: '+r.place:'',
-        r.fav?'⭐ お気に入り':'',
-      ].filter(Boolean).join('\n');
-      lines.push('<Placemark>');
-      lines.push(`<name>${esc(name)}</name>`);
-      lines.push(`<description>${esc(desc)}</description>`);
-      if(fol) lines.push(`<styleUrl>#folder-${fol.id}</styleUrl>`);
-      lines.push(`<Point><coordinates>${r.lng},${r.lat},0</coordinates></Point>`);
-      lines.push('</Placemark>');
-    });
-    lines.push('</Document></kml>');
-    const blob = new Blob([lines.join('\n')],{type:'application/vnd.google-earth.kml+xml'});
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    const date = new Date().toISOString().slice(0,10);
-    a.href=url; a.download=`photo-location-${date}.kml`;
-    a.click(); URL.revokeObjectURL(url);
-  }
   function importData(e){
     const file = e.target.files?.[0]; if(!file) return;
     const reader = new FileReader();
@@ -811,25 +771,6 @@ function App(){
         ),
         h('div',{style:{fontSize:11,color:th.text,opacity:0.7,marginTop:6,textAlign:'center'}},
           'ダウンロードしたファイルを新しい端末で読み込むと復元できます')
-      ),
-      h('div',{style:{height:1,background:th.divider,margin:'16px 0'}}),
-      // KML export
-      h('div',{style:{marginBottom:12}},
-        h('div',{style:{fontSize:11,color:th.textSub,letterSpacing:2,marginBottom:8}},'🗺 Googleマップにエクスポート'),
-        h('button',{onClick:exportKML,style:{
-          width:'100%',background:th.accentBg,border:`1px solid ${th.accentBorder}`,
-          borderRadius:10,color:th.accent,padding:'12px',fontSize:14,cursor:'pointer',
-          display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontFamily:'inherit',
-        }},
-          h('span',{style:{fontSize:18}},'🗺'),
-          'KMLファイルをダウンロード'
-        ),
-        h('div',{style:{fontSize:11,color:th.text,opacity:0.7,marginTop:8,lineHeight:1.8}},
-          '① KMLファイルをダウンロード',h('br'),
-          '② Googleマイマップ（mymaps.google.com）を開く',h('br'),
-          '③「新しい地図を作成」→「インポート」でKMLを読み込む',h('br'),
-          '④ 全撮影地がピンで表示されます'
-        )
       ),
       h('div',{style:{height:1,background:th.divider,margin:'16px 0'}}),
       // import
