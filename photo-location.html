@@ -1133,25 +1133,29 @@ function App(){
                   borderRadius:14,padding:'3px 10px',fontSize:12,cursor:'pointer',
                   fontFamily:'inherit',color:favOnly?'#ffcc00':th.textSub}},
                 '⭐ '+( favOnly?'解除':'ソート')),
-              nearSort
-                ? h('button',{onClick:()=>{setNearSort(false);setCurrentPos(null);},
-                    style:{background:th.accentBg,border:`1px solid ${th.accent}`,
-                      borderRadius:14,padding:'3px 10px',fontSize:12,cursor:'pointer',
-                      fontFamily:'inherit',color:th.accent}},
-                    '📍 解除')
-                : h('button',{
-                    onClick:()=>{
-                      if(!navigator.geolocation){ alert('位置情報が使えません'); return; }
-                      navigator.geolocation.getCurrentPosition(
-                        pos=>{ setCurrentPos({lat:pos.coords.latitude,lng:pos.coords.longitude}); setNearSort(true); },
-                        ()=>alert('位置情報を取得できませんでした'),
-                        {enableHighAccuracy:true,timeout:8000,maximumAge:0}
-                      );
+              h('button',{
+                onClick:()=>{
+                  if(!navigator.geolocation){ alert('位置情報が使えません'); return; }
+                  setCurrentPos(null); setNearSort(false);
+                  navigator.geolocation.getCurrentPosition(
+                    pos=>{
+                      setCurrentPos({lat:pos.coords.latitude,lng:pos.coords.longitude});
+                      setNearSort(true);
                     },
-                    style:{background:'none',border:`1px solid ${th.cardBorder}`,
-                      borderRadius:14,padding:'3px 10px',fontSize:12,cursor:'pointer',
-                      fontFamily:'inherit',color:th.textSub}},
-                    '📍 近い順')
+                    ()=>alert('位置情報を取得できませんでした'),
+                    {enableHighAccuracy:true,timeout:10000,maximumAge:0}
+                  );
+                },
+                style:{background:nearSort?th.accentBg:'none',
+                  border:`1px solid ${nearSort?th.accent:th.cardBorder}`,
+                  borderRadius:14,padding:'3px 10px',fontSize:12,cursor:'pointer',
+                  fontFamily:'inherit',color:nearSort?th.accent:th.textSub}},
+                '📍 近い順'),
+              nearSort && h('button',{onClick:()=>{setNearSort(false);setCurrentPos(null);},
+                style:{background:'none',border:`1px solid ${th.cardBorder}`,
+                  borderRadius:14,padding:'3px 10px',fontSize:12,cursor:'pointer',
+                  fontFamily:'inherit',color:th.textSub}},
+                '✕ 解除')
             ),
             h('button',{onClick:()=>setView('calendar'),
               style:{background:'none',border:`1px solid ${th.accentBorder}`,borderRadius:6,
