@@ -467,7 +467,9 @@ function App(){
   const [showAllFolderStats,setShowAllFolderStats] = useState(false);
   const [searchQuery,setSearchQuery]               = useState('');
   const [searchFolder,setSearchFolder]             = useState('all');
-  const [favOnly,setFavOnly]                       = useState(false); // 'all' or folder id
+  const [favOnly,setFavOnly]                       = useState(false);
+  const [nearSort,setNearSort]                     = useState(false);
+  const [currentPos,setCurrentPos]                 = useState(null); // {lat,lng} // 'all' or folder id
   const [showSettings,setShowSettings]       = useState(false);
   const [customBg,setCustomBg]               = useState(bgColor);
   const [showDataModal,setShowDataModal]     = useState(false);
@@ -710,6 +712,14 @@ function App(){
     if(!wt) return base;
     return (base ? base+WEATHER_SEP : '--- 天気: ')+wt.icon+' '+wt.label;
   }
+
+  // 距離計算 Haversine
+  function distKm(lat1,lng1,lat2,lng2){
+    const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+  function fmtDist(km){ return km<1?Math.round(km*1000)+'m':km.toFixed(1)+'km'; }
 
   // calendar
   const activeRecs = selFolder ? records.filter(r=>r.folderId===selFolder.id) : records;
@@ -1059,6 +1069,7 @@ function App(){
                     h('div',{style:{display:'flex',alignItems:'center',gap:7,marginBottom:4,flexWrap:'wrap'}},
                       r.fav&&h('span',{style:{fontSize:12,color:'#ffcc00'}},'⭐'),
                       h('span',{style:{fontFamily:'DM Mono',fontSize:11,color:th.textSub}},r.date+' '+r.time),
+                      dist&&h('span',{style:{fontFamily:'DM Mono',fontSize:11,color:th.accent}},'📍 '+dist),
                       fol&&h('span',{style:{fontSize:10,color:fol.color,background:fol.color+'22',
                         border:`1px solid ${fol.color}44`,borderRadius:4,padding:'1px 6px'}},highlight(fol.name)),
                       wt&&h('span',{style:{fontSize:12}},wt.icon)
@@ -1172,7 +1183,7 @@ function App(){
         // ── LIST ──
         view==='list' && h('div',null,
           h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}},
-            h('div',{style:{display:'flex',alignItems:'center',gap:8}},
+            h('div',{style:{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}},
               h('div',{style:{fontSize:11,color:th.textMuted,letterSpacing:2}},
                 selFolder ? selFolder.name+' · '+activeRecs.length+'件' : '全'+activeRecs.length+'件'),
               h('button',{onClick:()=>setFavOnly(v=>!v),
@@ -1180,7 +1191,22 @@ function App(){
                   border:`1px solid ${favOnly?'rgba(255,200,0,0.5)':th.cardBorder}`,
                   borderRadius:14,padding:'3px 10px',fontSize:12,cursor:'pointer',
                   fontFamily:'inherit',color:favOnly?'#ffcc00':th.textSub}},
-                '⭐ '+( favOnly?'解除':'ソート'))
+                '⭐ '+( favOnly?'解除':'ソート')),
+              h('button',{
+                onClick:()=>{
+                  if(nearSort){ setNearSort(false); setCurrentPos(null); return; }
+                  if(!navigator.geolocation){ alert('位置情報が使えません'); return; }
+                  navigator.geolocation.getCurrentPosition(
+                    pos=>{ setCurrentPos({lat:pos.coords.latitude,lng:pos.coords.longitude}); setNearSort(true); },
+                    ()=>alert('位置情報を取得できませんでした'),
+                    {enableHighAccuracy:true,timeout:8000}
+                  );
+                },
+                style:{background:nearSort?th.accentBg:'none',
+                  border:`1px solid ${nearSort?th.accent:th.cardBorder}`,
+                  borderRadius:14,padding:'3px 10px',fontSize:12,cursor:'pointer',
+                  fontFamily:'inherit',color:nearSort?th.accent:th.textSub}},
+                '📍 '+(nearSort?'解除':'近い順'))
             ),
             h('button',{onClick:()=>setView('calendar'),
               style:{background:'none',border:`1px solid ${th.accentBorder}`,borderRadius:6,
@@ -1189,6 +1215,11 @@ function App(){
           ),
           activeRecs.length===0 && h('div',{style:{textAlign:'center',color:th.textFaint,fontSize:13,padding:40}},'記録がありません'),
           [...activeRecs].sort((a,b)=>{
+            if(nearSort && currentPos){
+              const dA=distKm(currentPos.lat,currentPos.lng,a.lat,a.lng);
+              const dB=distKm(currentPos.lat,currentPos.lng,b.lat,b.lng);
+              return dA-dB;
+            }
             if(favOnly){
               if(a.fav&&!b.fav) return -1;
               if(!a.fav&&b.fav) return 1;
@@ -1197,6 +1228,7 @@ function App(){
           }).map((r,idx)=>{
             const fol=folders.find(f=>f.id===r.folderId);
             const wt=r.weather?WEATHERS.find(w=>w.id===r.weather):null;
+            const dist = nearSort&&currentPos ? fmtDist(distKm(currentPos.lat,currentPos.lng,r.lat,r.lng)) : null;
             return h('div',{key:r.id,style:{marginBottom:10,padding:'13px 14px',borderRadius:10,
               background:th.cardBg,border:`1px solid ${th.cardBorder}`}},
               h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}},
