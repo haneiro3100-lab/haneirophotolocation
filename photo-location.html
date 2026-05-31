@@ -1144,7 +1144,7 @@ function App(){
               h('div',{style:{fontSize:11,color:th.textMuted,fontFamily:'DM Mono'}},cnt+'件の撮影地')
             ),
             h('button',{onClick:e=>{e.stopPropagation();openEditFolder(f);},
-              style:{background:'none',border:'none',color:th.textSub,fontSize:16,padding:4}},'✎'),
+              style:{background:'none',border:'none',color:th.textSub,fontSize:16,padding:4}},'✏️'),
             h('span',{style:{color:th.textFaint,fontSize:18,cursor:'pointer'},
               onClick:()=>{setSelFolder(f);setView('list');}},'›')
           );
@@ -1282,7 +1282,7 @@ function App(){
                         h('span',{style:{fontSize:11,color:th.accent,flexShrink:0}},'📌'),
                         h('span',{style:{fontSize:13,color:r.place?th.accent:th.textFaint,fontWeight:r.place?500:400,flex:1}},
                           r.place||'場所を追加...'),
-                        h('span',{style:{fontSize:11,color:th.textMuted,flexShrink:0}},'✎')
+                        h('span',{style:{fontSize:14,color:th.accent,flexShrink:0,opacity:0.6}},'✏️')
                       ),
                   // memo inline edit
                   editingMemo?.id===r.id
@@ -1315,7 +1315,7 @@ function App(){
                         onClick:()=>setEditingMemo({id:r.id,text:r.memo||''})},
                         h('span',{style:{fontSize:13,color:r.memo?th.text:th.textFaint,flex:1,lineHeight:1.5}},
                           r.memo||'メモを追加...'),
-                        h('span',{style:{fontSize:11,color:th.textMuted,flexShrink:0,marginTop:1}},'✎')
+                        h('span',{style:{fontSize:14,color:th.accent,flexShrink:0,opacity:0.6}},'✏️')
                       ),
                   // coords  tap to edit
                   editingCoords?.id===r.id
@@ -1343,7 +1343,7 @@ function App(){
                         onClick:()=>setEditingCoords({id:r.id,text:r.lat.toFixed(5)+', '+r.lng.toFixed(5)})},
                         h('span',{style:{fontFamily:'DM Mono',fontSize:10,color:th.textMuted,flex:1}},
                           r.lat.toFixed(5)+', '+r.lng.toFixed(5)),
-                        h('span',{style:{fontSize:10,color:th.textFaint}},'✎')
+                        h('span',{style:{fontSize:14,color:th.accent,opacity:0.6}},'✏️')
                       )
                 ),
                 h('div',{style:{display:'flex',flexDirection:'column',gap:5,alignItems:'flex-end',flexShrink:0}},
@@ -1599,7 +1599,7 @@ function App(){
                         h('span',{style:{fontSize:11,color:th.accent,flexShrink:0}},'📌'),
                         h('span',{style:{fontSize:13,color:r.place?th.accent:th.textFaint,fontWeight:r.place?500:400,flex:1}},
                           r.place||'場所を追加...'),
-                        h('span',{style:{fontSize:11,color:th.textMuted,flexShrink:0}},'✎')
+                        h('span',{style:{fontSize:14,color:th.accent,flexShrink:0,opacity:0.6}},'✏️')
                       ),
                   // memo  tap to edit inline
                   editingMemo?.id===r.id
@@ -1645,7 +1645,7 @@ function App(){
                       },
                         h('span',{style:{fontSize:14,color:r.memo?th.text:th.textFaint,flex:1,lineHeight:1.5}},
                           r.memo||'メモを追加...'),
-                        h('span',{style:{fontSize:12,color:th.textMuted,flexShrink:0,marginTop:1}},'✎')
+                        h('span',{style:{fontSize:14,color:th.accent,flexShrink:0,opacity:0.6}},'✏️')
                       ),
                   // coords  tap to edit
                   editingCoords?.id===r.id
@@ -1675,7 +1675,7 @@ function App(){
                         onClick:()=>setEditingCoords({id:r.id,text:r.lat.toFixed(5)+', '+r.lng.toFixed(5)})},
                         h('span',{style:{fontFamily:'DM Mono',fontSize:10,color:th.textMuted,flex:1}},
                           r.lat.toFixed(5)+', '+r.lng.toFixed(5)),
-                        h('span',{style:{fontSize:10,color:th.textFaint}},'✎'),
+                        h('span',{style:{fontSize:14,color:th.accent,opacity:0.6}},'✏️'),
                         r.accuracy&&h('span',{style:{fontFamily:'DM Mono',fontSize:10,color:th.textFaint,marginLeft:4}},'±'+r.accuracy+'m')
                       )
                 ),
