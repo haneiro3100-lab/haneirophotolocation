@@ -1313,13 +1313,13 @@ function App(){
                         h('span',{style:{fontSize:13,color:r.place?th.accent:th.textFaint,fontWeight:r.place?500:400,flex:1,cursor:'text'},
                           onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},
                           r.place||'場所を追加...'),
+                        h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg},
+                          onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},'✎'),
                         wt&&h('span',{
                           onClick:()=>setEditWeatherId(r.id),
-                          style:{fontSize:12,flexShrink:0,marginRight:2,cursor:'pointer',
+                          style:{fontSize:12,flexShrink:0,cursor:'pointer',
                             border:'1px solid '+th.cardBorder,borderRadius:4,padding:'1px 4px',background:th.accentBg}},
-                          wt.icon+wt.label),
-                        h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg},
-                          onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},'✎')
+                          wt.icon+wt.label)
                       ),
                   // memo inline edit
                   editingMemo?.id===r.id
@@ -1636,13 +1636,13 @@ function App(){
                         h('span',{style:{fontSize:13,color:r.place?th.accent:th.textFaint,fontWeight:r.place?500:400,flex:1,cursor:'text'},
                           onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},
                           r.place||'場所を追加...'),
+                        h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg},
+                          onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},'✎'),
                         wt&&h('span',{
                           onClick:()=>setEditWeatherId(r.id),
-                          style:{fontSize:12,flexShrink:0,marginRight:2,cursor:'pointer',
+                          style:{fontSize:12,flexShrink:0,cursor:'pointer',
                             border:'1px solid '+th.cardBorder,borderRadius:4,padding:'1px 4px',background:th.accentBg}},
-                          wt.icon+wt.label),
-                        h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg},
-                          onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},'✎')
+                          wt.icon+wt.label)
                       ),
                   // memo  tap to edit inline
                   editingMemo?.id===r.id
