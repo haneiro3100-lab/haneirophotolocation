@@ -1317,25 +1317,25 @@ function App(){
                     style:{background:'none',border:'1px solid '+th.cardBorder,borderRadius:6,
                       color:th.textSub,fontSize:11,padding:'3px 10px',cursor:'pointer',
                       fontFamily:'inherit',display:'flex',alignItems:'center',gap:5}},
-                    (sunOpenId===r.id ? '▲' : '▼') + ' 🌅 日の出・日没'
+                    (sunOpenId===r.id ? '▲' : '▼') + ' 🌅 今日の日の出・日没'
                   ),
                   sunOpenId===r.id ? (
-                    calcSun(r.date,r.lat,r.lng).polar
-                      ? h('div',{style:{marginTop:4,fontSize:12,color:th.textMuted}}, calcSun(r.date,r.lat,r.lng).polar)
+                    calcSun(today, r.lat, r.lng).polar
+                      ? h('div',{style:{marginTop:4,fontSize:12,color:th.textMuted}}, calcSun(today,r.lat,r.lng).polar)
                       : h('div',{style:{marginTop:6,padding:'8px 10px',borderRadius:8,
                           background:isDark(th.bg)?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)',
                           border:'1px solid '+th.cardBorder}},
                           h('div',{style:{display:'flex',gap:20,marginBottom:4}},
                             h('div',null,
                               h('div',{style:{fontSize:10,color:th.textMuted,marginBottom:2}},'日の出'),
-                              h('div',{style:{fontFamily:'DM Mono',fontSize:16,color:'#f0a040'}}, calcSun(r.date,r.lat,r.lng).rise)
+                              h('div',{style:{fontFamily:'DM Mono',fontSize:16,color:'#f0a040'}}, calcSun(today,r.lat,r.lng).rise)
                             ),
                             h('div',null,
                               h('div',{style:{fontSize:10,color:th.textMuted,marginBottom:2}},'日没'),
-                              h('div',{style:{fontFamily:'DM Mono',fontSize:16,color:'#6080c0'}}, calcSun(r.date,r.lat,r.lng).set)
+                              h('div',{style:{fontFamily:'DM Mono',fontSize:16,color:'#6080c0'}}, calcSun(today,r.lat,r.lng).set)
                             )
                           ),
-                          h('div',{style:{fontSize:10,color:th.textFaint}}, r.date + ' の記録地点')
+                          h('div',{style:{fontSize:10,color:th.textFaint}}, today + ' この場所での計算値')
                         )
                   ) : null
                 ),
@@ -1446,6 +1446,34 @@ function App(){
             h('div',{style:{fontSize:17,fontWeight:300,color:th.text}},'撮影地 '+dayRecs.length+'件')
           ),
           dayRecs.length===0&&h('div',{style:{fontSize:13,color:th.textFaint}},'記録がありません'),
+          dayRecs.length>0 && h('div',{style:{marginBottom:12}},
+            h('button',{
+              onClick:()=>setSunOpenId(sunOpenId==='detail-'+selDate ? null : 'detail-'+selDate),
+              style:{background:'none',border:'1px solid '+th.cardBorder,borderRadius:6,
+                color:th.textSub,fontSize:11,padding:'3px 10px',cursor:'pointer',
+                fontFamily:'inherit',display:'flex',alignItems:'center',gap:5}},
+              (sunOpenId==='detail-'+selDate ? '▲' : '▼') + ' 🌅 日の出・日没（'+selDate+'）'
+            ),
+            sunOpenId==='detail-'+selDate ? (
+              calcSun(selDate, dayRecs[0].lat, dayRecs[0].lng).polar
+                ? h('div',{style:{marginTop:4,fontSize:12,color:th.textMuted}}, calcSun(selDate,dayRecs[0].lat,dayRecs[0].lng).polar)
+                : h('div',{style:{marginTop:8,padding:'10px 14px',borderRadius:8,
+                    background:isDark(th.bg)?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)',
+                    border:'1px solid '+th.cardBorder}},
+                    h('div',{style:{display:'flex',gap:24,marginBottom:4}},
+                      h('div',null,
+                        h('div',{style:{fontSize:10,color:th.textMuted,marginBottom:2}},'日の出'),
+                        h('div',{style:{fontFamily:'DM Mono',fontSize:18,color:'#f0a040'}}, calcSun(selDate,dayRecs[0].lat,dayRecs[0].lng).rise)
+                      ),
+                      h('div',null,
+                        h('div',{style:{fontSize:10,color:th.textMuted,marginBottom:2}},'日没'),
+                        h('div',{style:{fontFamily:'DM Mono',fontSize:18,color:'#6080c0'}}, calcSun(selDate,dayRecs[0].lat,dayRecs[0].lng).set)
+                      )
+                    ),
+                    h('div',{style:{fontSize:10,color:th.textFaint}}, '記録地点の座標で計算')
+                  )
+            ) : null
+          ),
           dayRecs.map((r,idx)=>{
             const fol=folders.find(f=>f.id===r.folderId);
             const wt=r.weather?WEATHERS.find(w=>w.id===r.weather):null;
@@ -1586,34 +1614,6 @@ function App(){
                         h('span',{style:{fontSize:10,color:th.textFaint}},'✎'),
                         r.accuracy&&h('span',{style:{fontFamily:'DM Mono',fontSize:10,color:th.textFaint,marginLeft:4}},'±'+r.accuracy+'m')
                       )
-                ),
-                h('div',{style:{marginTop:8}},
-                  h('button',{
-                    onClick:()=>setSunOpenId(sunOpenId===r.id ? null : r.id),
-                    style:{background:'none',border:'1px solid '+th.cardBorder,borderRadius:6,
-                      color:th.textSub,fontSize:11,padding:'3px 10px',cursor:'pointer',
-                      fontFamily:'inherit',display:'flex',alignItems:'center',gap:5}},
-                    (sunOpenId===r.id ? '▲' : '▼') + ' 🌅 日の出・日没'
-                  ),
-                  sunOpenId===r.id ? (
-                    calcSun(r.date,r.lat,r.lng).polar
-                      ? h('div',{style:{marginTop:6,fontSize:12,color:th.textMuted}}, calcSun(r.date,r.lat,r.lng).polar)
-                      : h('div',{style:{marginTop:8,padding:'10px 12px',borderRadius:8,
-                          background:isDark(th.bg)?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)',
-                          border:'1px solid '+th.cardBorder}},
-                          h('div',{style:{display:'flex',gap:24,marginBottom:6}},
-                            h('div',null,
-                              h('div',{style:{fontSize:10,color:th.textMuted,marginBottom:2}},'日の出'),
-                              h('div',{style:{fontFamily:'DM Mono',fontSize:18,color:'#f0a040'}}, calcSun(r.date,r.lat,r.lng).rise)
-                            ),
-                            h('div',null,
-                              h('div',{style:{fontSize:10,color:th.textMuted,marginBottom:2}},'日没'),
-                              h('div',{style:{fontFamily:'DM Mono',fontSize:18,color:'#6080c0'}}, calcSun(r.date,r.lat,r.lng).set)
-                            )
-                          ),
-                          h('div',{style:{fontSize:10,color:th.textFaint}}, r.date + ' の記録地点')
-                        )
-                  ) : null
                 ),
                 h('div',{style:{display:'flex',flexDirection:'column',gap:6,alignItems:'flex-end',flexShrink:0}},
                   h('button',{onClick:()=>toggleFav(r.id),
