@@ -471,7 +471,14 @@ function App(){
 
   // record form
   const [memo,setMemo]         = useState('');
-  const [tgtFolder,setTgtFolder] = useState(null);
+  const [tgtFolder,setTgtFolder] = useState(()=>{
+    const saved = localStorage.getItem('photo-loc-last-folder');
+    return saved || null;
+  });
+  const setTgtFolderAndSave = (fid)=>{
+    setTgtFolder(fid);
+    if(fid) localStorage.setItem('photo-loc-last-folder', fid);
+  };
   const [locating,setLocating] = useState(false);
   const [locErr,setLocErr]     = useState(null);
   const [flash,setFlash]       = useState(false);
@@ -573,6 +580,7 @@ function App(){
       async pos=>{
         const now=new Date();
         const fid=tgtFolder||folders[0]?.id||null;
+        if(fid) localStorage.setItem('photo-loc-last-folder', fid);
         const lat=pos.coords.latitude, lng=pos.coords.longitude;
 
         // OpenStreetMap Nominatim
@@ -1719,41 +1727,34 @@ function App(){
         ),
 
         // --  --
-        h('div',{style:{borderRadius:12,background:th.cardBg,border:`1px solid ${th.cardBorder}`,overflow:'hidden'}},
-          // toggle header
-          h('div',{onClick:()=>setShowManualInput(v=>!v),
-            style:{display:'flex',alignItems:'center',justifyContent:'space-between',
-              padding:'12px 16px',cursor:'pointer',userSelect:'none'}},
-            h('span',{style:{fontSize:12,color:th.textSub}},showManualInput?'▲ 詳細設定':'▼ 詳細設定（フォルダー・メモ・座標入力）'),
-            h('span',{style:{fontSize:11,color:th.textMuted}},
-              [tgtFolder&&folders.find(f=>f.id===tgtFolder)?.name, memo&&'メモあり'].filter(Boolean).join('・')||'')
+        h('div',{style:{borderRadius:12,background:th.cardBg,border:`1px solid ${th.cardBorder}`,
+          padding:'16px',display:'flex',flexDirection:'column',gap:14}},
+
+          // folder
+          h('div',null,
+            h('label',{style:{fontSize:11,color:th.textSub,letterSpacing:2,display:'block',marginBottom:8}},'保存先フォルダー'),
+            h('select',{value:tgtFolder||'',onChange:e=>setTgtFolderAndSave(e.target.value||null),
+              style:{...inputSt,appearance:'none',cursor:'pointer'}},
+              folders.map(f=>h('option',{key:f.id,value:f.id},f.name)),
+              folders.length===0&&h('option',{value:''},'フォルダーなし')
+            )
           ),
-          // expanded content
-          showManualInput && h('div',{style:{padding:'0 16px 16px',display:'flex',flexDirection:'column',gap:14,
-            borderTop:`1px solid ${th.divider}`}},
-            h('div',{style:{paddingTop:14}}),
 
-            // folder
-            h('div',null,
-              h('label',{style:{fontSize:11,color:th.textSub,letterSpacing:2,display:'block',marginBottom:8}},'保存先フォルダー'),
-              h('select',{value:tgtFolder||'',onChange:e=>setTgtFolder(e.target.value||null),
-                style:{...inputSt,appearance:'none',cursor:'pointer'}},
-                folders.map(f=>h('option',{key:f.id,value:f.id},f.name)),
-                folders.length===0&&h('option',{value:''},'フォルダーなし')
-              )
+          // memo
+          h('div',null,
+            h('label',{style:{fontSize:11,color:th.textSub,letterSpacing:2,display:'block',marginBottom:8}},'メモ（任意）'),
+            h('textarea',{value:memo,onChange:e=>setMemo(e.target.value),rows:2,
+              placeholder:'場所の名前や撮影メモ...',style:{...inputSt,resize:'none'}})
+          ),
+
+          // manual coords - collapsible
+          h('div',null,
+            h('div',{onClick:()=>setShowManualInput(v=>!v),
+              style:{display:'flex',alignItems:'center',gap:6,cursor:'pointer',userSelect:'none',marginBottom:showManualInput?8:0}},
+              h('span',{style:{fontSize:11,color:th.textSub}},'📋 座標・URLで記録（忘れた時・GPS修正）'),
+              h('span',{style:{fontSize:10,color:th.textMuted}},showManualInput?'▲':'▼')
             ),
-
-            // memo
-            h('div',null,
-              h('label',{style:{fontSize:11,color:th.textSub,letterSpacing:2,display:'block',marginBottom:8}},'メモ（任意）'),
-              h('textarea',{value:memo,onChange:e=>setMemo(e.target.value),rows:2,
-                placeholder:'場所の名前や撮影メモ...',style:{...inputSt,resize:'none'}})
-            ),
-
-            // manual coords
-            h('div',null,
-              h('label',{style:{fontSize:11,color:th.textSub,letterSpacing:2,display:'block',marginBottom:6}},
-                '📋 座標・URLで記録（忘れた時・GPS修正）'),
+            showManualInput && h('div',null,
               h('div',{style:{fontSize:11,color:th.text,marginBottom:8,lineHeight:1.8,opacity:0.8}},
                 'Googleマップ・Appleマップで建物付近を長押し',h('br'),
                 '→ 座標をコピー → ここに貼り付けて記録',h('br'),
