@@ -508,6 +508,8 @@ function App(){
   const [editingPlace,setEditingPlace]           = useState(null);
   const [editingCoords,setEditingCoords]         = useState(null);
   const [manualCoords,setManualCoords]           = useState('');
+  const [manualDateTime,setManualDateTime]       = useState('');
+  const [editingDateTime,setEditingDateTime]     = useState(null);
   const [showManualInput,setShowManualInput]     = useState(false);
   const [showAllFolderStats,setShowAllFolderStats] = useState(false);
   const [searchQuery,setSearchQuery]               = useState('');
@@ -620,6 +622,13 @@ function App(){
   function deleteRecord(id){ setRecords(p=>p.filter(r=>r.id!==id)); }
   function moveRecord(id,newFid){ setRecords(p=>p.map(r=>r.id===id?{...r,folderId:newFid}:r));setMoveModal(null); }
   function toggleFav(id){ setRecords(p=>p.map(r=>r.id===id?{...r,fav:!r.fav}:r)); }
+  function saveDateTime(id, dtStr){
+    if(!dtStr) return;
+    const d = new Date(dtStr);
+    if(isNaN(d.getTime())) return;
+    setRecords(p=>p.map(r=>r.id===id?{...r,date:toYMD(d),time:fmt(d)}:r));
+    setEditingDateTime(null);
+  }
 
   //  /  / GoogleURL 
   function parseCoords(str){
@@ -682,7 +691,7 @@ function App(){
       setLocating(false); return;
     }
 
-    const now=new Date();
+    const now = manualDateTime ? new Date(manualDateTime) : new Date();
     const fid=tgtFolder||folders[0]?.id||null;
     let place=null;
     try{
@@ -696,7 +705,7 @@ function App(){
       lat:coords.lat,lng:coords.lng,accuracy:null,memo:buildMemoWithWeather(memo.trim(),weather),weather,place};
     setRecords(p=>[rec,...p]);
     setGpsPos({lat:coords.lat,lng:coords.lng,acc:null});
-    setManualCoords(''); setMemo(''); setFlash(true); setShowManualInput(false);
+    setManualCoords(''); setManualDateTime(''); setMemo(''); setFlash(true); setShowManualInput(false);
     const fn=folders.find(f=>f.id===fid)?.name||'未分類';
     setOkMsg(`📍 記録${place?' — '+place:''} → ${fn}`);
     setTimeout(()=>setFlash(false),600);
@@ -1228,7 +1237,17 @@ function App(){
                 h('div',{style:{flex:1,minWidth:0}},
                   // header row
                   h('div',{style:{display:'flex',alignItems:'center',gap:7,marginBottom:4,flexWrap:'wrap'}},
-                    h('span',{style:{fontFamily:'DM Mono',fontSize:11,color:th.textSub}},r.date+' '+r.time),
+                    editingDateTime===r.id
+                      ? h('input',{type:'datetime-local',autoFocus:true,
+                          defaultValue:r.date+'T'+r.time,
+                          onBlur:e=>saveDateTime(r.id,e.target.value),
+                          onKeyDown:e=>{if(e.key==='Enter')saveDateTime(r.id,e.target.value);if(e.key==='Escape')setEditingDateTime(null);},
+                          style:{...inputSt,fontSize:11,padding:'2px 6px',width:'auto',cursor:'pointer'}})
+                      : h('span',{
+                          onClick:()=>setEditingDateTime(r.id),
+                          style:{fontFamily:'DM Mono',fontSize:11,color:th.textSub,cursor:'pointer',
+                            borderBottom:'1px dashed '+th.textFaint}},
+                          r.date+' '+r.time),
                     fol&&h('span',{style:{fontSize:10,color:fol.color,background:fol.color+'22',
                       border:`1px solid ${fol.color}44`,borderRadius:4,padding:'1px 6px'}},fol.name),
                     wt&&h('span',{style:{fontSize:13}},wt.icon)
@@ -1517,7 +1536,17 @@ function App(){
               h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}},
                 h('div',{style:{flex:1,minWidth:0}},
                   h('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:4,flexWrap:'wrap'}},
-                    h('span',{style:{fontFamily:'DM Mono',fontSize:11,color:th.textSub}},'#'+(idx+1)+' '+r.time),
+                    editingDateTime===r.id
+                      ? h('input',{type:'datetime-local',autoFocus:true,
+                          defaultValue:r.date+'T'+r.time,
+                          onBlur:e=>saveDateTime(r.id,e.target.value),
+                          onKeyDown:e=>{if(e.key==='Enter')saveDateTime(r.id,e.target.value);if(e.key==='Escape')setEditingDateTime(null);},
+                          style:{...inputSt,fontSize:11,padding:'2px 6px',width:'auto',cursor:'pointer'}})
+                      : h('span',{
+                          onClick:()=>setEditingDateTime(r.id),
+                          style:{fontFamily:'DM Mono',fontSize:11,color:th.textSub,cursor:'pointer',
+                            borderBottom:'1px dashed '+th.textFaint}},
+                          '#'+(idx+1)+' '+r.date+' '+r.time),
                     fol&&h('span',{style:{fontSize:10,color:fol.color,background:fol.color+'22',
                       border:`1px solid ${fol.color}44`,borderRadius:4,padding:'1px 6px'}},fol.name),
                     // weather badge with tap-to-change
@@ -1765,6 +1794,12 @@ function App(){
                 placeholder:'座標を貼り付け',
                 onKeyDown:e=>e.key==='Enter'&&saveManualRecord(),
                 style:{...inputSt,fontFamily:'inherit',fontSize:13,marginBottom:8}}),
+              h('div',null,
+                h('label',{style:{fontSize:11,color:th.textSub,letterSpacing:1,display:'block',marginBottom:4}},'日時（省略すると現在時刻）'),
+                h('input',{type:'datetime-local',value:manualDateTime,
+                  onChange:e=>setManualDateTime(e.target.value),
+                  style:{...inputSt,fontFamily:'inherit',fontSize:13,marginBottom:8,cursor:'pointer'}})
+              ),
               h('button',{onClick:saveManualRecord,disabled:locating||!manualCoords.trim(),
                 style:{width:'100%',background:th.accentBg,border:`1px solid ${th.accentBorder}`,
                   borderRadius:8,color:th.accent,padding:'9px',fontSize:13,cursor:'pointer',
