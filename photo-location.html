@@ -206,6 +206,13 @@ function calcSun(dateStr, lat, lng){
   return {rise: minsToTime(rMin), set: minsToTime(sMin)};
 }
 
+function distKm(lat1,lng1,lat2,lng2){
+  var R=6371,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function fmtDist(km){ return km<1?Math.round(km*1000)+'m':km.toFixed(1)+'km'; }
+
 // -- Compass --------------------------------------------
 function Compass({th, locating, gpsPos}){
   const [heading, setHeading] = useState(null);
