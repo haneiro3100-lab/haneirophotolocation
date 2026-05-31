@@ -1311,6 +1311,34 @@ function App(){
                         h('span',{style:{fontSize:10,color:th.textFaint}},'✎')
                       )
                 ),
+                h('div',{style:{marginTop:6}},
+                  h('button',{
+                    onClick:()=>setSunOpenId(sunOpenId===r.id ? null : r.id),
+                    style:{background:'none',border:'1px solid '+th.cardBorder,borderRadius:6,
+                      color:th.textSub,fontSize:11,padding:'3px 10px',cursor:'pointer',
+                      fontFamily:'inherit',display:'flex',alignItems:'center',gap:5}},
+                    (sunOpenId===r.id ? '▲' : '▼') + ' 🌅 日の出・日没'
+                  ),
+                  sunOpenId===r.id ? (
+                    calcSun(r.date,r.lat,r.lng).polar
+                      ? h('div',{style:{marginTop:4,fontSize:12,color:th.textMuted}}, calcSun(r.date,r.lat,r.lng).polar)
+                      : h('div',{style:{marginTop:6,padding:'8px 10px',borderRadius:8,
+                          background:isDark(th.bg)?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)',
+                          border:'1px solid '+th.cardBorder}},
+                          h('div',{style:{display:'flex',gap:20,marginBottom:4}},
+                            h('div',null,
+                              h('div',{style:{fontSize:10,color:th.textMuted,marginBottom:2}},'日の出'),
+                              h('div',{style:{fontFamily:'DM Mono',fontSize:16,color:'#f0a040'}}, calcSun(r.date,r.lat,r.lng).rise)
+                            ),
+                            h('div',null,
+                              h('div',{style:{fontSize:10,color:th.textMuted,marginBottom:2}},'日没'),
+                              h('div',{style:{fontFamily:'DM Mono',fontSize:16,color:'#6080c0'}}, calcSun(r.date,r.lat,r.lng).set)
+                            )
+                          ),
+                          h('div',{style:{fontSize:10,color:th.textFaint}}, r.date + ' の記録地点')
+                        )
+                  ) : null
+                ),
                 h('div',{style:{display:'flex',flexDirection:'column',gap:5,alignItems:'flex-end',flexShrink:0}},
                   h('button',{onClick:()=>toggleFav(r.id),
                     style:{background:r.fav?'rgba(255,200,0,0.15)':'none',
