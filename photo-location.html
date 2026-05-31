@@ -460,7 +460,7 @@ function App(){
   },[bgColor]);
 
   const th = makeTheme(bgColor);
-  const inputSt = {width:'100%',background:th.inputBg,border:`1px solid ${th.inputBorder}`,borderRadius:8,color:th.text,fontSize:14,padding:'9px 12px',outline:'none'};
+  const inputSt = {width:'100%',background:th.inputBg,border:`1px solid ${th.inputBorder}`,borderRadius:8,color:th.text,fontSize:16,padding:'9px 12px',outline:'none'};
 
   // nav
   const [view,setView]                   = useState('record');
@@ -1012,7 +1012,7 @@ function App(){
         // 
         h('div',{style:{marginBottom:12}},
           h('select',{value:searchFolder,onChange:e=>setSearchFolder(e.target.value),
-            style:{...inputSt,appearance:'none',cursor:'pointer',fontSize:13}},
+            style:{...inputSt,appearance:'none',cursor:'pointer',fontSize:16}},
             h('option',{value:'all'},'📂 すべてのフォルダー'),
             folders.map(f=>h('option',{key:f.id,value:f.id},'  '+f.name))
           )
