@@ -490,6 +490,7 @@ function App(){
   // weather
   const [weather,setWeather] = useState(()=>localStorage.getItem('photo-loc-weather')||null);
   const [showWeatherPicker,setShowWeatherPicker] = useState(false);
+  const [editWeatherId,setEditWeatherId]         = useState(null); // record id being weather-edited
 
   // 
   useEffect(()=>{
@@ -871,6 +872,34 @@ function App(){
         ))
       ),
       weather && h('button',{onClick:()=>{setWeather(null);setShowWeatherPicker(false);},
+        style:{background:'none',border:`1px solid ${th.cardBorder}`,borderRadius:8,
+          color:th.textSub,padding:'8px 16px',fontSize:13,width:'100%'}},
+        '天気をクリア')
+    ),
+
+    // edit record weather picker modal
+    editWeatherId && h(Modal,{title:'天気を変更',onClose:()=>setEditWeatherId(null),th},
+      h('div',{style:{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:8,marginBottom:16}},
+        WEATHERS.map(w=>{
+          const cur = records.find(r=>r.id===editWeatherId)?.weather;
+          return h('div',{key:w.id,onClick:()=>{
+              setRecords(p=>p.map(rec=>rec.id===editWeatherId?{...rec,weather:w.id,memo:buildMemoWithWeather(rec.memo,w.id)}:rec));
+              setEditWeatherId(null);
+            },
+            style:{display:'flex',flexDirection:'column',alignItems:'center',gap:4,cursor:'pointer',
+              padding:'8px 4px',borderRadius:10,
+              background:cur===w.id?th.accentBg:'transparent',
+              border:`1px solid ${cur===w.id?th.accent:'transparent'}`,
+              transition:'all .15s'}},
+            h('span',{style:{fontSize:26}},w.icon),
+            h('span',{style:{fontSize:10,color:cur===w.id?th.accent:th.textMuted}},w.label)
+          );
+        })
+      ),
+      h('button',{onClick:()=>{
+          setRecords(p=>p.map(rec=>rec.id===editWeatherId?{...rec,weather:null,memo:buildMemoWithWeather(rec.memo,null)}:rec));
+          setEditWeatherId(null);
+        },
         style:{background:'none',border:`1px solid ${th.cardBorder}`,borderRadius:8,
           color:th.textSub,padding:'8px 16px',fontSize:13,width:'100%'}},
         '天気をクリア')
@@ -1285,11 +1314,7 @@ function App(){
                           onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},
                           r.place||'場所を追加...'),
                         wt&&h('span',{
-                          onClick:()=>{
-                            const idx2=WEATHERS.findIndex(w=>w.id===r.weather);
-                            const next=WEATHERS[(idx2+1)%WEATHERS.length];
-                            setRecords(p=>p.map(rec=>rec.id===r.id?{...rec,weather:next.id,memo:buildMemoWithWeather(rec.memo,next.id)}:rec));
-                          },
+                          onClick:()=>setEditWeatherId(r.id),
                           style:{fontSize:12,flexShrink:0,marginRight:2,cursor:'pointer',
                             border:'1px solid '+th.cardBorder,borderRadius:4,padding:'1px 4px',background:th.accentBg}},
                           wt.icon+wt.label),
@@ -1612,11 +1637,7 @@ function App(){
                           onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},
                           r.place||'場所を追加...'),
                         wt&&h('span',{
-                          onClick:()=>{
-                            const idx2=WEATHERS.findIndex(w=>w.id===r.weather);
-                            const next=WEATHERS[(idx2+1)%WEATHERS.length];
-                            setRecords(p=>p.map(rec=>rec.id===r.id?{...rec,weather:next.id,memo:buildMemoWithWeather(rec.memo,next.id)}:rec));
-                          },
+                          onClick:()=>setEditWeatherId(r.id),
                           style:{fontSize:12,flexShrink:0,marginRight:2,cursor:'pointer',
                             border:'1px solid '+th.cardBorder,borderRadius:4,padding:'1px 4px',background:th.accentBg}},
                           wt.icon+wt.label),
