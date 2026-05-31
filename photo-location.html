@@ -1284,6 +1284,7 @@ function App(){
                         h('span',{style:{fontSize:11,color:th.accent,flexShrink:0}},'📌'),
                         h('span',{style:{fontSize:13,color:r.place?th.accent:th.textFaint,fontWeight:r.place?500:400,flex:1}},
                           r.place||'場所を追加...'),
+                        wt&&h('span',{style:{fontSize:12,flexShrink:0,marginRight:2}},wt.icon+wt.label),
                         h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg}},'✎')
                       ),
                   // memo inline edit
@@ -1315,18 +1316,8 @@ function App(){
                       )
                     : h('div',{style:{display:'flex',alignItems:'flex-start',gap:5,marginBottom:4,cursor:'text'},
                         onClick:()=>setEditingMemo({id:r.id,text:r.memo||''})},
-                        h('div',{style:{flex:1}},
-                          h('span',{style:{fontSize:13,color:r.memo?th.text:th.textFaint,lineHeight:1.6}},
-                            wt ? h('span',null,
-                              h('span',{style:{marginRight:2}},wt.icon),
-                              h('span',null,wt.label),
-                              memoBody(r.memo) ? h('span',null,
-                                h('span',{style:{color:th.textMuted}},' // '),
-                                memoBody(r.memo)
-                              ) : null
-                            ) : (r.memo ? memoBody(r.memo) : 'メモを追加...')
-                          )
-                        ),
+                        h('span',{style:{fontSize:13,color:r.memo?th.text:th.textFaint,flex:1,lineHeight:1.5}},
+                          r.memo ? memoBody(r.memo) : 'メモを追加...'),
                         h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg}},'✎')
                       ),
                   // coords  tap to edit
@@ -1611,6 +1602,7 @@ function App(){
                         h('span',{style:{fontSize:11,color:th.accent,flexShrink:0}},'📌'),
                         h('span',{style:{fontSize:13,color:r.place?th.accent:th.textFaint,fontWeight:r.place?500:400,flex:1}},
                           r.place||'場所を追加...'),
+                        wt&&h('span',{style:{fontSize:12,flexShrink:0,marginRight:2}},wt.icon+wt.label),
                         h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg}},'✎')
                       ),
                   // memo  tap to edit inline
@@ -1650,22 +1642,12 @@ function App(){
                         )
                       )
                     : h('div',{
-                        style:{display:'flex',alignItems:'flex-start',gap:6,marginBottom:5,cursor:'text',
-                          minHeight:20},
+                        style:{display:'flex',alignItems:'flex-start',gap:6,marginBottom:5,cursor:'text',minHeight:20},
                         onClick:()=>setEditingMemo({id:r.id,text:r.memo||''}),
                         title:'タップしてメモを編集',
                       },
-                        h('div',{style:{flex:1}},
-                          h('span',{style:{fontSize:14,color:r.memo?th.text:th.textFaint,lineHeight:1.6}},
-                            wt ? h('span',null,
-                              h('span',{style:{marginRight:4}},wt.icon),
-                              memoBody(r.memo) ? h('span',null,
-                                h('span',{style:{color:th.textMuted}},' // '),
-                                memoBody(r.memo)
-                              ) : null
-                            ) : (r.memo ? memoBody(r.memo) : 'メモを追加...')
-                          )
-                        ),
+                        h('span',{style:{fontSize:14,color:r.memo?th.text:th.textFaint,flex:1,lineHeight:1.5}},
+                          r.memo ? memoBody(r.memo) : 'メモを追加...'),
                         h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg}},'✎')
                       ),
                   // coords  tap to edit
