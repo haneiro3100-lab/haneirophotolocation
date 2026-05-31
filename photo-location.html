@@ -1279,13 +1279,22 @@ function App(){
                           style:{background:'none',border:`1px solid ${th.cardBorder}`,borderRadius:5,
                             color:th.textSub,padding:'3px 6px',fontSize:11,cursor:'pointer',fontFamily:'inherit',flexShrink:0}},'✕')
                       )
-                    : h('div',{style:{display:'flex',alignItems:'center',gap:5,marginBottom:4,cursor:'text'},
-                        onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},
+                    : h('div',{style:{display:'flex',alignItems:'center',gap:5,marginBottom:4}},
                         h('span',{style:{fontSize:11,color:th.accent,flexShrink:0}},'📌'),
-                        h('span',{style:{fontSize:13,color:r.place?th.accent:th.textFaint,fontWeight:r.place?500:400,flex:1}},
+                        h('span',{style:{fontSize:13,color:r.place?th.accent:th.textFaint,fontWeight:r.place?500:400,flex:1,cursor:'text'},
+                          onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},
                           r.place||'場所を追加...'),
-                        wt&&h('span',{style:{fontSize:12,flexShrink:0,marginRight:2}},wt.icon+wt.label),
-                        h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg}},'✎')
+                        wt&&h('span',{
+                          onClick:()=>{
+                            const idx2=WEATHERS.findIndex(w=>w.id===r.weather);
+                            const next=WEATHERS[(idx2+1)%WEATHERS.length];
+                            setRecords(p=>p.map(rec=>rec.id===r.id?{...rec,weather:next.id,memo:buildMemoWithWeather(rec.memo,next.id)}:rec));
+                          },
+                          style:{fontSize:12,flexShrink:0,marginRight:2,cursor:'pointer',
+                            border:'1px solid '+th.cardBorder,borderRadius:4,padding:'1px 4px',background:th.accentBg}},
+                          wt.icon+wt.label),
+                        h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg},
+                          onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},'✎')
                       ),
                   // memo inline edit
                   editingMemo?.id===r.id
@@ -1597,13 +1606,22 @@ function App(){
                           style:{background:'none',border:`1px solid ${th.cardBorder}`,borderRadius:5,
                             color:th.textSub,padding:'3px 8px',fontSize:11,cursor:'pointer',fontFamily:'inherit',flexShrink:0}},'✕')
                       )
-                    : h('div',{style:{display:'flex',alignItems:'center',gap:5,marginBottom:5,cursor:'text'},
-                        onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},
+                    : h('div',{style:{display:'flex',alignItems:'center',gap:5,marginBottom:5}},
                         h('span',{style:{fontSize:11,color:th.accent,flexShrink:0}},'📌'),
-                        h('span',{style:{fontSize:13,color:r.place?th.accent:th.textFaint,fontWeight:r.place?500:400,flex:1}},
+                        h('span',{style:{fontSize:13,color:r.place?th.accent:th.textFaint,fontWeight:r.place?500:400,flex:1,cursor:'text'},
+                          onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},
                           r.place||'場所を追加...'),
-                        wt&&h('span',{style:{fontSize:12,flexShrink:0,marginRight:2}},wt.icon+wt.label),
-                        h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg}},'✎')
+                        wt&&h('span',{
+                          onClick:()=>{
+                            const idx2=WEATHERS.findIndex(w=>w.id===r.weather);
+                            const next=WEATHERS[(idx2+1)%WEATHERS.length];
+                            setRecords(p=>p.map(rec=>rec.id===r.id?{...rec,weather:next.id,memo:buildMemoWithWeather(rec.memo,next.id)}:rec));
+                          },
+                          style:{fontSize:12,flexShrink:0,marginRight:2,cursor:'pointer',
+                            border:'1px solid '+th.cardBorder,borderRadius:4,padding:'1px 4px',background:th.accentBg}},
+                          wt.icon+wt.label),
+                        h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg},
+                          onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},'✎')
                       ),
                   // memo  tap to edit inline
                   editingMemo?.id===r.id
