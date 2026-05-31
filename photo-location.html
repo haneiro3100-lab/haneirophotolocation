@@ -503,6 +503,7 @@ function App(){
   const [currentPos,setCurrentPos]                 = useState(null);
   const [nearLoading,setNearLoading]               = useState(false);
   const [sunOpenId,setSunOpenId]                   = useState(null);
+  const [sunSelRec,setSunSelRec]                   = useState(null);
   const [showSettings,setShowSettings]       = useState(false);
   const [customBg,setCustomBg]               = useState(bgColor);
   const [showDataModal,setShowDataModal]     = useState(false);
@@ -1454,25 +1455,44 @@ function App(){
                 fontFamily:'inherit',display:'flex',alignItems:'center',gap:5}},
               (sunOpenId==='detail-'+selDate ? '▲' : '▼') + ' 🌅 日の出・日没（'+selDate+'）'
             ),
-            sunOpenId==='detail-'+selDate ? (
-              calcSun(selDate, dayRecs[0].lat, dayRecs[0].lng).polar
-                ? h('div',{style:{marginTop:4,fontSize:12,color:th.textMuted}}, calcSun(selDate,dayRecs[0].lat,dayRecs[0].lng).polar)
-                : h('div',{style:{marginTop:8,padding:'10px 14px',borderRadius:8,
-                    background:isDark(th.bg)?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)',
-                    border:'1px solid '+th.cardBorder}},
-                    h('div',{style:{display:'flex',gap:24,marginBottom:4}},
-                      h('div',null,
-                        h('div',{style:{fontSize:10,color:th.textMuted,marginBottom:2}},'日の出'),
-                        h('div',{style:{fontFamily:'DM Mono',fontSize:18,color:'#f0a040'}}, calcSun(selDate,dayRecs[0].lat,dayRecs[0].lng).rise)
+            sunOpenId==='detail-'+selDate ? (function(){
+              var idx = sunSelRec!==null ? sunSelRec : 0;
+              var rec = dayRecs[idx] || dayRecs[0];
+              var sun = calcSun(selDate, rec.lat, rec.lng);
+              var fol = folders.find(function(f){return f.id===rec.folderId;});
+              return h('div',{style:{marginTop:8,padding:'10px 14px',borderRadius:8,
+                background:isDark(th.bg)?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)',
+                border:'1px solid '+th.cardBorder}},
+                dayRecs.length>1 && h('select',{
+                  value:idx,
+                  onChange:function(e){setSunSelRec(Number(e.target.value));},
+                  style:{width:'100%',background:th.inputBg,border:'1px solid '+th.inputBorder,
+                    borderRadius:6,color:th.text,fontSize:11,padding:'4px 8px',
+                    fontFamily:'inherit',marginBottom:10,cursor:'pointer'}},
+                  dayRecs.map(function(dr,i){
+                    var df=folders.find(function(f){return f.id===dr.folderId;});
+                    return h('option',{key:dr.id,value:i},
+                      '#'+(i+1)+' '+(dr.place||dr.time)+(df?' ('+df.name+')':''));
+                  })
+                ),
+                sun.polar
+                  ? h('div',{style:{fontSize:12,color:th.textMuted}},sun.polar)
+                  : h('div',null,
+                      h('div',{style:{display:'flex',gap:24,marginBottom:4}},
+                        h('div',null,
+                          h('div',{style:{fontSize:10,color:th.textMuted,marginBottom:2}},'日の出'),
+                          h('div',{style:{fontFamily:'DM Mono',fontSize:18,color:'#f0a040'}},sun.rise)
+                        ),
+                        h('div',null,
+                          h('div',{style:{fontSize:10,color:th.textMuted,marginBottom:2}},'日没'),
+                          h('div',{style:{fontFamily:'DM Mono',fontSize:18,color:'#6080c0'}},sun.set)
+                        )
                       ),
-                      h('div',null,
-                        h('div',{style:{fontSize:10,color:th.textMuted,marginBottom:2}},'日没'),
-                        h('div',{style:{fontFamily:'DM Mono',fontSize:18,color:'#6080c0'}}, calcSun(selDate,dayRecs[0].lat,dayRecs[0].lng).set)
-                      )
-                    ),
-                    h('div',{style:{fontSize:10,color:th.textFaint}}, '記録地点の座標で計算')
-                  )
-            ) : null
+                      h('div',{style:{fontSize:10,color:th.textFaint}},
+                        (rec.place||rec.lat.toFixed(4)+', '+rec.lng.toFixed(4)) + ' の計算値')
+                    )
+              );
+            })() : null
           ),
           dayRecs.map((r,idx)=>{
             const fol=folders.find(f=>f.id===r.folderId);
