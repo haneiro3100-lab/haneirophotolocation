@@ -1176,7 +1176,7 @@ function App(){
             ),
             h('button',{onClick:e=>{e.stopPropagation();openEditFolder(f);},
               style:{background:th.accentBg,border:`1px solid ${th.accentBorder}`,borderRadius:4,
-                color:th.accent,fontSize:13,padding:'2px 6px',cursor:'pointer',lineHeight:1.4}},'✎'),
+                color:th.accent,fontSize:11,padding:'2px 8px',cursor:'pointer',lineHeight:1.4}},'編集'),
             h('span',{style:{color:th.textFaint,fontSize:18,cursor:'pointer'},
               onClick:()=>{setSelFolder(f);setView('list');}},'›')
           );
@@ -1310,11 +1310,10 @@ function App(){
                       )
                     : h('div',{style:{display:'flex',alignItems:'center',gap:5,marginBottom:4}},
                         h('span',{style:{fontSize:11,color:th.accent,flexShrink:0}},'📌'),
-                        h('span',{style:{fontSize:13,color:r.place?th.accent:th.textFaint,fontWeight:r.place?500:400,flex:1,cursor:'text'},
+                        h('span',{style:{fontSize:13,color:r.place?th.accent:th.textFaint,fontWeight:r.place?500:400,flex:1,cursor:'text',
+                            borderBottom:'1px dashed '+(r.place?th.accent:th.textFaint)},
                           onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},
                           r.place||'場所を追加...'),
-                        h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg},
-                          onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},'✎'),
                         wt&&h('span',{
                           onClick:()=>setEditWeatherId(r.id),
                           style:{fontSize:12,flexShrink:0,cursor:'pointer',
@@ -1350,9 +1349,8 @@ function App(){
                       )
                     : h('div',{style:{display:'flex',alignItems:'flex-start',gap:5,marginBottom:4,cursor:'text'},
                         onClick:()=>setEditingMemo({id:r.id,text:r.memo||''})},
-                        h('span',{style:{fontSize:13,color:r.memo?th.text:th.textFaint,flex:1,lineHeight:1.5}},
-                          r.memo ? memoBody(r.memo) : 'メモを追加...'),
-                        h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg}},'✎')
+                        h('span',{style:{fontSize:13,color:r.memo?th.text:th.textFaint,flex:1,lineHeight:1.5,borderBottom:'1px dashed '+th.textFaint}},
+                          r.memo ? memoBody(r.memo) : 'メモを追加...')
                       ),
                   // coords  tap to edit
                   editingCoords?.id===r.id
@@ -1379,8 +1377,7 @@ function App(){
                     : h('div',{style:{display:'flex',alignItems:'center',gap:4,cursor:'text'},
                         onClick:()=>setEditingCoords({id:r.id,text:r.lat.toFixed(5)+', '+r.lng.toFixed(5)})},
                         h('span',{style:{fontFamily:'DM Mono',fontSize:10,color:th.textMuted,flex:1}},
-                          r.lat.toFixed(5)+', '+r.lng.toFixed(5)),
-                        h('span',{style:{fontSize:11,color:th.accent,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg}},'✎')
+                          r.lat.toFixed(5)+', '+r.lng.toFixed(5))
                       )
                 ),
                 h('div',{style:{display:'flex',flexDirection:'column',gap:5,alignItems:'flex-end',flexShrink:0}},
@@ -1406,7 +1403,7 @@ function App(){
                   style:{background:'none',border:'1px solid '+th.cardBorder,borderRadius:6,
                     color:th.textSub,fontSize:11,padding:'3px 10px',cursor:'pointer',
                     fontFamily:'inherit',display:'flex',alignItems:'center',gap:5}},
-                  (sunOpenId===r.id ? '▲' : '▼') + ' 🌅 今日の日の出・日没'
+                  (sunOpenId===r.id ? '▲' : '▼') + ' 🌅 今日の日の出・日没（場所名をタップして場所変更可）'
                 ),
                 sunOpenId===r.id ? (
                   calcSun(today, r.lat, r.lng).polar
@@ -1524,7 +1521,7 @@ function App(){
               style:{background:'none',border:'1px solid '+th.cardBorder,borderRadius:6,
                 color:th.textSub,fontSize:11,padding:'3px 10px',cursor:'pointer',
                 fontFamily:'inherit',display:'flex',alignItems:'center',gap:5}},
-              (sunOpenId==='detail-'+selDate ? '▲' : '▼') + ' 🌅 日の出・日没（'+selDate+'）'
+              (sunOpenId==='detail-'+selDate ? '▲' : '▼') + ' 🌅 日の出・日没（'+selDate+'・場所は下から選択）'
             ),
             sunOpenId==='detail-'+selDate ? (function(){
               var idx = sunSelRec!==null ? sunSelRec : 0;
@@ -1633,11 +1630,10 @@ function App(){
                       )
                     : h('div',{style:{display:'flex',alignItems:'center',gap:5,marginBottom:5}},
                         h('span',{style:{fontSize:11,color:th.accent,flexShrink:0}},'📌'),
-                        h('span',{style:{fontSize:13,color:r.place?th.accent:th.textFaint,fontWeight:r.place?500:400,flex:1,cursor:'text'},
+                        h('span',{style:{fontSize:13,color:r.place?th.accent:th.textFaint,fontWeight:r.place?500:400,flex:1,cursor:'text',
+                            borderBottom:'1px dashed '+(r.place?th.accent:th.textFaint)},
                           onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},
                           r.place||'場所を追加...'),
-                        h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg},
-                          onClick:()=>setEditingPlace({id:r.id,text:r.place||''})},'✎'),
                         wt&&h('span',{
                           onClick:()=>setEditWeatherId(r.id),
                           style:{fontSize:12,flexShrink:0,cursor:'pointer',
@@ -1685,9 +1681,8 @@ function App(){
                         onClick:()=>setEditingMemo({id:r.id,text:r.memo||''}),
                         title:'タップしてメモを編集',
                       },
-                        h('span',{style:{fontSize:14,color:r.memo?th.text:th.textFaint,flex:1,lineHeight:1.5}},
-                          r.memo ? memoBody(r.memo) : 'メモを追加...'),
-                        h('span',{style:{fontSize:11,color:th.accent,flexShrink:0,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg}},'✎')
+                        h('span',{style:{fontSize:14,color:r.memo?th.text:th.textFaint,flex:1,lineHeight:1.5,borderBottom:'1px dashed '+th.textFaint}},
+                          r.memo ? memoBody(r.memo) : 'メモを追加...')
                       ),
                   // coords  tap to edit
                   editingCoords?.id===r.id
@@ -1717,7 +1712,6 @@ function App(){
                         onClick:()=>setEditingCoords({id:r.id,text:r.lat.toFixed(5)+', '+r.lng.toFixed(5)})},
                         h('span',{style:{fontFamily:'DM Mono',fontSize:10,color:th.textMuted,flex:1}},
                           r.lat.toFixed(5)+', '+r.lng.toFixed(5)),
-                        h('span',{style:{fontSize:11,color:th.accent,border:'1px solid '+th.accentBorder,borderRadius:4,padding:'1px 4px',lineHeight:1.4,background:th.accentBg}},'✎'),
                         r.accuracy&&h('span',{style:{fontFamily:'DM Mono',fontSize:10,color:th.textFaint,marginLeft:4}},'±'+r.accuracy+'m')
                       )
                 ),
