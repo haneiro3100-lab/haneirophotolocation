@@ -1,0 +1,11 @@
+{
+  "name": "Event Flow",
+  "short_name": "Event Flow",
+  "description": "イベント撮影用タイムスケジュール管理アプリ",
+  "id": "./event.html",
+  "start_url": "./event.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#08101b",
+  "theme_color": "#08101b"
+}
