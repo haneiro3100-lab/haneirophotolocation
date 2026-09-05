@@ -358,9 +358,231 @@
     .tt-confirm { display:flex; align-items:flex-start; gap:8px; font-size:12px; line-height:1.7; margin-top:14px }
     .tt-confirm input { margin-top:5px; flex:none }
     #ttPreview .form-grid { margin-top:14px }
+    /* Camera console finish. Presentation only; schedule and storage stay independent. */
+    body { isolation:isolate }
+    body:after { background-image:none; opacity:0 }
+    .console-ambient { position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; background:radial-gradient(ellipse at 15% 8%,rgba(100,131,199,.15),transparent 55%),linear-gradient(150deg,#101a29,#090e17 65%,#0c1721) }
+    .console-ambient svg { position:absolute; top:9vh; left:-15%; width:130%; height:65vh; opacity:.3; transform-origin:center }
+    .staff-readonly .console-ambient { display:none }
+    .sidebar { background:linear-gradient(145deg,rgba(31,44,64,.94),rgba(12,20,33,.97)); border-color:rgba(208,223,255,.17); box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 16px 36px rgba(0,0,0,.23) }
+    .brand b { font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif; letter-spacing:-.035em; font-weight:750 }
+    .brand small { color:#a0afc5; font-weight:600; letter-spacing:.14em }
+    .brand-mark { background:linear-gradient(145deg,#c0d1ec,#607eaa 45%,#254456); box-shadow:inset 0 1px 1px #e6efff,0 8px 24px rgba(92,137,204,.2) }
+    .brand-mark:after { display:none }
+    .nav { position:relative; gap:8px }
+    .nav button { min-height:58px; color:#a0aec2; font-weight:650; gap:14px; transition:color .24s ease,background .24s ease; touch-action:pan-x pan-y pinch-zoom }
+    .nav button:hover { transform:none; color:#e2eaf6; background:rgba(211,229,255,.035) }
+    .nav button.active { color:#fff; background:linear-gradient(90deg,rgba(184,211,255,.085),transparent); box-shadow:none }
+    .nav button.active:before,.nav button.active:after { display:none }
+    .nav .nav-icon { position:relative; display:grid; place-items:center; width:38px; height:38px; flex:0 0 38px; color:inherit; transition:transform .3s cubic-bezier(.2,.8,.2,1),filter .3s ease }
+    .nav-icon svg { display:block; width:26px; height:26px; fill:none; stroke:currentColor; stroke-width:1.45; stroke-linecap:round; stroke-linejoin:round }
+    .nav button.active .nav-icon { transform:scale(1.12); filter:drop-shadow(0 0 7px rgba(190,218,255,.48)) }
+    .nav .nav-icon:after { content:""; position:absolute; inset:-3px; border:0; opacity:0; transform:scale(1.22); transition:opacity .22s ease,transform .3s cubic-bezier(.2,.8,.2,1); background:linear-gradient(#b8dfef,#b8dfef) left top/8px 1px no-repeat,linear-gradient(#b8dfef,#b8dfef) left top/1px 8px no-repeat,linear-gradient(#b8dfef,#b8dfef) right top/8px 1px no-repeat,linear-gradient(#b8dfef,#b8dfef) right top/1px 8px no-repeat,linear-gradient(#b8dfef,#b8dfef) left bottom/8px 1px no-repeat,linear-gradient(#b8dfef,#b8dfef) left bottom/1px 8px no-repeat,linear-gradient(#b8dfef,#b8dfef) right bottom/8px 1px no-repeat,linear-gradient(#b8dfef,#b8dfef) right bottom/1px 8px no-repeat }
+    .nav button.active .nav-icon:after { opacity:.85; transform:scale(1) }
+    .nav-hint { display:none; margin:2px 0 0; text-align:center; color:#a0aec2; font-size:9px; letter-spacing:.06em }
+    .nav button:focus-visible { outline:2px solid #b8dfef; outline-offset:-3px }
+    .now-card { background:linear-gradient(145deg,rgba(28,43,63,.98),rgba(10,20,32,.98) 65%,rgba(12,35,41,.97)); box-shadow:inset 0 1px 0 rgba(218,232,255,.09),0 24px 56px rgba(0,0,0,.33) }
+    .btn:not(.primary):not(.danger),.icon-btn { background:linear-gradient(rgba(215,231,255,.065),rgba(152,182,229,.025)); box-shadow:inset 0 1px 0 rgba(255,255,255,.035) }
+    .now-card .hero-ring:before { content:""; position:absolute; inset:-5px; border-radius:50%; background:repeating-conic-gradient(from -1deg,rgba(208,228,249,.42) 0deg 1deg,transparent 1deg 6deg); -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px)); mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px)); pointer-events:none }
+    .now-card .hero-ring:after { box-shadow:inset 0 0 0 3px rgba(6,13,23,.38),inset 0 0 20px rgba(95,154,174,.1) }
+    .recipe-card { position:relative }
+    .recipe-card:before,.recipe-card:after { content:""; position:absolute; width:9px; height:9px; pointer-events:none; opacity:.6 }
+    .recipe-card:before { top:7px; left:7px; border-top:1px solid #a3bcd9; border-left:1px solid #a3bcd9 }
+    .recipe-card:after { bottom:7px; right:7px; border-bottom:1px solid #a3bcd9; border-right:1px solid #a3bcd9 }
+    .view.active { animation:console-focus .2s cubic-bezier(.2,.8,.2,1) both }
+    @keyframes console-focus { from { opacity:.65; transform:translateY(4px) } to { opacity:1; transform:translateY(0) } }
+    @keyframes console-ribbon { from { transform:translate3d(-1%,0,0) rotate(-2deg) } to { transform:translate3d(1%,2%,0) rotate(1deg) } }
+    @keyframes capture-frame { 0% { outline-color:rgba(241,249,255,.85); box-shadow:inset 0 0 14px rgba(233,246,255,.12) } 100% { outline-color:transparent; box-shadow:inset 0 0 0 transparent } }
+    @media (prefers-reduced-motion:no-preference) { .console-ambient svg { animation:console-ribbon 24s ease-in-out infinite alternate } .priority-cut.must.capture-feedback { outline:1px solid transparent; outline-offset:1px; animation:capture-frame .38s ease-out both } }
+    body.console-idle .console-ambient svg { animation-play-state:paused }
+    @media (max-width:980px) {
+      .sidebar { padding-bottom:12px }
+      .nav { display:flex; width:100%; gap:12px; overflow-x:auto; overflow-y:hidden; padding:12px max(10px,calc(50% - 46px)); scroll-padding-inline:calc(50% - 46px); scroll-snap-type:x proximity; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; scrollbar-width:none; -webkit-mask-image:linear-gradient(90deg,transparent,#000 16px,#000 calc(100% - 16px),transparent); mask-image:linear-gradient(90deg,transparent,#000 16px,#000 calc(100% - 16px),transparent) }
+      .nav::-webkit-scrollbar { display:none }
+      .nav button { display:flex; flex-direction:column; align-items:center; justify-content:center; width:92px; flex:0 0 92px; min-height:76px; padding:4px; gap:10px; border-radius:8px; scroll-snap-align:center; text-align:center; font-size:11px; white-space:nowrap }
+      .nav button.active { background:transparent }
+      .nav-hint { display:block }
+    }
+    @media (prefers-reduced-motion:reduce) { .console-ambient svg,.view.active,.priority-cut.must.capture-feedback { animation:none } .nav button,.nav .nav-icon,.nav .nav-icon:after { transition:none } }
+    /* Digital viewfinder: quiet surfaces, clear hierarchy, fixed mobile controls. */
+    .finder-ui { --canvas:#101112; --canvas-soft:#17191b; --ink:#f2f1ed; --muted:#b0b1b0; --faint:#969996; --line:rgba(255,255,255,.10); --line-strong:rgba(255,255,255,.2); --panel:#191b1d; --shadow:none; --mint:#84d5b0; --blue:#b9c8c3; --radius-lg:16px; background:#101112; letter-spacing:0 }
+    .finder-ui:before,.finder-ui:after,.finder-ui .console-ambient { display:none }
+    .finder-ui .app { width:min(1380px,calc(100% - 48px)); grid-template-columns:196px minmax(0,1fr); gap:40px }
+    .finder-ui main { padding:36px 0 70px }
+    .finder-ui .sidebar { border:0; border-right:1px solid var(--line); border-radius:0; background:none; box-shadow:none; backdrop-filter:none; padding:24px 20px 16px 0 }
+    .finder-ui .sidebar:after,.finder-ui .brand:after,.finder-ui .brand-mark:after { display:none }
+    .finder-ui .brand { gap:10px; padding:0 0 40px }
+    .finder-ui .brand-mark { width:36px; height:36px; border:1px solid #737c77; border-radius:50%; background:#222826; box-shadow:none; padding:7px }
+    .finder-ui .brand-mark:before { inset:3px; border-color:#777e79 }
+    .finder-ui .brand small { font-size:7px; color:var(--faint); letter-spacing:.08em }
+    .finder-ui .nav-label { margin-left:8px; color:var(--faint); font-weight:500 }
+    .finder-ui .nav { gap:6px }
+    .finder-ui .nav button { font-size:12px; font-weight:550; min-height:60px; padding:8px; color:#aaaead }
+    .finder-ui .nav button.active { color:#f4f5ef; background:#202523; border-radius:10px }
+    .finder-ui .nav .nav-icon { width:30px; height:30px; flex-basis:30px }
+    .finder-ui .nav-icon svg { width:22px; height:22px }
+    .finder-ui .nav button.active .nav-icon { transform:translateY(-1px); filter:none }
+    .finder-ui .nav .nav-icon:after { inset:-2px; opacity:0; }
+    .finder-ui .nav button.active .nav-icon:after { opacity:.65 }
+    .finder-ui .nav-hint { display:none }
+    .finder-ui .side-foot { font-size:10px; line-height:1.8; padding-left:4px }
+    .finder-ui .topbar { padding:0 0 24px; align-items:center; gap:16px; border-bottom:1px solid var(--line); margin-bottom:24px }
+    .finder-ui .finder-heading { min-width:0; flex:1 }
+    .finder-ui .eyebrow { color:#9da7a1; font-size:9px; font-weight:500; letter-spacing:.14em }
+    .finder-ui .page-title { margin-top:9px; font-size:25px; line-height:1.35; letter-spacing:-.03em; font-weight:650; overflow-wrap:anywhere }
+    .finder-ui #finderEventMeta { color:var(--faint); font-size:11px; margin:5px 0 0; line-height:1.6 }
+    .finder-ui #finderEventMeta:empty { display:none }
+    .finder-ui .header-actions { flex:0 0 auto; gap:6px }
+    .finder-ui .clock { display:none }
+    .finder-ui .btn,.finder-ui .btn:not(.primary):not(.danger),.finder-ui .icon-btn { min-height:44px; background:#242729; border-color:rgba(255,255,255,.14); color:#eceee9; box-shadow:none; border-radius:9px; font-weight:550 }
+    .finder-ui .btn:hover,.finder-ui .icon-btn:hover { background:#303536; box-shadow:none; transform:none }
+    .finder-ui .btn.primary { background:#84d5b0; border-color:#84d5b0; color:#11251c; box-shadow:none; font-weight:700 }
+    .finder-ui .btn.primary:hover { background:#a0e5c3 }
+    .finder-ui .btn.danger { background:rgba(255,113,141,.06); color:#ffacba; border-color:rgba(255,113,141,.2) }
+    .finder-ui .btn.small { min-height:40px; font-size:11px }
+    .finder-ui .finder-field-grid { grid-template-columns:minmax(0,1fr) 240px; gap:24px }
+    .finder-ui .finder-main { min-width:0 }
+    .finder-ui .now-card { padding:26px; border:1px solid #394440; border-radius:14px; background:#191d1c; box-shadow:none; backdrop-filter:none; overflow:visible }
+    .finder-ui .now-card:before,.finder-ui .now-card:after { width:14px; height:14px; border-radius:0; background:none; opacity:.8; pointer-events:none }
+    .finder-ui .now-card:before { left:11px; top:11px; right:auto; bottom:auto; border-top:1px solid #aebbb3; border-left:1px solid #aebbb3 }
+    .finder-ui .now-card:after { right:11px; bottom:11px; left:auto; top:auto; border-right:1px solid #aebbb3; border-bottom:1px solid #aebbb3 }
+    .finder-ui .card-top { align-items:center; gap:12px }
+    .finder-ui .finder-kicker { color:#a7b4ac; font-size:11px; font-weight:550; letter-spacing:.07em }
+    .finder-ui .finder-index { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:10px; color:var(--faint); margin-left:12px; letter-spacing:0 }
+    .finder-ui .status-pill { font-family:inherit; color:#bccdc4; background:none; border:0; font-size:10px; font-weight:500; padding:0; gap:6px; min-height:24px }
+    .finder-ui .status-pill:before { width:5px; height:5px; box-shadow:none }
+    .finder-ui .status-pill:after { display:none }
+    .finder-ui .cue-name { font-size:clamp(29px,3.3vw,42px); line-height:1.4; letter-spacing:-.04em; margin-top:20px; font-weight:650; overflow-wrap:anywhere }
+    .finder-ui .cue-planned { font-size:11px; gap:8px; margin-top:10px; line-height:1.8; font-weight:450 }
+    .finder-ui .cue-planned b { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:16px; font-weight:500; white-space:normal; overflow-wrap:anywhere }
+    .finder-ui .now-card .timer-row { margin-top:22px; min-height:0; border:0; padding:0; background:none; display:block }
+    .finder-ui .countdown { gap:10px; align-items:flex-start; container-type:inline-size; width:100% }
+    .finder-ui .countdown-label { color:#b2bcb6; font-size:11px; letter-spacing:.04em; font-weight:450 }
+    .finder-ui .now-card .countdown-number { color:#f3f5ef; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-weight:550; font-size:clamp(48px,6vw,76px); font-size:clamp(26px,13cqi,76px); line-height:1.12; text-shadow:none; gap:6px; white-space:nowrap }
+    .finder-ui .countdown-number .time-value { letter-spacing:-.065em }
+    .finder-ui .countdown-number .time-unit { color:#b2bcb6; font-size:.24em; font-weight:450; letter-spacing:0; margin:0 5px 0 0 }
+    .finder-ui .countdown.warn .countdown-number { color:var(--amber) }
+    .finder-ui .countdown.over .countdown-number { color:var(--rose) }
+    .finder-ui .finder-progress { height:3px; background:#363c39; margin:19px 0 5px; border-radius:2px; overflow:hidden }
+    .finder-ui .finder-progress i { display:block; height:100%; background:var(--mint); transition:width .3s linear }
+    .finder-ui .finder-progress.warn i { background:var(--amber) }
+    .finder-ui .finder-progress.over i { background:var(--rose) }
+    .finder-ui .finder-next { border-bottom:1px solid var(--line); padding:20px 4px; margin-bottom:20px }
+    .finder-ui .finder-next-head { display:flex; align-items:center; justify-content:space-between; gap:12px }
+    .finder-ui .finder-next-head strong { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:25px; font-weight:500; letter-spacing:-.04em; white-space:nowrap }
+    .finder-ui .finder-next h3 { font-size:20px; line-height:1.5; font-weight:550; margin:10px 0 3px; overflow-wrap:anywhere }
+    .finder-ui .finder-next p { color:var(--faint); font-size:11px; margin:4px 0 0; line-height:1.7 }
+    .finder-ui .next-thirty { border-radius:6px; border:0; padding:10px 0 0; background:none }
+    .finder-ui .next-thirty-head span { font-size:0 }
+    .finder-ui .next-thirty-head span:before { content:'次の準備'; margin:0; font-size:10px; color:var(--faint) }
+    .finder-ui .next-thirty-copy { font-size:11px }
+    .finder-ui .next-thirty.soon,.finder-ui .next-thirty.urgent { padding:10px; background:rgba(242,189,91,.06) }
+    .finder-ui .priority-layer { border:1px solid var(--line); border-radius:12px; background:#191c1b; margin:0; padding:17px }
+    .finder-ui .priority-head { gap:10px; flex-wrap:wrap }
+    .finder-ui .priority-head span { font-size:0 }
+    .finder-ui .priority-head span:before { content:'撮影カット'; font-size:11px; color:#bfcac3; letter-spacing:0 }
+    .finder-ui .priority-head .priority-alert,.finder-ui .priority-head .priority-done { font-size:10px }
+    .finder-ui .priority-head .priority-alert:before,.finder-ui .priority-head .priority-done:before { content:none }
+    .finder-ui .priority-head small { font-size:10px; font-weight:450 }
+    .finder-ui .priority-cut { border:0; background:none; padding:12px 0; gap:10px }
+    .finder-ui .priority-cut p { font-size:13px; line-height:1.7; color:#e2e8e2 }
+    .finder-ui .priority-cut strong { padding-top:3px; font-size:10px; min-width:30px; font-weight:550 }
+    .finder-ui .priority-cut.must { display:grid; grid-template-columns:30px minmax(0,1fr); border:0; background:none; box-shadow:none }
+    .finder-ui .priority-cut.must p { margin:0 }
+    .finder-ui .must-toggle { grid-column:1/-1; width:100%; min-height:48px; margin:4px 0 0; border-radius:8px; font-size:13px; font-weight:650; background:var(--mint); color:#14291e }
+    .finder-ui .must-toggle.undo { background:#252d29; color:#b9d4c4; border-color:#48584f }
+    .finder-ui .priority-layer.critical .priority-cut.must:not(.completed) { animation:none; border:0; background:none; box-shadow:none }
+    .finder-ui .priority-layer.critical { border-color:rgba(255,113,141,.45); background:#221c1d }
+    .finder-ui .priority-layer.tight:not(.critical) { border-color:rgba(242,189,91,.35) }
+    .finder-ui .finder-main-actions { margin-top:16px; display:grid; gap:8px }
+    .finder-ui .finder-main-actions .btn { min-height:50px; font-size:14px }
+    .finder-ui .finder-no-shot { padding:16px; background:#191b1c; border:1px solid var(--line); border-radius:10px }
+    .finder-ui .finder-no-shot p,.finder-ui .finder-tools p { font-size:11px; line-height:1.7; color:var(--muted) }
+    .finder-ui .finder-tools { margin-top:16px; border:1px solid var(--line); padding:14px; border-radius:10px; background:#17191a }
+    .finder-ui .finder-tools summary { cursor:pointer; font-size:12px; color:#e5e7e1; min-height:22px; line-height:1.7 }
+    .finder-ui .finder-tools summary span { display:block; margin-left:14px; font-size:10px; color:var(--faint) }
+    .finder-ui .now-actions { display:flex; gap:8px; flex-wrap:wrap; padding-top:10px }
+    .finder-ui .now-actions .btn { flex:1 1 150px; min-width:0; font-size:12px }
+    .finder-ui .finder-location { margin:16px 0; padding:0 4px }
+    .finder-ui .finder-location p { display:flex; gap:14px; font-size:12px; line-height:1.7; color:#d3d9d3 }
+    .finder-ui .finder-location span { flex:0 0 28px; color:var(--faint); font-size:10px; padding-top:2px }
+    .finder-ui .note { background:none; color:#b4bbb5; border:0; padding:12px 4px; font-size:12px; white-space:pre-wrap; line-height:1.8 }
+    .finder-ui .finder-side { padding:0; gap:16px }
+    .finder-ui .finder-side:before,.finder-ui .panel:before,.finder-ui .panel:after,.finder-ui .panel-label:before { display:none }
+    .finder-ui .panel { border:1px solid var(--line); border-radius:10px; background:#191b1c; padding:18px; box-shadow:none; backdrop-filter:none }
+    .finder-ui .panel-label { font-family:inherit; font-weight:500; font-size:10px; line-height:1.5; letter-spacing:0; color:var(--faint) }
+    .finder-ui .panel h2 { color:#e0e5de; font-family:inherit; font-weight:550; font-size:17px; line-height:1.5 }
+    .finder-ui .panel h2 small { font-size:12px; color:var(--faint) }
+    .finder-ui .side-stack .panel p { font-size:11px; line-height:1.8; color:var(--faint) }
+    .finder-ui .finder-side .finder-tools { margin:0 }
+    .finder-ui .adjust-row { display:flex; gap:6px; flex-wrap:wrap }
+    .finder-ui .adjust-row .btn { flex:1; min-width:55px; padding:8px 5px; font-size:12px }
+    .finder-ui .tag,.finder-ui .tag.mint { background:#2a302d; color:#b9c6bd; font-weight:500 }
+    .finder-ui .tag.amber { background:#332d22; color:#edcd8f }
+    .finder-ui .tag.rose { background:#35242a; color:#ffadbd }
+    .finder-ui .queue-toolbar,.finder-ui .tt-entry { border:0; border-bottom:1px solid var(--line); border-radius:0; background:none; padding:0 0 18px; gap:12px }
+    .finder-ui .toolbar-note { color:var(--muted); line-height:1.7 }
+    .finder-ui .queue-row { border:1px solid var(--line); background:#191b1c; border-radius:10px; padding:16px; box-shadow:none }
+    .finder-ui .queue-row.current { border-color:#6a9e82; background:#1d2621 }
+    .finder-ui .queue-time { color:#e4ebe5; font-weight:500; letter-spacing:-.02em; white-space:nowrap }
+    .finder-ui .queue-time small { white-space:normal; line-height:1.6; color:var(--faint) }
+    .finder-ui .queue-main b { font-weight:550; font-size:15px; line-height:1.5 }
+    .finder-ui .queue-main span { color:var(--muted); line-height:1.7 }
+    .finder-ui .row-tools { gap:5px }
+    .finder-ui .icon-btn { width:40px; min-height:40px; font-size:16px }
+    .finder-ui .event-card,.finder-ui .recipe-card,.finder-ui .data-card,.finder-ui .push-card,.finder-ui .break-panel { border:1px solid var(--line); border-radius:12px; background:#191b1c; box-shadow:none; backdrop-filter:none }
+    .finder-ui .event-card.selected { border-color:#688d77; background:#1b211d }
+    .finder-ui .event-top h2,.finder-ui .recipe-card h3 { font-weight:550; line-height:1.5 }
+    .finder-ui .recipe-card { padding:22px; border-radius:3px; background:linear-gradient(#202421,#181a19) }
+    .finder-ui .recipe-tags span { color:#bac8bd; background:#29302b }
+    .finder-ui .break-panel { margin-top:24px }
+    .finder-ui .break-panel:before,.finder-ui .break-panel:after { display:none }
+    .finder-ui .break-item,.finder-ui .break-action { background:#1f2321; border-color:var(--line); border-radius:8px }
+    .finder-ui .break-inner { padding:18px }
+    .finder-ui .break-head p,.finder-ui .break-item p,.finder-ui .break-action span { font-size:11px; color:var(--muted); line-height:1.7 }
+    .finder-ui .form-field input,.finder-ui .form-field select,.finder-ui .form-field textarea { background:#131516; border-color:#3b403c; color:#efeee7 }
+    .finder-ui .modal-backdrop { z-index:100; backdrop-filter:blur(5px); padding:16px }
+    .finder-ui .modal { background:#1a1d1b; border-color:#454e46; border-radius:16px; box-shadow:0 20px 70px #0008 }
+    .finder-ui .toast { z-index:120; bottom:100px; background:#2a332c; color:#eef4ec; border-color:#5a7461 }
+    .finder-ui .condition-panel,.finder-ui .emergency-cell { background:#1d2420; border-color:#42534a; border-radius:10px }
+    .finder-ui .auto-banner { background:#252b26; border-color:#536f5d; color:#e3ebdf; box-shadow:none }
+    .finder-ui .auto-banner span { color:#bfcdbc }
+    .finder-ui .view.active { animation:console-focus .2s ease-out both }
+    .finder-ui[data-font-scale="xlarge"] .cue-name { font-size:clamp(34px,4vw,48px); line-height:1.4 }
+    .finder-ui[data-font-scale="xlarge"] .now-card .countdown-number { font-size:clamp(50px,7vw,88px); font-size:clamp(28px,15cqi,88px) }
+    .finder-ui[data-font-scale="xlarge"] .countdown-label { font-size:13px }
+    @media (max-width:1100px) { .finder-ui .finder-field-grid { grid-template-columns:minmax(0,1fr) } .finder-ui .finder-side { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width:980px) {
+      .finder-ui .app { display:block; width:min(760px,calc(100% - 32px)); min-height:100svh }
+      .finder-ui .sidebar { display:none }
+      .finder-ui main { padding:calc(18px + env(safe-area-inset-top)) 0 calc(110px + env(safe-area-inset-bottom)) }
+      .finder-ui > .nav { position:fixed; z-index:30; left:0; right:0; bottom:0; width:100%; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:0; padding:8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left)); background:rgba(22,25,23,.98); border-top:1px solid #3b453e; overflow:visible; scroll-snap-type:none; mask-image:none; -webkit-mask-image:none; box-shadow:0 -8px 24px #0003 }
+      .finder-ui > .nav button { width:auto; min-width:0; min-height:56px; flex:none; flex-direction:column; gap:5px; padding:3px 0; font-size:10px; white-space:nowrap; border-radius:8px }
+      .finder-ui > .nav button.active { background:none; color:#a8dfbb }
+      .finder-ui > .nav .nav-icon { width:26px; height:26px; flex-basis:26px }
+      .finder-ui > .nav .nav-icon svg { width:21px; height:21px }
+      .finder-ui .topbar { align-items:flex-start; flex-direction:row; gap:12px; margin-bottom:18px; padding-bottom:18px }
+      .finder-ui .header-actions { width:auto; flex-direction:column; align-items:stretch; gap:6px }
+      .finder-ui .header-actions .btn { min-height:36px; padding:6px 8px; font-size:10px }
+      .finder-ui .page-title { font-size:19px; font-weight:600 }
+      .finder-ui .finder-field-grid { display:block }
+      .finder-ui .finder-side { margin-top:20px; grid-template-columns:1fr }
+      .finder-ui .now-card { padding:22px 20px }
+      .finder-ui .cue-name { font-size:30px; line-height:1.4 }
+      .finder-ui .now-card .countdown-number { font-size:clamp(36px,11vw,70px); font-size:clamp(26px,13cqi,70px) }
+      .finder-ui[data-font-scale="xlarge"] .now-card .countdown-number { font-size:clamp(38px,12vw,78px); font-size:clamp(28px,15cqi,78px) }
+      .finder-ui .queue-row { grid-template-columns:64px minmax(0,1fr); padding:13px; gap:12px }
+      .finder-ui .row-tools { grid-column:2; flex-wrap:wrap }
+      .finder-ui .event-grid,.finder-ui .recipe-grid { grid-template-columns:1fr }
+      .finder-ui .modal { max-height:calc(100dvh - 32px); padding:18px }
+      .finder-ui .form-field input,.finder-ui .form-field select,.finder-ui .form-field textarea { font-size:16px }
+      .finder-ui .toast { bottom:calc(90px + env(safe-area-inset-bottom)) }
+    }
+    @media (prefers-reduced-motion:reduce) { .finder-ui .view.active,.finder-ui .priority-cut.must.capture-feedback { animation:none } .finder-ui .finder-progress i { transition:none } }
   </style>
 </head>
-<body>
+<body class="finder-ui">
+  <div class="console-ambient" aria-hidden="true"><svg viewBox="0 0 1440 600" preserveAspectRatio="none"><defs><linearGradient id="consoleRibbon"><stop stop-color="#97c1eb" stop-opacity="0"/><stop offset=".4" stop-color="#a3d3f1" stop-opacity=".5"/><stop offset=".7" stop-color="#83b8c7" stop-opacity=".3"/><stop offset="1" stop-color="#97c1eb" stop-opacity="0"/></linearGradient></defs><path d="M-80 410 C300 60 700 540 1520 130" fill="none" stroke="url(#consoleRibbon)" stroke-width="2"/></svg></div>
   <div class="app">
     <aside class="sidebar">
       <div class="brand">
@@ -369,18 +591,19 @@
       </div>
       <div class="nav-label">WORKSPACE</div>
       <nav class="nav" aria-label="主な機能">
-        <button class="active" data-view="field"><span class="nav-icon">◉</span>現場モード</button>
-        <button data-view="queue"><span class="nav-icon">≡</span>進行表</button>
-        <button data-view="events"><span class="nav-icon">▣</span>イベント</button>
-        <button data-view="recipes"><span class="nav-icon">◇</span>構図レシピ</button>
-        <button data-view="data"><span class="nav-icon">↥</span>データ</button>
+        <button class="active" data-view="field"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M4 10h6l2-4h8l2 4h6v17H4z"/><circle cx="16" cy="18" r="6"/><circle cx="25" cy="13" r=".7"/></svg></span>現場モード</button>
+        <button data-view="queue"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><path d="M16 8v8l6 4M16 4v2M28 16h-2M16 28v-2M4 16h2"/></svg></span>進行表</button>
+        <button data-view="events"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M5 7h22v21H5zM5 13h22M10 4v6M22 4v6M10 18h3M19 18h3M10 23h3M19 23h3"/></svg></span>イベント</button>
+        <button data-view="recipes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M11 5H5v6M21 5h6v6M5 21v6h6M27 21v6h-6M11 8v16M21 8v16M8 11h16M8 21h16"/></svg></span>構図レシピ</button>
+        <button data-view="data"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M9 4h11l5 5v19H7V6zM20 4v6h5M16 24V13m-5 5 5-5 5 5"/></svg></span>データ</button>
       </nav>
+      <p class="nav-hint">左右にスワイプ · タップで選択</p>
       <div class="side-foot"><b>撮影の区切りを、次の判断へ。</b><span>余裕がある転換では、構図レシピをワンタップで残せます。</span></div>
     </aside>
 
     <main>
       <header class="topbar">
-        <div><div class="eyebrow" id="pageEyebrow">FIELD CONSOLE</div><h1 class="page-title" id="pageTitle">いまの <em>撮影キュー</em></h1></div>
+        <div class="finder-heading"><div class="eyebrow" id="pageEyebrow">EVENT FLOW</div><h1 class="page-title" id="pageTitle">現場</h1><p id="finderEventMeta"></p></div>
         <div class="header-actions"><div class="clock"><span>LOCAL TIME</span><b id="clock">--:--:--</b></div><button class="btn small font-size-btn" id="fontSizeBtn" aria-label="現場文字サイズを切り替え">文字 標準</button><button class="btn small" id="eventSettingsBtn">⚙ 設定</button><button class="btn primary small" id="addButton">＋ キュー追加</button></div>
       </header>
 
@@ -545,17 +768,43 @@
       function cycleFontScale() { const event=currentEvent(); if(state.ui.view!=='field'||!event||event.closedAt||!activeQueue(event))return; const order=['normal','xlarge']; const current=order.indexOf(state.ui.fontScale||'normal'); state.ui.fontScale=order[(current+1)%order.length]; save(); render(); showToast(`現場の文字サイズを${{normal:'標準',xlarge:'特大'}[state.ui.fontScale]}に切り替えました。`); }
       function titleByView(view) { return {field:['FIELD CONSOLE','いまの <em>撮影キュー</em>'],queue:['QUEUE SCHEDULE','撮影の <em>進行表</em>'],events:['EVENT LIBRARY','イベントを <em>管理</em>'],recipes:['FRAME RECIPES','構図を <em>残す</em>'],data:['LOCAL DATA','データの <em>バックアップ</em>']}[view]; }
 
+      // Menu motion owns presentation only. Scrolling never changes the active view.
+      let consoleView='', consoleNavigationReady=false;
+      function syncConsoleNavigation() {
+        const view=state.ui.view||'field';
+        $$('.nav button').forEach(button=>{if(button.dataset.view===view)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
+      }
+      function setupConsoleNavigation() {
+        const nav=$('.nav');if(!nav||consoleNavigationReady)return;consoleNavigationReady=true;
+        const sidebar=$('.sidebar'),anchor=$('.nav-hint'),mobile=matchMedia('(max-width:980px)');
+        const dock=()=>{if(mobile.matches)document.body.appendChild(nav);else sidebar.insertBefore(nav,anchor);};
+        dock();mobile.addEventListener('change',dock);
+        nav.addEventListener('keydown',event=>{
+          if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(event.key))return;
+          const buttons=$$('button[data-view]',nav),index=buttons.indexOf(event.target);if(index<0)return;
+          event.preventDefault();const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(index+(['ArrowRight','ArrowDown'].includes(event.key)?1:-1)+buttons.length)%buttons.length;
+          buttons[next].focus({preventScroll:true});
+        });
+        document.addEventListener('click',event=>{
+          if(!event.target.closest('[data-action="record-must"]'))return;
+          const frame=$('.priority-cut.must.completed');if(!frame)return;
+          frame.classList.add('capture-feedback');frame.addEventListener('animationend',()=>frame.classList.remove('capture-feedback'),{once:true});
+        });
+      }
       function render() {
         const view=state.ui.view || 'field'; const event=currentEvent(); const hasCurrentFieldQueue=view==='field'&&!!event&&!event.closedAt&&!!activeQueue(event); const fontScale=hasCurrentFieldQueue?(state.ui.fontScale||'normal'):'normal'; const [eyebrow,title]=titleByView(view); $('#pageEyebrow').textContent=eyebrow; $('#pageTitle').innerHTML=title;
         document.body.dataset.fontScale=fontScale; const fontButton=$('#fontSizeBtn'); if(fontButton){const labels={normal:'文字 標準',xlarge:'文字 特大'};fontButton.classList.toggle('hide',!hasCurrentFieldQueue);fontButton.textContent=labels[fontScale];fontButton.setAttribute('aria-label',`現場文字サイズ：${labels[fontScale]}。タップで標準・特大を切り替え`);}
         $$('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
         $$('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${view}`));
-        const fieldFab=view==='field'&&!!event&&!event.closedAt;
+        if(view==='field'&&event){$('#pageTitle').textContent=event.name;$('#pageEyebrow').textContent='EVENT FLOW / 現場';}
+        else {$('#pageTitle').textContent=({field:'現場',queue:'進行表',events:'イベント',recipes:'構図レシピ',data:'データと連携'})[view];$('#pageEyebrow').textContent='EVENT FLOW';}
+        $('#finderEventMeta').textContent=event&&['field','queue','recipes'].includes(view)?[fmtDate(event.date),event.venue].filter(Boolean).join(' · '):'';
+        const fieldFab=false;
         $('#addButton').textContent='＋ キュー追加';
         $('#addButton').classList.toggle('hide',!fieldFab);
         $('#addButton').classList.toggle('field-fab',fieldFab);
         $('#eventSettingsBtn').classList.toggle('hide',view==='events'||view==='data'||view==='recipes'||!currentEvent());
-        renderField(); renderQueue(); renderEvents(); renderRecipes(); renderData(); renderStaffShareCard(); renderTimetableEntry();
+        renderField(); renderQueue(); renderEvents(); renderRecipes(); renderData(); renderStaffShareCard(); renderTimetableEntry(); syncConsoleNavigation();
       }
       function empty(icon,title,copy,button='') { return `<div class="empty"><div class="empty-icon">${icon}</div><b>${esc(title)}</b><p>${esc(copy)}</p>${button?`<button class="btn primary" style="margin-top:16px" data-action="${button}">${button==='create-event'?'イベントを作成':'キューを追加'}</button>`:''}</div>`; }
       function countdownClass(left) { return left===null?'':left<0?'over':left<=3?'warn':''; }
@@ -594,6 +843,17 @@
         const description=mode==='move'?'今はメモより移動優先です。次キューの場所と準備だけを確認してください。':mode==='prep'?'次キューまで少し余裕があります。移動・準備と前回の構図を見直せます。':'転換の余裕があります。次の撮影を確認しながら、再現したい構図を残せます。';
         return `<section class="break-panel break-${mode} glass"><div class="break-inner"><div class="break-head"><div><div class="panel-label">準備ノート</div><h2>次の撮影に備える</h2><p>${description}</p></div><span class="break-chip">${next?.isTerminal?'終端キュー':modeLabel(mode)}</span></div><div class="break-grid"><div class="break-item"><span>開始と余裕</span><b>${esc(next?.plannedAt||'--:--')}　${esc(wait)}</b><p>${esc(next?.title||'後続キューはありません')}</p></div><div class="break-item"><span>場所と準備</span><b>${esc(location)}</b><p>${esc(prep)}</p></div></div>${prior?`<div class="recipe-preview"><i>◇</i><div><b>このキューの前回構図：${esc(prior.subject||next?.title||'構図メモ')}</b><p>${esc(prior.location||'場所未設定')}　${recipeTags(prior)}${prior.note?`　${esc(prior.note)}`:''}</p></div></div>`:''}<div class="break-action"><div><b>${mode==='move'?'次の現場へ移動':'今回の構図を、次回の判断に残す'}</b><span>${mode==='move'?'詳細入力は不要です。必要ならタグだけを記録できます。':mode==='prep'?'定型タグと一言で、再現できる撮影レシピにします。':'場所・被写体・画角・カメラ位置・光・注意点を、必要な分だけ記録します。'}</span></div>${action}</div></div></section>`;
       }
+      function finderTimerMarkup(q,left) {
+        const timed=!q.noDuration&&!q.isTerminal&&left!==null,over=timed&&left<0;
+        const label=q.isTerminal?'完全撤収の締切':q.noDuration?'所要時間なし':conditionWaiting(q)?'開始条件を待機':left===null?'時刻未設定':over?'終了予定から超過':'終了予定まで';
+        const value=q.isTerminal?esc(q.terminalDeadline||q.plannedAt||'--:--'):q.noDuration?'案内':left===null?'—':countdownTimeMarkup(Math.abs(left),over?'+':'');
+        const pct=timed?Math.round(Math.max(0,Math.min(1,left/Math.max(1,Number(q.duration)||1)))*100):0;
+        return `<div class="timer-row"><div class="countdown ${q.isTerminal?'over':countdownClass(left)}"><div class="countdown-label">${label}</div><div class="countdown-number ${timed?'has-parts':''}">${value}</div></div></div>${timed?`<div class="finder-progress ${countdownClass(left)}" role="progressbar" aria-label="予定枠の残り" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>`:''}`;
+      }
+      function refreshFinderTimer() {
+        const event=currentEvent(),q=activeQueue(event),box=$('#finderTimer');if(!q||!box)return;
+        const markup=finderTimerMarkup(q,remaining(event,q));if(box.innerHTML!==markup)box.innerHTML=markup;
+      }
       function renderField() {
         const box=$('#view-field'); const event=currentEvent(); const emergency=!!state.ui.emergencyView; box.classList.toggle('emergency-active',emergency);
         if (!event) { box.innerHTML=empty('◌','イベントがありません','最初にイベントを作成し、撮影キューを登録してください。','create-event'); return; }
@@ -607,29 +867,38 @@
         const currentSchedule=current.isTerminal?`完全撤収締切 <b>${esc(current.terminalDeadline||current.plannedAt||'--:--')}</b><span>後続なし・手動完了</span>`:current.noDuration?`案内時刻 <b>${esc(current.plannedAt||'--:--')}</b><span>所要時間なし</span>`:waitingCondition?`開始条件 <b>${esc(current.startCondition||'条件を確認')}</b><span>開始待ち</span>`:current.startMode==='condition'&&actualStart?`開始 <b>${timeText(actualStart)}–${end?timeText(end):'--:--'}</b><span>${current.duration||1}分枠</span>`:`予定 <b>${esc(current.plannedAt||'--:--')}–${end?timeText(end):'--:--'}</b><span>${current.duration||1}分枠</span>`;
         const currentCondition=current.startMode!=='time'?`<div class="condition-panel ${waitingCondition?'waiting':''}"><span class="condition-symbol">${waitingCondition?'◇':'›'}</span><div class="condition-copy"><span>${waitingCondition?'開始条件を待機':current.startMode==='condition'?'開始条件で開始済み':'開始条件を確認'}</span><b>${esc(current.startCondition||'条件を設定してください')}</b><p>${waitingCondition?'条件が成立したら「条件成立」を押すと、ここから所要時間を計測します。':current.startMode==='condition'&&actualStart?`${timeText(actualStart)} に条件成立。ここから所要時間を計測しています。`:'予定時刻に加えて、現場の開始条件も確認してください。'}</p></div></div>`:'';
         const actionButtons=current.isTerminal?`<button class="btn primary" data-action="complete-terminal">完全撤収を記録</button><button class="btn" data-action="edit-current">内容を編集</button>`:current.noDuration?`<button class="btn primary" data-action="complete-no-duration">確認済み・次へ</button><button class="btn" data-action="skip-current">このキューをスキップ</button><button class="btn" data-action="edit-current">内容を編集</button>`:waitingCondition?`<button class="btn primary" data-action="activate-condition">条件成立・ここから開始</button><button class="btn" data-action="skip-current">このキューをスキップ</button><button class="btn" data-action="edit-current">内容を編集</button>`:`<button class="btn primary" data-action="shift-now">現在時刻から組み直す</button><button class="btn" data-action="skip-current">このキューをスキップ</button><button class="btn" data-action="edit-current">内容を編集</button>`;
+
+        const mainActions=current.isTerminal?'<button class="btn primary" data-action="complete-terminal">完全撤収を記録</button>':current.noDuration?'<button class="btn primary" data-action="complete-no-duration">確認済み・次へ</button>':waitingCondition?'<button class="btn primary" data-action="activate-condition">条件成立・ここから開始</button>':'';
+        const otherActions=actionButtons.replace(/<button[^>]*data-action="(?:complete-terminal|complete-no-duration|activate-condition)"[^>]*>[\s\S]*?<\/button>/g,'').replaceAll('btn primary','btn');
         box.innerHTML=`
           <div class="auto-banner ${previousAutoEvent?'show':''}" id="autoBanner"><div class="icon">→</div><div><b>自動進行しました</b><span>${esc(previousAutoEvent||'')}</span></div><button class="btn small" data-action="dismiss-auto">閉じる</button></div>
-          <div class="field-grid">
-            <article class="now-card glass ${current.isTerminal?'over':waitingCondition?'wait':countdownClass(left)}">
-              <div class="card-top"><span class="cue-index">${sortedQueues(event).findIndex(q=>q.id===current.id)+1}</span><div style="display:flex;align-items:center;gap:7px"><span class="status-pill">${waitingCondition?'開始条件を待機':event.autoAdvance?'自動進行中':'自動進行 OFF'}</span><button class="field-view-toggle" data-action="toggle-emergency" aria-pressed="false">緊急表示</button></div></div>
-              <h2 class="cue-name">${esc(current.title)}</h2>
-              <div class="cue-planned">${currentSchedule}</div>
+          <div class="field-grid finder-field-grid">
+            <div class="finder-main">
+              <article class="now-card glass ${current.isTerminal?'over':waitingCondition?'wait':countdownClass(left)}">
+                <div class="card-top"><span class="finder-kicker">現在 <span class="finder-index">${pad(sortedQueues(event).findIndex(q=>q.id===current.id)+1)} / ${pad(cov.total)}</span></span><span class="status-pill">${waitingCondition?'条件待ち':event.autoAdvance?'自動進行 ON':'自動進行 OFF'}</span></div>
+                <h2 class="cue-name">${esc(current.title)}</h2>
+                <div class="cue-planned">${currentSchedule}</div>
+                <div id="finderTimer">${finderTimerMarkup(current,left)}</div>
+                ${current.locked?'<span class="tag amber">固定時刻</span>':''}
+              </article>
+              <section class="finder-next" aria-label="次の予定">
+                <div class="finder-next-head"><span class="finder-kicker">次の予定</span><strong>${next?next.startMode==='condition'?'条件開始':esc(next.plannedAt||'--:--'):'—'}</strong></div>
+                <h3>${esc(next?.title||'後続の予定はありません')}</h3>
+                <p>${esc(nextMsg)}</p>
+                ${next?nextThirtyBar(next,nextStart):''}
+              </section>
+              ${priorityLayer(current,left)||'<section class="finder-no-shot"><span class="finder-kicker">撮影メモ</span><p>必須カットは未設定です。</p><button class="btn small" data-action="edit-current">内容を編集</button></section>'}
+              ${mainActions?`<div class="finder-main-actions">${mainActions}</div>`:''}
               ${currentCondition}
-              <div class="timer-row"><div class="countdown ${current.isTerminal?'over':countdownClass(left)}"><div class="countdown-number ${!current.isTerminal&&!current.noDuration&&left!==null?'has-parts':''}">${current.isTerminal?esc(current.terminalDeadline||current.plannedAt||'--:--'):current.noDuration?'案内':left===null?'--':over?countdownTimeMarkup(-left,'+'):countdownTimeMarkup(left)}</div><div class="countdown-label">${current.isTerminal?'締切厳守':current.noDuration?'所要時間なし':waitingCondition?'条件待ち':left===null?'時刻未設定':over?'超過':'残り'}</div></div><div class="hero-ring"><svg viewBox="0 0 142 142"><circle class="ring-bg" cx="71" cy="71" r="59"/><circle class="ring-bar" id="heroRingBar" cx="71" cy="71" r="59" stroke="${current.isTerminal?'#ff718d':current.noDuration?'#77a1ff':ringColor(left)}" stroke-dasharray="370.7" stroke-dashoffset="${current.isTerminal||current.noDuration?185.35:370.7*(1-raw)}"/></svg><div class="hero-ring-copy"><b>${current.isTerminal?'!':current.noDuration?'—':left===null?'--':over?'+'+Math.ceil(-left):Math.ceil(left)}</b><span>${current.isTerminal?'FINAL':current.noDuration?'INFO':waitingCondition?'WAIT':over?'OVER':'MIN LEFT'}</span></div></div></div>
-              <div class="cue-detail">${current.locked?'<span class="tag amber">固定時刻</span>':''}<span class="tag ${waitingCondition?'amber':'mint'}">${startModeLabel(current)}</span><span class="tag mint">${event.autoAdvance?'終了時に次キューへ自動進行':'手動で進行'}</span>${over?'<span class="tag rose">時間超過</span>':''}</div>
-              ${current.isTerminal?`<div class="terminal-banner"><span class="terminal-symbol">!</span><div><span>FINAL DEADLINE</span><b>${esc(current.title)}　${esc(current.terminalDeadline||current.plannedAt||'締切確認')} 厳守</b></div><small>後続なし</small></div>`:''}
-              ${stateRail(current,left)}
-              ${next?`<div class="hero-next-line ${nextStart&&Date.now()>=nextStart.getTime()?'overdue':''}"><span class="next-line-label">NEXT LINE</span><div><span class="next-line-time">${next.startMode==='condition'?'条件':esc(next.plannedAt||'--:--')}</span><b>${esc(next.title)}</b></div><small>${esc(nextMsg)}</small></div>`:'<div class="hero-next-line"><span class="next-line-label">NEXT LINE</span><b>後続のキューはありません</b><small>QUEUE END</small></div>'}
-              ${nextThirtyBar(next,nextStart)}
-              ${priorityLayer(current,left)}
+              ${current.area||current.prep?`<div class="finder-location">${current.area?`<p><span>場所</span>${esc(current.area)}</p>`:''}${current.prep?`<p><span>準備</span>${esc(current.prep)}</p>`:''}</div>`:''}
               ${current.note?`<div class="note">${esc(current.note)}</div>`:''}
-              <div class="now-actions">${actionButtons}</div>
-            </article>
-            <div class="side-stack">
-              <section class="panel glass"><div class="panel-label">TIME COVERAGE</div><h2>進行カバレッジ</h2><div class="ring-layout"><div class="coverage-copy"><b>${cov.done} / ${cov.total} 件　${cov.pct}%</b><p>完了・スキップ済みのキュー。大きな時間の円弧は現在キューだけに表示します。</p></div></div><div class="progress-line"><i style="width:${cov.pct}%"></i></div></section>
-              <section class="panel glass"><div class="panel-label">AUTO QUEUE</div><h2>${event.autoAdvance?'終了時に自動で次へ':'手動進行に設定中'}</h2><p style="color:var(--muted);font-size:11px;line-height:1.65;margin:10px 0 0">現在キューの終了予定を越えると、上の Next Line を現場の現在キューとして表示します。</p></section>
-              <section class="panel glass"><div class="panel-label">RESCHEDULE</div><h2>未完了をまとめて調整</h2><div class="adjust-row"><button class="btn small" data-action="shift-queues" data-min="-5">−5分</button><button class="btn small" data-action="shift-queues" data-min="5">＋5分</button><button class="btn small" data-action="shift-queues" data-min="10">＋10分</button></div></section>
+              <details class="finder-tools"><summary>進行操作・編集 <span>調整 / スキップ / 表示</span></summary><div class="now-actions">${otherActions}<button class="btn" data-action="toggle-emergency" aria-pressed="false">緊急表示</button></div><p>予定の追加は「進行表」から行えます。</p></details>
             </div>
+            <aside class="side-stack finder-side">
+              <section class="panel glass"><div class="panel-label">イベントの進捗</div><h2>${cov.done} <small>/ ${cov.total} 件完了</small></h2><div class="progress-line"><i style="width:${cov.pct}%"></i></div><p>完了・スキップ済みの予定を集計しています。</p></section>
+              <details class="finder-tools"><summary>まとめて時間調整</summary><p>未完了の予定を移動します。固定時刻は維持します。</p><div class="adjust-row"><button class="btn" data-action="shift-queues" data-min="-5">−5分</button><button class="btn" data-action="shift-queues" data-min="5">＋5分</button><button class="btn" data-action="shift-queues" data-min="10">＋10分</button></div></details>
+              <section class="panel glass"><div class="panel-label">進行設定</div><h2>${event.autoAdvance?'終了時に自動で次へ':'手動で進行'}</h2><p>案内と終端は手動確認です。条件基準の予定は「条件成立」から計測します。</p></section>
+            </aside>
           </div>
           ${breakPanel(event,next,nextStart)}`;
       }
@@ -874,14 +1143,15 @@
         if(a==='close-modal')closeModal(); else if(a==='dismiss-auto'){previousAutoEvent='';render();} else if(a==='toggle-emergency'){state.ui.emergencyView=!state.ui.emergencyView;save();render();showToast(state.ui.emergencyView?'緊急表示に切り替えました。':'通常表示に戻しました。');} else if(a==='add-queue')openQueueForm(); else if(a==='edit-queue')openQueueForm(id); else if(a==='edit-current'){const q=activeQueue(currentEvent());if(q)openQueueForm(q.id);} else if(a==='open-recipe')openRecipeForm('',id); else if(a==='edit-recipe')openRecipeForm(id); else if(a==='toggle-tag')button.classList.toggle('selected'); else if(a==='create-event')openEventForm(); else if(a==='edit-event')openEventForm(id); else if(a==='open-event'){state.activeEventId=id;state.ui.view='field';save();render();} else if(a==='delete-event')deleteEvent(id); else if(a==='delete-queue')deleteQueue(id); else if(a==='move-queue')moveQueue(id,Number(button.dataset.dir)); else if(a==='shift-queues')shiftQueues(Number(button.dataset.min)); else if(a==='shift-now')shiftQueues(0,true); else if(a==='activate-condition')activateCondition(); else if(a==='record-must')recordMustCut(); else if(a==='undo-must')undoMustCut(); else if(a==='complete-no-duration')completeNoDuration(); else if(a==='complete-terminal')completeTerminal(); else if(a==='skip-current')skipCurrent(); else if(a==='save-push-settings')saveNotificationSettings(); else if(a==='enable-push')enablePushNotifications(); else if(a==='disable-push')disablePushNotifications(); else if(a==='test-push')sendTestPushNotification(); else if(a==='start-share')startStaffShare(); else if(a==='show-share-qr')openStaffShareQr(); else if(a==='copy-share')copyStaffShareLink(); else if(a==='sync-share'){const event=currentEvent();if(event)syncStaffShare(event);} else if(a==='stop-share')stopStaffShare(); else if(a==='sync-push')syncAllNotificationSchedules().catch(error=>{notificationSettings().lastError=error.message;save();render();showToast(error.message);}); else if(a==='export')exportData(); else if(a==='import')$('#importFile')?.click(); else if(a==='clear')clearData(); });
       document.addEventListener('change',e=>{if(e.target.id==='importFile')importData(e.target.files?.[0]);});
       document.addEventListener('dblclick',e=>{if(e.target.closest('button,.btn,.icon-btn,.map-link,.nav button,label.settings-line,[data-action]'))e.preventDefault();},{passive:false});
-      if(STAFF_SHARE_ID){startStaffReadonlyView();return;}
+      if(STAFF_SHARE_ID){document.body.classList.remove('finder-ui');startStaffReadonlyView();return;}
+      setupConsoleNavigation();
       $$('.nav button').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
       $('#fontSizeBtn').addEventListener('click',cycleFontScale);
       $('#addButton').addEventListener('click',()=>state.ui.view==='events'?openEventForm():state.ui.view==='recipes'?openRecipeForm():openQueueForm());
       $('#eventSettingsBtn').addEventListener('click',openSettings);
       $('#modalBackdrop').addEventListener('click',e=>{if(e.target.id==='modalBackdrop')closeModal();});
       document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
-      setInterval(()=>{const c=$('#clock');if(c)c.textContent=fullTimeText(new Date());handoffIfDue();const view=state.ui.view;if(view==='field'){refreshNextThirtyBar();const event=currentEvent(),q=activeQueue(event);if(q){const num=$('.countdown-number');const label=$('.countdown-label');const left=remaining(event,q);if(num&&left!==null){num.innerHTML=left<0?countdownTimeMarkup(-left,'+'):countdownTimeMarkup(left);num.classList.add('has-parts');label.textContent=left<0?'超過':'残り';const parent=num.closest('.countdown');parent.className=`countdown ${countdownClass(left)}`;const ring=$('#heroRingBar');if(ring){const circ=370.7;const r=Math.max(0,Math.min(1,left/(Math.max(1,Number(q.duration)||1))));ring.style.strokeDashoffset=String(circ*(1-r));ring.style.stroke=ringColor(left);const ringCopy=$('.hero-ring-copy b');const ringLabel=$('.hero-ring-copy span');if(ringCopy)ringCopy.textContent=left<0?'+'+Math.ceil(-left):Math.ceil(left);if(ringLabel)ringLabel.textContent=left<0?'OVER':'MIN LEFT';}}}}},1000);
+      setInterval(()=>{const c=$('#clock');if(c)c.textContent=fullTimeText(new Date());handoffIfDue();if(state.ui.view==='field'){refreshNextThirtyBar();refreshFinderTimer();}},1000);
       registerPwa();
       render();
     })();
