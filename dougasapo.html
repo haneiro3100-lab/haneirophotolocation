@@ -118,10 +118,24 @@
     .top-wipe::before { content: "TOP WIPE"; position: absolute; z-index: 2; top: 7px; left: 7px; padding: 4px 6px; border-radius: 5px; color: #eaf8ff; background: rgba(7,17,28,.7); font-size: .53rem; font-weight: 850; letter-spacing: .1em; }
     .top-wipe::after { content: "LIVE"; position: absolute; z-index: 2; right: 7px; bottom: 7px; color: #99f2d3; font-size: .48rem; font-weight: 850; letter-spacing: .09em; text-shadow: 0 0 8px rgba(86,245,192,.8); }
     /* リールの切り取り範囲。描画は横長のまま、9:16に入る範囲を示す。 */
-    .reel-frame { position: absolute; z-index: 4; top: 0; bottom: 0; left: 50%; display: none; width: calc((100% - 0px) * 0); transform: translateX(-50%); pointer-events: none; border-left: 1px solid rgba(180,228,255,.5); border-right: 1px solid rgba(180,228,255,.5); box-shadow: 0 0 0 9999px rgba(4,11,22,.46); }
+    /* スマートフォンモードのLENS VIEWは、枠を重ねるのではなく描画そのものを9:16にする。 */
+    .viewport.is-lens.is-reel #sceneCanvas { left: 50%; right: auto; width: min(100%, calc(var(--viewport-height, 300px) * 9 / 16)); transform: translateX(-50%); }
+    .reel-frame { position: absolute; z-index: 4; top: 0; bottom: 0; left: 50%; display: none; transform: translateX(-50%); pointer-events: none; border-left: 1px solid rgba(180,228,255,.34); border-right: 1px solid rgba(180,228,255,.34); }
     .viewport.is-lens.is-reel .reel-frame { display: block; width: min(100%, calc(var(--viewport-height, 300px) * 9 / 16)); }
-    .reel-frame-label { position: absolute; top: 8px; left: 50%; padding: 3px 7px; transform: translateX(-50%); border-radius: 5px; color: #dff2ff; background: rgba(6,15,28,.72); font-size: .52rem; font-weight: 800; letter-spacing: .1em; }
+    .reel-corner { position: absolute; width: 17px; height: 17px; border: 2px solid rgba(226,245,255,.78); }
+    .reel-corner--tl { top: 9px; left: 9px; border-right: 0; border-bottom: 0; border-radius: 4px 0 0 0; }
+    .reel-corner--tr { top: 9px; right: 9px; border-left: 0; border-bottom: 0; border-radius: 0 4px 0 0; }
+    .reel-corner--bl { bottom: 9px; left: 9px; border-right: 0; border-top: 0; border-radius: 0 0 0 4px; }
+    .reel-corner--br { bottom: 9px; right: 9px; border-left: 0; border-top: 0; border-radius: 0 0 4px 0; }
+    .rec-hud { position: absolute; top: 9px; left: 50%; display: inline-flex; align-items: center; gap: 5px; max-width: calc(100% - 46px); padding: 4px 8px; transform: translateX(-50%); overflow: hidden; border-radius: 999px; background: rgba(6,15,28,.74); color: #eaf7ff; font-size: .56rem; font-weight: 800; letter-spacing: .04em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .rec-hud i { width: 7px; height: 7px; border-radius: 50%; background: rgba(190,214,232,.55); }
+    .rec-hud b { color: rgba(214,236,255,.6); font-weight: 700; }
+    .rec-hud.is-recording i { background: #ff4e69; box-shadow: 0 0 9px rgba(255,78,105,.9); animation: rec-blink 1s steps(1, end) infinite; }
+    @keyframes rec-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: .18; } }
     .viewport.is-lens .lens-window { display: none; }
+    /* 9:16の画面内は撮影中の絵として残したいので、状態表示と俯瞰ワイプは枠の外へ出す。 */
+    .viewport.is-lens.is-reel .view-badge { display: none; }
+    .viewport.is-lens.is-reel .top-wipe { top: auto; right: auto; bottom: 12px; left: 10px; width: clamp(84px, 24%, 132px); }
     .viewport.is-lens .top-wipe { display: block; animation: wipe-enter .28s ease-out; }
     .viewport.is-lens .scene-hint { display: none; }
     #lensCanvas, #topWipeCanvas { position: absolute; inset: 0; }
@@ -334,7 +348,7 @@
     @keyframes guide-sheet-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
     @keyframes guide-result-in { 0% { opacity: 0; transform: translateY(12px) scale(.98); } 60% { opacity: 1; } 100% { transform: none; } }
     @keyframes guide-bar-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
-    @media (prefers-reduced-motion: reduce) { .guide-sheet, .guide-result, .guide-applied-bar, .viewport.is-lens .top-wipe { animation: none; } .guide-tab, .guide-choice, .guide-apply { transition: none; } }
+    @media (prefers-reduced-motion: reduce) { .guide-sheet, .guide-result, .guide-applied-bar, .viewport.is-lens .top-wipe, .rec-hud.is-recording i { animation: none; } .guide-tab, .guide-choice, .guide-apply { transition: none; } }
     .phone-lens-button { min-height: 42px; border: 1px solid var(--line); border-radius: 10px; background: rgba(6,16,29,.48); color: var(--muted); cursor: pointer; font-size: .66rem; font-weight: 800; letter-spacing: .025em; transition: .18s ease; }
     .phone-lens-button:hover { color: #e8f8ff; border-color: var(--line-strong); }
     .phone-lens-button.active { color: #edfbff; border-color: rgba(111,205,255,.6); background: linear-gradient(135deg, rgba(55,165,239,.48), rgba(59,85,186,.42)); box-shadow: inset 0 0 16px rgba(85,186,255,.18); }
@@ -495,6 +509,8 @@
       .builder-check > span:last-child { grid-column: 2; color: #82b6a7; }
       .builder-actions { grid-template-columns: 1fr auto; }
       .guide-apply, .guide-secondary { min-height: 46px; font-size: .73rem; }
+      .rec-hud { gap: 4px; padding: 3px 7px; font-size: .5rem; letter-spacing: 0; }
+      .reel-corner { width: 13px; height: 13px; }
       .guide-applied-bar { right: 10px; left: 10px; bottom: 70px; min-height: 44px; padding: 8px 10px; }
       /* E: 画面下ではガイドの操作ボタンを覆うため、上端へ出す。 */
       .toast { top: max(10px, env(safe-area-inset-top)); bottom: auto; transform: translate(-50%, -120px); }
@@ -548,7 +564,11 @@
           <div class="lens-window"><canvas id="lensCanvas" aria-label="レンズプレビュー"></canvas></div>
           <div class="top-wipe" aria-label="トップビューのワイプ表示"><canvas id="topWipeCanvas" aria-label="トップビューのライブワイプ"></canvas></div>
           <div class="lens-bokeh" aria-hidden="true"><span class="bokeh-orb"></span><span class="bokeh-orb"></span><span class="bokeh-orb"></span><span class="bokeh-orb"></span><span class="bokeh-orb"></span></div>
-          <div class="reel-frame" id="reelFrame" aria-hidden="true"><span class="reel-frame-label">9:16</span></div>
+          <div class="reel-frame" id="reelFrame" aria-hidden="true">
+            <span class="reel-corner reel-corner--tl"></span><span class="reel-corner reel-corner--tr"></span>
+            <span class="reel-corner reel-corner--bl"></span><span class="reel-corner reel-corner--br"></span>
+            <div class="rec-hud" id="recHud"><i></i><span id="recTimecode">0:00.0</span><b id="recTotal">/ 0:05.0</b></div>
+          </div>
           <div class="scene-hud scene-hint" id="sceneHint"><span class="hint-pointer">ドラッグで回転 · ピンチ／ホイールでズーム</span><span class="hint-touch">ドラッグで回転 · ピンチでズーム</span></div>
           <div class="guide-applied-bar" id="guideAppliedBar" aria-live="polite"><b id="guideAppliedLens">3×</b><span id="guideAppliedCopy">まず0.8秒止めてから、短く動かす。</span></div>
           <div class="scene-fallback" id="sceneFallback">3Dシーンを読み込めませんでした。ネットワーク接続を確認して再読み込みしてください。</div>
@@ -916,7 +936,7 @@
         topView: $('#topViewButton'), lensView: $('#lensViewButton'), staticShotStatus: $('#staticShotStatus'), staticShotStatusCopy: $('#staticShotStatusCopy'), presetGrid: $('#presetGrid'), guideTabs: $('#guideTabs'), presetTab: $('#presetTab'), sceneGuideTab: $('#sceneGuideTab'), sceneGuide: $('#sceneGuide'), handheldCategoryControl: $('#handheldCategoryControl'), handheldCategoryButtons: [...document.querySelectorAll('[data-handheld-category]')], handheldCategoryNote: $('#handheldCategoryNote'), cameraMode: $('#cameraModeButton'), smartphoneMode: $('#smartphoneModeButton'), captureModeTitle: $('#captureModeTitle'), captureModeDescription: $('#captureModeDescription'), captureModeLabel: $('#captureModeLabel'), stageSummary: $('#stageSummary'),
         distance: $('#distanceInput'), height: $('#heightInput'), duration: $('#durationInput'), focal: $('#focalInput'), fStop: $('#fStopInput'), bokeh: $('#bokehInput'), scenicMotionControl: $('#scenicMotionControl'), scenicMotion: $('#scenicMotionInput'), scenicMotionOutput: $('#scenicMotionOutput'), phoneLensControl: $('#phoneLensControl'), phoneLensButtons: [...document.querySelectorAll('.phone-lens-button')], distanceOutput: $('#distanceOutput'), heightOutput: $('#heightOutput'), durationOutput: $('#durationOutput'), focalOutput: $('#focalOutput'), fStopOutput: $('#fStopOutput'), bokehOutput: $('#bokehOutput'), opticsSummary: $('#opticsSummary'), opticsNote: $('#opticsNote'),
         libraryGrid: $('#libraryGrid'), search: $('#searchInput'), modal: $('#referenceModal'), form: $('#referenceForm'), referenceUrl: $('#referenceUrl'), referenceTitle: $('#referenceTitle'), thumbnailUrl: $('#thumbnailUrl'), cameraWorkSelect: $('#cameraWorkSelect'), referenceFocal: $('#referenceFocal'), referenceFStop: $('#referenceFStop'), referenceMemo: $('#referenceMemo'), tagPicker: $('#tagPicker'), toast: $('#toast'),
-        importFile: $('#importFile'), sceneHint: $('#sceneHint')
+        importFile: $('#importFile'), sceneHint: $('#sceneHint'), recHud: $('#recHud'), recTimecode: $('#recTimecode'), recTotal: $('#recTotal')
       };
 
       function cloneDemoLibrary() { return JSON.parse(JSON.stringify(DEMO_LIBRARY)); }
@@ -936,6 +956,10 @@
       function currentMove() { return activeMoves()[state.moveIndex] || activeMoves()[0]; }
       function findMoveById(id) { return allMoves().find(move => move.id === id) || CAMERA_MOVES[0]; }
       function number(v, digits = 1) { return Number(v).toFixed(digits); }
+      function timecode(seconds) {
+        const total = Math.max(0, Number(seconds) || 0);
+        return `${Math.floor(total / 60)}:${(total % 60).toFixed(1).padStart(4, '0')}`;
+      }
       function showToast(message) {
         el.toast.textContent = message;
         el.toast.classList.add('show');
@@ -1211,6 +1235,12 @@
         el.lensView.setAttribute('aria-pressed', String(!isTopView));
         el.viewport.classList.toggle('is-lens', !isTopView);
         el.viewport.classList.toggle('is-reel', state.captureMode === 'smartphone');
+        // 撮影中であることと、いま何秒回しているかを画面内に出す。
+        const recTotal = Number(state.params.duration);
+        const recNow = clamp(state.progress, 0, 1) * recTotal;
+        el.recHud.classList.toggle('is-recording', state.playing && state.captureMode === 'smartphone');
+        el.recTimecode.textContent = timecode(recNow);
+        el.recTotal.textContent = `/ ${timecode(recTotal)}`;
         el.mainViewLabel.textContent = isTopView ? 'TOP VIEW' : 'LENS VIEW';
         const applied = isSmartphone ? state.sceneGuide.applied : null;
         el.viewport.classList.toggle('guide-applied', Boolean(applied));
@@ -1434,6 +1464,8 @@
         state.visualFocal = Number(state.params.focal);
         state.progress = 0; state.playing = false; state.scenicMotionRate = 1;
         renderPresets(); renderCameraWorkOptions(); renderSceneGuide(); syncUI(); updateMotionPath(); updateScene(0);
+        // 9:16と横長では描画面の寸法が変わるため、切り替えのたびに取り直す。
+        requestAnimationFrame(resizeScene);
         showToast(mode === 'smartphone' ? 'スマホ手持ちモードに切り替えました。' : 'カメラリグモードに切り替えました。');
       }
       function setPhoneLens(key) {
@@ -2209,12 +2241,16 @@
       }
       function resizeScene() {
         if (!renderer || !lensRenderer || !topWipeRenderer) return;
-        const rect = el.viewport.getBoundingClientRect();
-        el.viewport.style.setProperty('--viewport-height', `${Math.round(rect.height)}px`); const lensRect = el.lensCanvas.parentElement.getBoundingClientRect(); const wipeRect = el.topWipeCanvas.parentElement.getBoundingClientRect();
+        const viewportRect = el.viewport.getBoundingClientRect();
+        el.viewport.style.setProperty('--viewport-height', `${Math.round(viewportRect.height)}px`);
+        // 9:16描画ではキャンバスの実寸がビューポートと異なるため、比率はキャンバスから取る。
+        const rect = el.sceneCanvas.getBoundingClientRect();
+        const lensRect = el.lensCanvas.parentElement.getBoundingClientRect(); const wipeRect = el.topWipeCanvas.parentElement.getBoundingClientRect();
         renderer.setSize(Math.max(1, rect.width), Math.max(1, rect.height), false); topCamera.aspect=rect.width/rect.height; topCamera.updateProjectionMatrix();
-        if (lensRect.width > 0 && lensRect.height > 0) {
-          lensRenderer.setSize(lensRect.width, lensRect.height, false); lensCamera.aspect=lensRect.width/lensRect.height; lensCamera.updateProjectionMatrix();
-        }
+        // メインの描画面がレンズビューのときは、そちらの比率をレンズカメラに与える。
+        const lensSurface = state.mainView === 'lens' ? rect : lensRect;
+        if (lensSurface.width > 0 && lensSurface.height > 0) { lensCamera.aspect = lensSurface.width / lensSurface.height; lensCamera.updateProjectionMatrix(); }
+        if (lensRect.width > 0 && lensRect.height > 0) lensRenderer.setSize(lensRect.width, lensRect.height, false);
         if (wipeRect.width > 0 && wipeRect.height > 0) {
           topWipeRenderer.setSize(wipeRect.width, wipeRect.height, false);
           topWipeCamera.aspect = wipeRect.width / wipeRect.height; topWipeCamera.updateProjectionMatrix();
@@ -2373,7 +2409,20 @@
         $('#nextButton').addEventListener('click', () => setMove(state.moveIndex + 1));
         $('#stagePrevButton').addEventListener('click', () => setMove(state.moveIndex - 1));
         $('#stageNextButton').addEventListener('click', () => setMove(state.moveIndex + 1));
-        el.play.addEventListener('click', toggleStagePlayback);
+        // スマホモードでは「押している間だけ録る」を再現する。
+        // 240ms未満のタップは従来どおりの再生として扱う。
+        let holdTimer = null, holdActive = false, holdConsumed = false;
+        const startHold = () => { holdActive = true; holdConsumed = true; state.progress = 0; state.playing = true; syncUI(); };
+        const endHold = () => {
+          clearTimeout(holdTimer); holdTimer = null;
+          if (holdActive) { holdActive = false; state.playing = false; syncUI(); }
+        };
+        el.play.addEventListener('pointerdown', () => {
+          if (state.captureMode !== 'smartphone' || isStageStaticShot()) return;
+          holdConsumed = false; holdTimer = setTimeout(startHold, 240);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(type => el.play.addEventListener(type, endHold));
+        el.play.addEventListener('click', () => { if (holdConsumed) { holdConsumed = false; return; } toggleStagePlayback(); });
         el.progress.addEventListener('input', () => { state.playing=false; state.progress=Number(el.progress.value)/1000; syncUI(); updateScene(state.progress); });
         const updateStageDuration = () => { state.playing=false; state.params = { ...state.params, duration: Number(el.stageDuration.value) }; markSceneGuideAdjusted(); renderSceneGuide(); syncUI(); updateMotionPath(); updateScene(state.progress); };
         const updateStageEasing = (key) => { if (!STAGE_EASING[key] || isStageStaticShot()) return; state.playing = false; state.stageEasing = key; markSceneGuideAdjusted(); syncUI(); updateScene(state.progress); showToast(`${STAGE_EASING[key].label}の緩急へ切り替えました。`); };
