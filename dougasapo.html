@@ -980,11 +980,26 @@
         if (easing === 'decelerate') return 1 - Math.pow(1 - value, 2.15);
         return value < .5 ? 4 * value * value * value : 1 - Math.pow(-2 * value + 2, 3) / 2;
       }
+      // 収録尺を伸ばしたときに「同じ動きが遅くなるだけ」にならないよう、運ぶ量も一緒に伸ばす。
+      // 終点が幾何的に決まっているショット（遮蔽・Blueprint・固定・景観）は 1 に固定する。
+      function isFixedTravelShot(move = currentMove()) {
+        return Boolean(move.coverShot || move.scenic || move.staticShot || getActiveShotBlueprint());
+      }
+      function getTravelScale(move = currentMove()) {
+        if (isFixedTravelShot(move)) return 1;
+        const base = Number(move.defaults?.duration) || 3;
+        const ratio = Number(state.params.duration) / base;
+        return clamp(1 + (ratio - 1) * .6, .6, 1.8);
+      }
       function durationEasingHint() {
         const duration = Number(state.params.duration); const easing = STAGE_EASING[activeStageEasing()] || STAGE_EASING.smooth;
         if (isStageStaticShot()) return easing.note;
-        const durationNote = duration <= 2.5 ? '短尺なので、構図の変化を一つに絞ります。' : duration >= 5.8 ? '長めの尺なので、終点で余白を残しやすくなります。' : '選んだショットの構図と軌跡は維持されます。';
-        return `${easing.note} ${durationNote}`;
+        if (isFixedTravelShot()) return `${easing.note} 終点が決まっているショットなので、尺は速さだけを変えます。`;
+        const travel = getTravelScale();
+        const travelNote = travel > 1.02 ? `尺を伸ばしたぶん、同じ速さのまま運ぶ量が ×${number(travel, 2)} になります。`
+          : travel < .98 ? `尺が短いので、運ぶ量を ×${number(travel, 2)} に抑えます。`
+          : '運ぶ量は既定のままです。';
+        return `${easing.note} ${travelNote}`;
       }
       function getGuideTiming(recipe = state.sceneGuide.applied) {
         if (!recipe) return null;
@@ -1977,33 +1992,36 @@
         const personTarget = new THREE.Vector3(0, 1.30, 0);
         const aimsAtPerson = state.activeScene === 'architecture' && !move.scenic;
         const position = new THREE.Vector3(0, h, d); const target = aimsAtPerson ? personTarget.clone() : subjectTarget.clone();
-        if (move.id === 'dolly-in') position.z = d + (1.7 - d) * u;
-        if (move.id === 'dolly-out') position.z = 1.7 + (d - 1.7) * u;
-        if (move.id === 'orbit') { const angle = THREE.MathUtils.lerp(-.35, Math.PI * 1.28, u); position.set(Math.cos(angle) * d, h, Math.sin(angle) * d); }
+        // 収録尺に応じて終点を伸縮させる。始点は動かさず、運ぶ量だけを変える。
+        const travel = getTravelScale(move);
+        const span = (from, to) => from + (to - from) * travel;
+        if (move.id === 'dolly-in') position.z = d + (Math.max(.9, span(d, 1.7)) - d) * u;
+        if (move.id === 'dolly-out') position.z = 1.7 + (span(1.7, d) - 1.7) * u;
+        if (move.id === 'orbit') { const angle = THREE.MathUtils.lerp(-.35, span(-.35, Math.PI * 1.28), u); position.set(Math.cos(angle) * d, h, Math.sin(angle) * d); }
         if (move.id === 'pan-left' || move.id === 'pan-right') {
-          const sign = move.id === 'pan-left' ? 1 : -1; const angle = THREE.MathUtils.lerp(-.84 * sign, .84 * sign, u);
+          const sign = move.id === 'pan-left' ? 1 : -1; const angle = THREE.MathUtils.lerp(-.84 * sign, span(-.84 * sign, .84 * sign), u);
           const base = new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0), angle); target.copy(position).add(base.multiplyScalar(5)); target.y = h + .03;
         }
-        if (move.id === 'tilt-up') { target.set(0, THREE.MathUtils.lerp(.15, 4.2, u), 0); }
+        if (move.id === 'tilt-up') { target.set(0, THREE.MathUtils.lerp(.15, Math.min(7.5, span(.15, 4.2)), u), 0); }
         // トラックは向きを変えずに真横へ運ぶ。注視点をカメラと同じだけ送り、視線方向を固定する。
-        if (move.id === 'truck-left' || move.id === 'truck-right') { const sign = move.id === 'truck-left' ? -1 : 1; position.x = THREE.MathUtils.lerp(-2.8 * sign, 2.8 * sign, u); target.set(position.x, 1.30, 0); }
-        if (move.id === 'pedestal-up') { position.y = THREE.MathUtils.lerp(Math.max(.35, h - .75), h + 1.35, u); target.set(0, 1.30, 0); }
-        if (move.id === 'crane-rise') { position.y = THREE.MathUtils.lerp(.55, h + 3.5, u); position.z = THREE.MathUtils.lerp(d + 1.1, d - 1.4, u); target.set(0, THREE.MathUtils.lerp(1.05, 2.9, u), 0); }
-        if (move.id === 'arc-push') { const angle = THREE.MathUtils.lerp(-.72, .52, u); const radius = THREE.MathUtils.lerp(d, 2.0, u); position.set(Math.cos(angle) * radius, h, Math.sin(angle) * radius); target.set(0, 1.30, 0); }
-        if (move.id === 'lead-walk') { const subjectZ = THREE.MathUtils.lerp(-.8, 1.0, u); position.set(0, h, subjectZ + d); target.set(0, 1.25, subjectZ); }
-        if (move.id === 'ots-drift') { position.set(THREE.MathUtils.lerp(-.72, .72, u), h, d); target.set(0, 1.25, 0); }
-        if (move.id === 'low-detail') { position.set(THREE.MathUtils.lerp(.35, -.28, u), THREE.MathUtils.lerp(.52, h, u), d); target.set(0, THREE.MathUtils.lerp(.42, 1.05, u), 0); }
-        if (move.id === 'reflection-turn') { const sign = THREE.MathUtils.lerp(-1, 1, u); const base = new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0), sign * .54); target.copy(position).add(base.multiplyScalar(3.6)); target.y = 1.25; }
+        if (move.id === 'truck-left' || move.id === 'truck-right') { const sign = move.id === 'truck-left' ? -1 : 1; position.x = THREE.MathUtils.lerp(-2.8 * sign, span(-2.8 * sign, 2.8 * sign), u); target.set(position.x, 1.30, 0); }
+        if (move.id === 'pedestal-up') { position.y = THREE.MathUtils.lerp(Math.max(.35, h - .75), span(Math.max(.35, h - .75), h + 1.35), u); target.set(0, 1.30, 0); }
+        if (move.id === 'crane-rise') { position.y = THREE.MathUtils.lerp(.55, span(.55, h + 3.5), u); position.z = THREE.MathUtils.lerp(d + 1.1, span(d + 1.1, d - 1.4), u); target.set(0, THREE.MathUtils.lerp(1.05, span(1.05, 2.9), u), 0); }
+        if (move.id === 'arc-push') { const angle = THREE.MathUtils.lerp(-.72, span(-.72, .52), u); const radius = THREE.MathUtils.lerp(d, Math.max(1.2, span(d, 2.0)), u); position.set(Math.cos(angle) * radius, h, Math.sin(angle) * radius); target.set(0, 1.30, 0); }
+        if (move.id === 'lead-walk') { const subjectZ = THREE.MathUtils.lerp(-.8, span(-.8, 1.0), u); position.set(0, h, subjectZ + d); target.set(0, 1.25, subjectZ); }
+        if (move.id === 'ots-drift') { position.set(THREE.MathUtils.lerp(-.72, span(-.72, .72), u), h, d); target.set(0, 1.25, 0); }
+        if (move.id === 'low-detail') { position.set(THREE.MathUtils.lerp(.35, span(.35, -.28), u), THREE.MathUtils.lerp(.52, span(.52, h), u), d); target.set(0, THREE.MathUtils.lerp(.42, span(.42, 1.05), u), 0); }
+        if (move.id === 'reflection-turn') { const sign = THREE.MathUtils.lerp(-1, span(-1, 1), u); const base = new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0), sign * .54); target.copy(position).add(base.multiplyScalar(3.6)); target.y = 1.25; }
         // 「人物の背中で画面を閉じる」ので、回りながら終盤に背中まで詰める。
-        if (move.id === 'backcam-pivot') { const angle = THREE.MathUtils.lerp(-.48, .38, u); const radius = THREE.MathUtils.lerp(d, .62, u); position.set(Math.cos(angle) * radius, h, Math.sin(angle) * radius); target.set(0, 1.30, 0); }
-        if (move.id === 'focus-shift') { position.set(0, h, d); target.set(THREE.MathUtils.lerp(-.8, 0, u), THREE.MathUtils.lerp(.62, 1.25, u), THREE.MathUtils.lerp(-.42, 0, u)); }
+        if (move.id === 'backcam-pivot') { const angle = THREE.MathUtils.lerp(-.48, span(-.48, .38), u); const radius = THREE.MathUtils.lerp(d, Math.max(.5, span(d, .62)), u); position.set(Math.cos(angle) * radius, h, Math.sin(angle) * radius); target.set(0, 1.30, 0); }
+        if (move.id === 'focus-shift') { position.set(0, h, d); target.set(THREE.MathUtils.lerp(-.8, span(-.8, 0), u), THREE.MathUtils.lerp(.62, span(.62, 1.25), u), THREE.MathUtils.lerp(-.42, span(-.42, 0), u)); }
         if (move.id === 'pan-dolly') { position.set(THREE.MathUtils.lerp(-.36, .32, u), h, THREE.MathUtils.lerp(d + .38, d - .58, u)); const base = new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0), THREE.MathUtils.lerp(.30, -.32, u)); target.copy(position).add(base.multiplyScalar(3.4)); target.y = 1.2; }
-        if (move.id === 'pocket-orbit') { const angle = THREE.MathUtils.lerp(-.58, .58, u); position.set(Math.cos(angle) * d, h, Math.sin(angle) * d); target.set(0, 1.25, 0); }
-        if (move.id === 'walkby-pass') { position.set(THREE.MathUtils.lerp(-1.18, 1.18, u), h, d); target.set(0, 1.25, 0); }
-        if (move.id === 'knee-rise') { position.set(THREE.MathUtils.lerp(.16, -.12, u), THREE.MathUtils.lerp(.62, h, u), THREE.MathUtils.lerp(d + .2, d - .36, u)); target.set(0, THREE.MathUtils.lerp(.75, 1.25, u), 0); }
+        if (move.id === 'pocket-orbit') { const angle = THREE.MathUtils.lerp(-.58, span(-.58, .58), u); position.set(Math.cos(angle) * d, h, Math.sin(angle) * d); target.set(0, 1.25, 0); }
+        if (move.id === 'walkby-pass') { position.set(THREE.MathUtils.lerp(-1.18, span(-1.18, 1.18), u), h, d); target.set(0, 1.25, 0); }
+        if (move.id === 'knee-rise') { position.set(THREE.MathUtils.lerp(.16, span(.16, -.12), u), THREE.MathUtils.lerp(.62, span(.62, h), u), THREE.MathUtils.lerp(d + .2, span(d + .2, d - .36), u)); target.set(0, THREE.MathUtils.lerp(.75, span(.75, 1.25), u), 0); }
         if (move.id === 'corner-reveal') { position.set(THREE.MathUtils.lerp(-.86, .18, u), h, THREE.MathUtils.lerp(d + .15, d - .28, u)); target.set(0, 1.25, 0); }
         // 「背中が画面を満たすところまで追う」ので、終盤は距離を詰める。
-        if (move.id === 'follow-arc') { const subjectZ = THREE.MathUtils.lerp(-.45, .62, u); const angle = THREE.MathUtils.lerp(-.34, .30, u); const radius = THREE.MathUtils.lerp(d, .52, u); position.set(Math.sin(angle) * radius, h, subjectZ + Math.cos(angle) * radius); target.set(0, 1.25, subjectZ); }
+        if (move.id === 'follow-arc') { const subjectZ = THREE.MathUtils.lerp(-.45, span(-.45, .62), u); const angle = THREE.MathUtils.lerp(-.34, span(-.34, .30), u); const radius = THREE.MathUtils.lerp(d, Math.max(.45, span(d, .52)), u); position.set(Math.sin(angle) * radius, h, subjectZ + Math.cos(angle) * radius); target.set(0, 1.25, subjectZ); }
         if (move.id === 'architecture-glide') { position.set(THREE.MathUtils.lerp(-5.0, -2.2, u), h, 2.5); target.set(.4, 3.0, -6.4); }
         if (move.id === 'skyline-pan') { position.set(2.6, h, 5.0); const base = new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0), THREE.MathUtils.lerp(.85, -.75, u)); target.copy(position).add(base.multiplyScalar(15)); target.y = THREE.MathUtils.lerp(2.0, 5.1, u); }
         if (move.id === 'facade-tilt') { position.set(.4, h, 7.8); target.set(.4, THREE.MathUtils.lerp(.45, 6.8, u), -6.4); }
@@ -2357,7 +2375,7 @@
         $('#stageNextButton').addEventListener('click', () => setMove(state.moveIndex + 1));
         el.play.addEventListener('click', toggleStagePlayback);
         el.progress.addEventListener('input', () => { state.playing=false; state.progress=Number(el.progress.value)/1000; syncUI(); updateScene(state.progress); });
-        const updateStageDuration = () => { state.playing=false; state.params = { ...state.params, duration: Number(el.stageDuration.value) }; markSceneGuideAdjusted(); renderSceneGuide(); syncUI(); updateScene(state.progress); };
+        const updateStageDuration = () => { state.playing=false; state.params = { ...state.params, duration: Number(el.stageDuration.value) }; markSceneGuideAdjusted(); renderSceneGuide(); syncUI(); updateMotionPath(); updateScene(state.progress); };
         const updateStageEasing = (key) => { if (!STAGE_EASING[key] || isStageStaticShot()) return; state.playing = false; state.stageEasing = key; markSceneGuideAdjusted(); syncUI(); updateScene(state.progress); showToast(`${STAGE_EASING[key].label}の緩急へ切り替えました。`); };
         el.stageDuration.addEventListener('input', updateStageDuration); el.stageDuration.addEventListener('change', updateStageDuration);
         const updateSubjectDistance = () => { if (!getActiveShotBlueprint()) return; state.playing = false; state.sceneGuide.subjectDistanceOffset = Number(el.subjectDistance.value); markSceneGuideAdjusted(); updateMotionPath(); syncUI(); updateScene(state.progress); };
