@@ -1,0 +1,1414 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d0f12" />
+  <title>Livehouse — 照明卓＆撮影シミュレーター</title>
+  <style>
+    :root{--ink:#171b1d;--panel:#161b1b;--line:rgba(255,255,255,.14);--sun:#e0a83a;--key:#67aef5;--fill:#bff4e9;--muted:#9ba2a1}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;background:#171b1d;color:#f6f5f0}button,input{font:inherit}button{border:0;cursor:pointer}.shell{height:100dvh;min-height:620px;background:#1b2021}.scene{position:absolute;inset:0}.scene canvas{display:block;width:100%;height:100%;touch-action:none}.bar{position:absolute;z-index:2;top:16px;left:16px;display:flex;align-items:center;gap:9px}.mark{display:grid;place-items:center;width:34px;height:34px;background:#e7e1d5;color:#171b1d;border-radius:9px;font-weight:800}.title p{margin:0;color:#c6cfc9;font:700 9px ui-monospace,SFMono-Regular,monospace;letter-spacing:.12em}.title h1{margin:1px 0 0;font:700 18px ui-monospace,SFMono-Regular,monospace;letter-spacing:.04em}.badge{display:flex;align-items:center;gap:5px;margin-left:8px;padding:8px 10px;background:rgba(22,27,27,.82);border:1px solid rgba(224,168,58,.5);color:#ffd784;font:700 11px ui-monospace,SFMono-Regular,monospace}.readout{position:absolute;z-index:2;left:16px;top:60px;display:flex;align-items:center;gap:5px;padding:6px 9px;background:rgba(22,27,27,.8);border:1px solid rgba(224,168,58,.4);color:#ffd784;font:700 10px ui-monospace,SFMono-Regular,monospace}.scale{position:absolute;z-index:2;top:98px;left:16px;width:220px;height:18px;display:flex;justify-content:space-between;border-top:1px solid rgba(28,34,33,.45);padding-top:5px;color:#35403d;font:700 8px ui-monospace,SFMono-Regular,monospace}.scale:before{content:"";position:absolute;top:-4px;inset-inline:0;height:4px;background:repeating-linear-gradient(90deg,rgba(30,36,35,.56) 0 1px,transparent 1px 16px)}.scale i{position:absolute;top:-8px;width:2px;height:13px;background:var(--sun)}.drawer{position:absolute;z-index:3;right:0;top:0;bottom:0;width:338px;overflow:auto;padding:24px 20px;background:linear-gradient(140deg,#192020,#111616);border-left:1px solid var(--line);box-shadow:-16px 0 35px rgba(0,0,0,.25)}.eyebrow{margin:0 0 3px;color:#bfc7c3;font:700 9px ui-monospace,SFMono-Regular,monospace;letter-spacing:.1em}.drawer h2{margin:0;font-size:20px;letter-spacing:-.04em}.section{padding:12px 0;border-top:1px solid rgba(255,255,255,.1)}.section:first-of-type{margin-top:17px}.label{display:flex;justify-content:space-between;margin-bottom:9px;font-size:12px;font-weight:700}.label small{color:#87918e;font:500 9px ui-monospace,SFMono-Regular,monospace;letter-spacing:.09em}.two{display:grid;grid-template-columns:1fr 1fr;gap:4px}.mode,.pose{min-height:38px;background:#111616;border:1px solid var(--line);color:#adb6b3;font-size:11px;font-weight:700}.mode.active,.pose.active{border-color:rgba(224,168,58,.65);color:#ffe3a8;background:rgba(224,168,58,.1);box-shadow:inset 0 -2px var(--sun)}.inputs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}.inputs input{min-width:0;background:#111616;border:1px solid var(--line);color:#ebeee9;padding:7px;font:11px ui-monospace,SFMono-Regular,monospace}.slider{margin:7px 0}.slider div{display:flex;justify-content:space-between;font-size:11px;color:#c6cfcc}.slider strong{color:#e9eff0;font:600 11px ui-monospace,SFMono-Regular,monospace}.slider input{width:100%;accent-color:var(--key)}.sun-range{accent-color:var(--sun)!important}.hidden{display:none}.lights{display:flex;flex-direction:column;gap:5px}.light{display:flex;align-items:center;gap:8px;padding:9px 8px;background:rgba(255,255,255,.025);border:1px solid var(--line);cursor:pointer}.light.selected{border-color:rgba(103,174,245,.7);background:rgba(103,174,245,.1)}.light span{flex:1;font-size:12px;font-weight:700}.dot{width:8px;height:8px;border-radius:50%;background:var(--key)}.fill{background:var(--fill)}.rim{background:#b9d3ff}.light .toggle-wrap{display:flex;align-items:center;gap:6px}.light .toggle-wrap small{font:700 9px ui-monospace,SFMono-Regular,monospace;color:#87918e}.light.enabled .toggle-wrap small{color:#c9e1ff}.light input{accent-color:var(--key);width:16px;height:16px;margin:0}.hint{margin-top:10px;padding:10px;border-left:2px solid var(--sun);background:rgba(0,0,0,.18);color:#d8dcd6;font-size:10px;line-height:1.55}.hint strong{display:block;color:#ffe3a8;font-size:11px}.settings-actions{display:flex;justify-content:flex-end;margin-top:10px}.reset-settings{width:100%;min-height:34px;background:transparent;border:1px solid rgba(224,168,58,.55);color:#ffd784;font-size:11px;font-weight:700}.reset-settings:hover{background:rgba(224,168,58,.1)}.preset-grid{display:grid;grid-template-columns:1fr auto;gap:6px;margin-top:8px}.preset-grid input,.preset-grid select{min-width:0;background:#111616;border:1px solid var(--line);color:#ebeee9;padding:7px;font-size:11px}.preset-grid button,.io-actions button{min-height:32px;background:#111616;border:1px solid var(--line);color:#cbd5d1;font-size:11px;font-weight:700;padding:0 9px}.preset-grid button:hover,.io-actions button:hover{border-color:rgba(224,168,58,.65);color:#ffe3a8}.io-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}.io-actions button{width:100%}.status-note{margin-top:7px;color:#9ba2a1;font-size:10px;line-height:1.4}@media(max-width:720px){.drawer{top:auto;left:0;width:auto;height:38dvh;padding:14px}.bar{top:12px;left:12px}.readout{top:52px;left:12px}.scale{top:86px;left:12px}.scene{bottom:33dvh}.drawer h2{font-size:18px}.section{padding:9px 0}.slider{margin:5px 0}}
+    /* --- livehouse 固有 ------------------------------------------------- */
+    .tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:14px 0 4px}
+    .tab{min-height:38px;background:#111616;border:1px solid var(--line);color:#cbd5d1;font:700 12px ui-monospace,SFMono-Regular,monospace;letter-spacing:.06em}
+    .tab.active{background:#e7e1d5;color:#171b1d}
+    .panel.hidden{display:none}
+    .scenes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+    .scene-btn{min-height:46px;padding:4px 2px;background:#111616;border:1px solid var(--line);color:#e7e5df;font-size:11px;line-height:1.25}
+    .scene-btn small{display:block;color:#87918e;font:500 8px ui-monospace,SFMono-Regular,monospace;margin-top:2px}
+    .scene-btn.active{background:#e7e1d5;color:#171b1d}
+    .scene-btn.active small{color:#4a4f4d}
+    .swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:8px}
+    .swatch{height:26px;border:1px solid var(--line);border-radius:4px;padding:0}
+    .swatch.active{outline:2px solid #e7e1d5;outline-offset:1px}
+    .fixgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-top:8px}
+    .fix{aspect-ratio:1;border:1px solid var(--line);border-radius:3px;font:700 8px ui-monospace,monospace;color:#0c0f0f;padding:0;opacity:.28}
+    .fix.on{opacity:1}
+    .fix.sel{outline:2px solid #e7e1d5;outline-offset:-1px}
+    .fixrow{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-top:3px}
+    .warn{margin-top:6px;color:#ffb4a2;font-size:11px;line-height:1.5}
+    .warn:empty{display:none}
+    .ok{color:#9ff0c4}
+  </style>
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"}}</script>
+</head>
+<body>
+  <main class="shell">
+    <div id="scene" class="scene"></div>
+    <header class="bar"><div class="mark">◒</div><div class="title"><p>LIGHTING SKETCHBOOK</p><h1>Livehouse</h1></div><span class="badge" id="sceneBadge">バンド</span></header>
+    <div class="readout">📷 <strong id="expoBadge">計算中</strong></div>
+    <aside class="drawer">
+      <p class="eyebrow">STANDALONE HTML</p><h2>ステージの光を撮る</h2>
+      <div class="tabs"><button class="tab active" data-tab="camera">📷 カメラ</button><button class="tab" data-tab="board">🎛 照明卓</button></div>
+
+      <div class="panel" id="panel-camera">
+        <section class="section"><div class="label"><span>カメラの露出</span><small>ISO / F / SHUTTER</small></div>
+          <div class="slider"><div><span>ISO感度</span><strong id="v-iso">1600</strong></div><input type="range" id="isoR" min="0" max="9" step="1" value="5" /></div>
+          <div class="slider"><div><span>絞り</span><strong id="v-fstop">F2.8</strong></div><input type="range" id="fstopR" min="0" max="10" step="1" value="3" /></div>
+          <div class="slider"><div><span>シャッター速度</span><strong id="v-shutter">1/250</strong></div><input type="range" id="shutterR" class="sun-range" min="0" max="11" step="1" value="6" /></div>
+          <div class="hint" id="expoReadout"></div>
+          <div class="warn" id="expoWarn"></div>
+        </section>
+        <section class="section"><div class="label"><span>被写体の姿勢</span><small>POSE</small></div>
+          <div class="two" id="poses"><button class="pose active" data-pose="standing">直立</button><button class="pose" data-pose="crouching">しゃがみ</button><button class="pose" data-pose="seated">椅子</button><button class="pose" data-pose="leaning">壁にもたれ</button><button class="pose" data-pose="armsCrossed" style="grid-column:1/-1">腕組み</button></div>
+        </section>
+        <section class="section"><div class="label"><span>アクセサリー</span><small>ACCESSORY</small></div>
+          <div class="two"><button class="mode" id="glassesToggle">○ メガネ</button><button class="mode" id="sunglassesToggle">○ サングラス</button></div>
+          <button class="mode" id="catEarsToggle" style="width:100%;margin-top:8px">○ ネコ耳</button>
+          <div class="slider" style="margin-top:8px"><div><span>衣装の明るさ</span><strong id="v-mannequinColor">#d6d7d2</strong></div><input type="color" id="mannequinColor" value="#d6d7d2" /></div>
+        </section>
+        <section class="section"><div class="label"><span>光の棒</span><small>MOTION TRAIL</small></div>
+          <div class="hint"><strong>シャッター速度による被写体ブレの模式図。</strong>尾の長さは現在のシャッター秒数に比例します。明るさとは別の現象です。</div>
+          <button class="mode" id="addMotionBar" type="button" style="width:100%;margin:8px 0">＋ 棒を追加</button>
+          <div class="lights" id="motionBarList"></div>
+        </section>
+        <section class="section"><div class="label"><span>課題</span><small>CHALLENGE</small></div>
+          <select id="challengeSelect" aria-label="課題を選択"><option value="">課題を選択</option></select>
+          <div class="hint" id="challengeStatus"></div>
+        </section>
+      </div>
+
+      <div class="panel hidden" id="panel-board">
+        <section class="section"><div class="label"><span>シーン</span><small>SCENE PRESET</small></div>
+          <div class="scenes" id="sceneList"></div>
+        </section>
+        <section class="section"><div class="label"><span>全体</span><small>MASTER</small></div>
+          <div class="slider"><div><span>明るさ</span><strong id="v-bright">70</strong></div><input type="range" id="brightR" min="0" max="100" step="1" value="70" /></div>
+          <div class="slider"><div><span>チルト</span><strong id="v-tilt">-25°</strong></div><input type="range" id="tiltR" min="-60" max="10" step="1" value="-25" /></div>
+          <div class="slider"><div><span>ビームのやわらかさ</span><strong id="v-soft">62%</strong></div><input type="range" id="softR" min="0" max="100" step="1" value="62" /></div>
+          <div class="two" style="margin-top:8px"><button class="mode" id="smokeToggle">○ スモーク</button><button class="mode" id="blackoutToggle">○ ブラックアウト</button></div>
+        </section>
+        <section class="section"><div class="label"><span>色</span><small>COLOR</small></div>
+          <div class="slider"><div><span>選択中の灯体に適用</span><strong id="v-color">#fff4e0</strong></div><input type="color" id="colorPick" value="#fff4e0" /></div>
+          <div class="swatches" id="swatches"></div>
+          <button class="mode" id="rainbowToggle" style="width:100%;margin-top:8px">○ レインボー</button>
+        </section>
+        <section class="section"><div class="label"><span>灯体</span><small>30 FIXTURES</small></div>
+          <select id="groupSelect" aria-label="グループを選択">
+            <option value="all">すべて（30灯）</option>
+            <option value="front">フロント（客席側）</option>
+            <option value="back">バック（奥）</option>
+            <option value="par">PAR（24灯）</option>
+            <option value="moving">ムービング（4灯）</option>
+            <option value="side">サイド（4灯）</option>
+            <option value="uplight">バック足元</option>
+          </select>
+          <div class="hint" id="groupHint"></div>
+          <div class="fixgrid" id="fixGrid"></div>
+          <div class="fixrow" id="fixRow"></div>
+          <div class="two" style="margin-top:8px"><button class="mode" id="groupOn">選択をON</button><button class="mode" id="groupOff">選択をOFF</button></div>
+        </section>
+        <section class="section"><div class="label"><span>チェイス</span><small>SEQUENCE</small></div>
+          <select id="chaseMode" aria-label="チェイスの方向">
+            <option value="front-back">前→後ろウェーブ</option>
+            <option value="left-right">左→右</option>
+            <option value="center-out">センター→外側</option>
+            <option value="random">ランダムポップ</option>
+            <option value="chase">追っかけ</option>
+          </select>
+          <div class="slider"><div><span>速度</span><strong id="v-chaseSpeed">1.2</strong></div><input type="range" id="chaseSpeed" min="0.2" max="6" step="0.1" value="1.2" /></div>
+          <div class="slider"><div><span>フェード</span><strong id="v-chaseFade">0.60</strong></div><input type="range" id="chaseFade" min="0" max="1" step="0.02" value="0.6" /></div>
+          <div class="two"><button class="mode" id="chasePlay">▶ 再生</button><button class="mode active" id="chaseLoop">ループ</button></div>
+        </section>
+        <section class="section"><div class="label"><span>ブリンク</span><small>BLINK</small></div>
+          <select id="blinkMode" aria-label="ブリンクの種類"><option value="all">全灯</option><option value="random">ランダム</option></select>
+          <div class="slider"><div><span>速度</span><strong id="v-blinkSpeed">1.8</strong></div><input type="range" id="blinkSpeed" min="0.3" max="8" step="0.1" value="1.8" /></div>
+          <button class="mode" id="blinkPlay" style="width:100%">▶ 再生</button>
+        </section>
+        <section class="section"><div class="label"><span>キュー</span><small>CUE SHEET</small></div>
+          <div class="preset-grid scene-preset-grid">
+            <input id="cueName" type="text" maxlength="30" placeholder="キュー名（例：M3 サビ）" />
+            <button id="saveCue" type="button">保存</button>
+            <select id="cueSelect" aria-label="キューを選択"><option value="">キューを選択</option></select>
+            <button id="loadCue" type="button">呼び出し</button>
+            <span></span>
+            <button id="deleteCue" type="button">削除</button>
+          </div>
+          <div class="status-note" id="cueStatus"></div>
+        </section>
+        <section class="section"><div class="label"><span>設定データ</span><small>JSON / BACKUP</small></div>
+          <div class="io-actions"><button id="exportSettings" type="button">設定をエクスポート</button><button id="importSettings" type="button">設定をインポート</button></div>
+          <input id="importFile" type="file" accept="application/json,.json" hidden />
+          <div class="status-note" id="ioStatus">キューを含めてJSONで保存・復元できます。</div>
+          <div class="settings-actions"><button class="reset-settings" id="resetSettings" type="button">設定を初期化</button></div>
+        </section>
+      </div>
+    </aside>
+  </main>
+  <script type="module">
+    import * as THREE from 'three'; import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    /* ======================================================================
+       ステージ — レンダラ／カメラ／床・背景幕
+       ====================================================================== */
+    const host=document.querySelector('#scene'), scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(38,1,.1,120), renderer=new THREE.WebGLRenderer({antialias:true});
+    renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFShadowMap; renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; host.append(renderer.domElement);
+    camera.position.set(0,1.75,7.2);
+    const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,1.35,0); controls.enableDamping=true; controls.maxPolarAngle=Math.PI/2.02; controls.minDistance=2; controls.maxDistance=16;
+
+    const material=new THREE.MeshStandardMaterial({color:'#d6d7d2',roughness:.76,metalness:.015});
+    const glassesMaterial=new THREE.MeshStandardMaterial({color:'#2b2e30',roughness:.28,metalness:.85});
+    const sunglassFrameMaterial=new THREE.MeshStandardMaterial({color:'#141414',roughness:.55,metalness:.05});
+    const sunglassLensMaterial=new THREE.MeshStandardMaterial({color:'#0a0a0c',roughness:.15,metalness:.3,side:THREE.DoubleSide});
+
+    scene.background=new THREE.Color('#07080a');
+    scene.fog=new THREE.FogExp2('#07080a',0.012);
+    // ステージ床。ライブハウスの黒い床は反射が少ないので roughness を高く取る
+    const ground=new THREE.Mesh(new THREE.PlaneGeometry(14,11),new THREE.MeshStandardMaterial({color:'#26262a',roughness:.88}));
+    ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+    // 背景幕（黒ホリ）。壁にもたれポーズで使うので位置は ligutsetting と同じ z=-1.15 ではなく舞台奥に置く
+    const wall=new THREE.Mesh(new THREE.PlaneGeometry(13,6),new THREE.MeshStandardMaterial({color:'#1a1a1e',roughness:.95}));
+    wall.position.set(0,3,-3.2); wall.receiveShadow=true; scene.add(wall);
+    // 「壁にもたれ」ポーズ専用の袖幕。被写体のすぐ後ろに立てる
+    const leanWall=new THREE.Mesh(new THREE.PlaneGeometry(4,3.4),new THREE.MeshStandardMaterial({color:'#1f1f24',roughness:.95}));
+    leanWall.position.set(0,1.7,-1.15); leanWall.receiveShadow=true; leanWall.visible=false; scene.add(leanWall);
+    const chair=new THREE.Mesh(new THREE.BoxGeometry(.5,.46,.5),new THREE.MeshStandardMaterial({color:'#3a3a3e',roughness:.85}));
+    chair.position.set(0,.23,.14); chair.castShadow=true; chair.receiveShadow=true; chair.visible=false; scene.add(chair);
+    // 客席側からの僅かな回り込み。真っ黒を防ぐだけの最低限
+    const hemi=new THREE.HemisphereLight('#3a4756','#101014',.05); scene.add(hemi);
+    const ambient=new THREE.AmbientLight('#ffffff',0); scene.add(ambient);
+
+
+    const SUBJECT=new THREE.Vector3(0,1.4,0);   // 露出計算の基準点（演者の顔の高さ）
+    /* ======================================================================
+       撮影用マネキン — 人体モデル生成システム
+       比率(P) → 骨格(buildSkeleton) → ポーズ(POSES) → 断面ロフト(loft) → 面
+       この区画だけが人体形状を担当する。ライト/影/UI/太陽計算とは独立。
+       ====================================================================== */
+
+    const MAN_HEIGHT = 1.80;                        // 全高[m]。寸法は全て全高=1.0の比率で保持しここで実寸化する
+
+    // --- STEP 1: 人体比率（すべて全高=1.0 に正規化） ----------------------
+    const P = {
+      // 基準高さ（床からの比率）
+      CROWN:0.998, CHIN:0.862, SKULL_BASE:0.892, NECK:0.872,
+      NECK_ROOT:0.848, GIRDLE:0.818, SHOULDER_J:0.805, CHEST:0.740, RIB:0.700,
+      ABDOMEN:0.665, WAIST:0.625, HIP:0.530, CROTCH:0.470,
+      ELBOW:0.625, WRIST:0.485, KNEE:0.285, ANKLE:0.039,
+      // 左右オフセット（関節位置）
+      SHOULDER_X:0.087, HIP_X:0.048,
+      // 頭部の左右／前後の半値（上下は CROWN と CHIN から導出する）
+      HEAD_W:0.047, HEAD_D:0.059,
+      // 足
+      FOOT_LEN:0.143, HEEL_LEN:0.027, FOOT_W:0.031
+    };
+    // 骨長は比率から導出する。ポーズが変わってもこの値は不変（STEP 22 の保証）
+    P.THIGH      = P.HIP - P.KNEE;          // 大腿
+    P.SHANK      = P.KNEE - P.ANKLE;        // 下腿
+    P.UPPER_ARM  = P.SHOULDER_J - P.ELBOW;  // 上腕
+    P.FOREARM    = P.ELBOW - P.WRIST;       // 前腕
+    P.HAND       = 0.098;                   // 手
+    P.HEAD_C     = (P.CROWN+P.CHIN)/2;      // 頭部中心の高さ
+    P.HEAD_H     = (P.CROWN-P.CHIN)/2;      // 頭部の上下半値
+
+    const H = MAN_HEIGHT, D2R = Math.PI/180;
+    const V3 = (x,y,z)=>new THREE.Vector3(x,y,z);
+    const glasses=buildGlasses();glasses.visible=false;scene.add(glasses);
+    const sunglasses=buildSunglasses();sunglasses.visible=false;scene.add(sunglasses);
+    const catEars=buildCatEars();catEars.visible=false;scene.add(catEars);
+
+    // --- 断面テーブル -------------------------------------------------------
+    // 各 station = { y:高さ比率, z:前後オフセット, w:左右半幅, dF:前方厚み, dB:後方厚み, n:超楕円指数 }
+    // 胸・腹・腰・骨盤・肩甲帯・首はすべて「1本のロフトの station」であり独立オブジェクトではない
+    const TRUNK = [
+      // 下端は大腿と同じ断面まで絞り込み、開いたまま大腿ロフトの内側で終わらせる
+      // station はほぼ等間隔に置く。間隔が急に詰まると平滑化が効かず横筋が出る。
+      // 下端は左右の大腿が十分重なる高さで開いたまま終わらせ、股間のVは大腿の内側面が作る
+      { y:P.CROTCH,    z: 0.004, w:0.0850,dF:0.043, dB:0.046, n:2.1, sep:0.046, pinch:0.76 },
+      { y:0.487,       z: 0.002, w:0.0965,dF:0.054, dB:0.061, n:2.1, sep:0.040, pinch:0.55 },
+      { y:0.504,       z: 0.000, w:0.1025,dF:0.061, dB:0.070, n:2.2, sep:0.030, pinch:0.36 },  // 骨盤の最大幅（大転子）
+      { y:0.522,       z:-0.003, w:0.1050,dF:0.066, dB:0.077, n:2.2, sep:0.019, pinch:0.20 },  // 臀部の最大厚み
+      { y:0.545,       z:-0.001, w:0.1010,dF:0.067, dB:0.074, n:2.3, sep:0.008, pinch:0.07 },
+      { y:0.572,       z: 0.004, w:0.0910,dF:0.066, dB:0.062, n:2.3 },
+      { y:0.600,       z: 0.007, w:0.0845,dF:0.064, dB:0.056, n:2.4 },
+      { y:P.WAIST,     z: 0.008, w:0.081, dF:0.062, dB:0.054, n:2.4 },  // 腰（最も細い）
+      { y:P.ABDOMEN,   z: 0.005, w:0.084, dF:0.067, dB:0.056, n:2.4 },  // 腹
+      { y:P.RIB,       z: 0.000, w:0.088, dF:0.071, dB:0.060, n:2.5 },  // 上腹／肋骨下端
+      { y:P.CHEST,     z:-0.004, w:0.088, dF:0.073, dB:0.063, n:2.5 },  // 胸郭（前方に厚い）
+      { y:0.782,       z:-0.008, w:0.089, dF:0.067, dB:0.065, n:2.5 },  // 胸郭上部（胴体の最大幅）
+      { y:0.806,       z:-0.009, w:0.086, dF:0.061, dB:0.063, n:2.5 },
+      { y:P.GIRDLE,    z:-0.010, w:0.080, dF:0.057, dB:0.061, n:2.4 },  // 肩甲帯（肩幅は腕側の三角筋が作る）
+      { y:0.834,       z:-0.011, w:0.066, dF:0.047, dB:0.055, n:2.3 },  // 僧帽筋の傾斜
+      { y:P.NECK_ROOT, z:-0.010, w:0.048, dF:0.040, dB:0.048, n:2.2 },  // 胸郭→首へ連続して細くなる
+      { y:P.NECK,      z:-0.005, w:0.033, dF:0.031, dB:0.035, n:2.1 },  // 首
+      { y:P.SKULL_BASE,z:-0.002, w:0.031, dF:0.029, dB:0.034, n:2.0 }   // 頭蓋底（頭部と重なって連続する）
+    ];
+
+    // 脚: t は 大腿(0→1) / 下腿(0→1)。断面の前後差でふくらはぎの膨らみを作る
+    const LEG = [
+      { seg:'thigh', t: 0.05, w:0.0535,dF:0.052, dB:0.069, n:2.2 },  // 骨盤の中で開いたまま始める（後面は臀部へつなぐ）
+      { seg:'thigh', t: 0.20, w:0.0518,dF:0.051, dB:0.058, n:2.2 },  // 大腿上部（太い）
+      { seg:'thigh', t: 0.42, w:0.0470,dF:0.047, dB:0.048, n:2.2 },
+      { seg:'thigh', t: 0.68, w:0.041, dF:0.041, dB:0.042, n:2.2 },
+      { seg:'thigh', t: 0.93, w:0.034, dF:0.036, dB:0.034, n:2.3 },  // 膝上（細くなる）
+      { seg:'shank', t: 0.02, w:0.036, dF:0.037, dB:0.031, n:2.5 },  // 膝（横に広く後面は扁平）
+      { seg:'shank', t: 0.18, w:0.036, dF:0.031, dB:0.044, n:2.2 },  // ふくらはぎ（後方に膨らむ）
+      { seg:'shank', t: 0.40, w:0.032, dF:0.028, dB:0.037, n:2.2 },
+      { seg:'shank', t: 0.70, w:0.024, dF:0.023, dB:0.026, n:2.2 },
+      { seg:'shank', t: 1.00, w:0.019, dF:0.020, dB:0.022, n:2.2 }   // 足首
+    ];
+
+    // 腕: t は 上腕(0→1) / 前腕(0→1) / 手(0→1)。肩甲帯の中から始めて三角筋の丸みを作る
+    const ARM = [
+      { seg:'upper', t:-0.03, ox:-0.017, w:0.032, dF:0.033, dB:0.033, n:2.2 },  // 肩甲帯の中から立ち上げる
+      { seg:'upper', t: 0.03, w:0.042, dF:0.042, dB:0.042, n:2.2 },  // 三角筋（肩の丸み）
+      { seg:'upper', t: 0.26, w:0.037, dF:0.037, dB:0.038, n:2.2 },  // 上腕（肩側が太い）
+      { seg:'upper', t: 0.60, w:0.029, dF:0.029, dB:0.030, n:2.2 },
+      { seg:'upper', t: 0.92, w:0.025, dF:0.025, dB:0.025, n:2.3 },  // 肘の手前で細くなる
+      { seg:'fore',  t: 0.04, w:0.026, dF:0.025, dB:0.026, n:2.4 },  // 肘
+      { seg:'fore',  t: 0.26, w:0.026, dF:0.025, dB:0.027, n:2.2 },  // 前腕の膨らみ
+      { seg:'fore',  t: 0.62, w:0.021, dF:0.020, dB:0.021, n:2.2 },
+      { seg:'fore',  t: 1.00, w:0.015, dF:0.013, dB:0.014, n:2.3 },  // 手首（細い）
+      { seg:'hand',  t: 0.30, w:0.014, dF:0.025, dB:0.023, n:2.7 },  // 手（扁平な板・手のひらは体側を向く）
+      { seg:'hand',  t: 0.72, w:0.013, dF:0.024, dB:0.021, n:2.7 },
+      { seg:'hand',  t: 1.00, w:0.008, dF:0.016, dB:0.014, n:2.7 }
+    ];
+
+    /* ----------------------------------------------------------------------
+       STEP 3: 断面ロフト
+       背骨ポリラインに沿って断面リングを押し出し、連続した1枚の面を作る。
+       球やカプセルは使わない。
+       ---------------------------------------------------------------------- */
+
+    // 非一様（弦長パラメータ化）Catmull-Rom。Barry-Goldman 形。
+    // station の間隔が不均一でも行き過ぎず、背骨が逆行して面が折り返すのを防ぐ
+    function crNU(t0,t1,t2,t3,p0,p1,p2,p3,t){
+      const L=(ta,tb,pa,pb)=>{const d=tb-ta;return Math.abs(d)<1e-9?pa:((tb-t)*pa+(t-ta)*pb)/d;};
+      const a1=L(t0,t1,p0,p1), a2=L(t1,t2,p1,p2), a3=L(t2,t3,p2,p3);
+      const b1=L(t0,t2,a1,a2), b2=L(t1,t3,a2,a3);
+      return L(t1,t2,b1,b2);
+    }
+    // stations から「弦長ノット」と、そのノット上での補間関数を作る
+    function splineOf(stations){
+      const N=stations.length, kn=[0];
+      for(let i=1;i<N;i++) kn[i]=kn[i-1]+Math.max(1e-4,Math.sqrt(stations[i].p.distanceTo(stations[i-1].p)));
+      const knot=i=>i<0?2*kn[0]-kn[1]:i>N-1?2*kn[N-1]-kn[N-2]:kn[i];
+      const at=(u,get)=>{
+        let i=0; while(i<N-2&&kn[i+1]<u) i++;
+        const g=k=>get(stations[Math.min(N-1,Math.max(0,k))]);
+        return crNU(knot(i-1),knot(i),knot(i+1),knot(i+2),g(i-1),g(i),g(i+1),g(i+2),u);
+      };
+      return {total:kn[N-1],at};
+    }
+
+    // 超楕円断面（前後非対称）。n が大きいほど角張り、2 で楕円。
+    // 極角でパラメータ化した radial superellipse なので、頂点が円周に均等に載る。
+    // sep   : 断面を左右2つの葉に割る量（骨盤→大腿の移行に使う）
+    // pinch : 中央（前面・背面）を凹ませる量。臀部の谷と股間の溝を作る
+    function ringPoint(theta,w,dF,dB,n,sep,pinch){
+      sep=sep||0; pinch=pinch||0;
+      const c=Math.cos(theta), s=Math.sin(theta), wc=Math.max(1e-4,w-sep);
+      const k=Math.pow(Math.pow(Math.abs(c),n)+Math.pow(Math.abs(s),n),-1/n);
+      const dMid=(dF+dB)/2, dAsym=(dF-dB)/2;
+      let a=wc*c*k, b=(dMid+dAsym*s)*s*k;
+      if(sep>0) a+=sep*Math.tanh(a/(0.35*wc));      // 連続なまま左右へ寄せる
+      if(pinch>0){ const t=a/w/0.32; b*=1-pinch*Math.exp(-t*t); }
+      return [a,b];
+    }
+
+    /**
+     * stations: [{p:Vector3, w, dF, dB, n}]（近位→遠位）
+     * opts: { seg:分割数, radial:円周分割, capStart, capEnd, front:初期前方ベクトル }
+     */
+    function loft(stations,opts){
+      opts=opts||{};
+      const RAD=opts.radial||28, SEG=opts.seg||(stations.length-1)*6;
+      const capS=opts.capStart!==false, capE=opts.capEnd!==false;
+      const front=opts.front||V3(0,0,1);
+      const sp=splineOf(stations);
+
+      // 1) 背骨と断面パラメータをサンプリング
+      const pts=[],prm=[];
+      for(let i=0;i<=SEG;i++){
+        const u=sp.total*i/SEG;
+        pts.push(V3(sp.at(u,s=>s.p.x),sp.at(u,s=>s.p.y),sp.at(u,s=>s.p.z)));
+        prm.push({
+          w:sp.at(u,s=>s.w), dF:sp.at(u,s=>s.dF),
+          dB:sp.at(u,s=>s.dB), n:sp.at(u,s=>s.n),
+          sep:sp.at(u,s=>s.sep||0), pinch:sp.at(u,s=>s.pinch||0)
+        });
+      }
+      // 1b) 断面パラメータを平滑化する。
+      //     Catmull-Rom は節点で曲率が不連続になり、滑らかな面に横縞の陰影が出るため。
+      const relax=(key,passes)=>{
+        for(let k=0;k<passes;k++){
+          const a=prm.map(o=>o[key]);
+          for(let i=1;i<SEG;i++) prm[i][key]=0.25*a[i-1]+0.5*a[i]+0.25*a[i+1];
+        }
+      };
+      ['w','dF','dB','n','sep','pinch'].forEach(k=>relax(k,16));
+
+      // 2) 平行移動フレーム（ねじれ防止）
+      const T=[],B=[],N=[];
+      for(let i=0;i<=SEG;i++){
+        const a=pts[Math.max(0,i-1)], b=pts[Math.min(SEG,i+1)];
+        T.push(V3().subVectors(b,a).normalize());
+      }
+      B[0]=V3().copy(front).addScaledVector(T[0],-front.dot(T[0]));
+      if(B[0].lengthSq()<1e-8) B[0].set(1,0,0).addScaledVector(T[0],-T[0].x);
+      B[0].normalize();
+      for(let i=1;i<=SEG;i++){
+        const q=new THREE.Quaternion().setFromUnitVectors(T[i-1],T[i]);
+        B[i]=B[i-1].clone().applyQuaternion(q).normalize();
+      }
+      for(let i=0;i<=SEG;i++) N[i]=V3().crossVectors(T[i],B[i]).normalize();
+
+      // 3) 頂点生成（継ぎ目は頂点を共有するので法線が割れない）
+      const pos=[],idx=[];
+      const push=(v)=>{pos.push(v.x,v.y,v.z);return pos.length/3-1;};
+      const rings=[];
+      const makeRing=(i,scale,slide)=>{
+        const row=[],c=pts[i].clone().addScaledVector(T[i],slide||0);
+        for(let j=0;j<RAD;j++){
+          const th=j/RAD*Math.PI*2;
+          const[a,b]=ringPoint(th,prm[i].w*scale,prm[i].dF*scale,prm[i].dB*scale,prm[i].n,Math.max(0,prm[i].sep)*scale,Math.max(0,prm[i].pinch));
+          row.push(push(V3().copy(c).addScaledVector(N[i],a).addScaledVector(B[i],b)));
+        }
+        return row;
+      };
+      // 開始側の丸めキャップ
+      if(capS){
+        const r0=Math.min(prm[0].w,(prm[0].dF+prm[0].dB)/2);
+        const CS=8;
+        for(let k=CS;k>=1;k--){
+          const a=k/CS*Math.PI/2;
+          rings.push(makeRing(0,Math.cos(a),-Math.sin(a)*r0));
+        }
+      }
+      for(let i=0;i<=SEG;i++) rings.push(makeRing(i,1,0));
+      if(capE){
+        const r1=Math.min(prm[SEG].w,(prm[SEG].dF+prm[SEG].dB)/2);
+        const CS=8;
+        for(let k=1;k<=CS;k++){
+          const a=k/CS*Math.PI/2;
+          rings.push(makeRing(SEG,Math.cos(a),Math.sin(a)*r1));
+        }
+      }
+      for(let r=0;r<rings.length-1;r++){
+        for(let j=0;j<RAD;j++){
+          const j2=(j+1)%RAD, a=rings[r][j], b=rings[r][j2], c=rings[r+1][j2], d=rings[r+1][j];
+          idx.push(a,d,b, b,d,c);
+        }
+      }
+      const g=new THREE.BufferGeometry();
+      g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+      g.setIndex(idx);
+      g.computeVertexNormals();
+      return g;
+    }
+
+    /* ----------------------------------------------------------------------
+       STEP 2: 骨格
+       standing を基準に、ポーズは関節角として与える。
+       骨長 × 方向ベクトルの前進計算なので、どのポーズでも骨長は変化しない。
+       ---------------------------------------------------------------------- */
+
+    // 下向き(0,-1,0)を基準に pitch(前が正) / abduct(外側が正) で方向を作る
+    function dir(pitch,abduct,side){
+      const v=V3(0,-1,0);
+      v.applyAxisAngle(V3(0,0,1),side*abduct*D2R);
+      v.applyAxisAngle(V3(1,0,0),-pitch*D2R);
+      return v;
+    }
+
+    // 4姿勢。人体そのものは作り直さず、この角度だけが変わる
+    const POSES = {
+      standing : { rootY:P.HIP, rootZ: 0.00, spine:  2, head: 0,
+                   hip: -1, knee:  3, ankle:  0, footPitch: 0,
+                   armPitch:  3, armAbduct:  9, elbow:  6, wristPitch: 4 },
+      crouching: { rootY:0.215, rootZ: 0.05, spine: 46, head:-40,
+                   hip:104, knee:-146, ankle: 40, footPitch: 0,
+                   armPitch: 40, armAbduct:-16, elbow:108, wristPitch: 62 },
+      seated   : { rootY:0.300, rootZ:-0.02, spine:  6, head: -5,
+                   hip: 86, knee:-86, ankle:  2, footPitch: 0,
+                   armPitch:  8, armAbduct: 16, elbow: 32, wristPitch: 6 },
+      leaning  : { rootY:P.HIP-0.012, rootZ:-0.50, spine:-16, head: 22,
+                   // 支持脚(R)は直立寄り。逃がす脚(L)は前を通って交差させる（壁にもたれる体重移動）
+                   hip: -1, knee:  3, ankle:  0, footPitch: 0,
+                   hipL: 26, kneeL:-38, ankleL: 0, footPitchL: 0,
+                   hipAbductL:-22, kneeAbductL:-10,
+                   // armAbduct は正値が体の外向き。負値にすると腕が胴体にめり込むため両腕とも正値にする。
+                   // 支持脚側の腕(R)は肘を外・後ろへ引き、elbowAbductR で前腕だけ内へ折って手を腰の後ろに回す
+                   armPitch:  6, armAbduct: 10, elbow: 10, wristPitch: 4,
+                   armPitchR:-24, armAbductR: 26, elbowR: 30, wristPitchR: 0,
+                   elbowAbductR:-60, wristAbductR:-60,
+                   armPitchL: 12, armAbductL: 14, elbowL: 20, wristPitchL: 8 },
+      armsCrossed: { rootY:P.HIP, rootZ: 0.00, spine:  2, head: 0,
+                   // 支持脚(L)は直立のまま。右脚(R)だけ軽く膝を緩めた寛いだ立ち方にする
+                   hip: -1, knee:  3, ankle:  0, footPitch: 0,
+                   hipR:  8, kneeR:-18,
+                   // elbowAbduct で前腕だけをほぼ真横に倒し、上腹部の前で左右の前腕を重ねる。
+                   // 手は前腕の延長のまま反対側の肘まで届かせる（wristAbduct を同値にする）
+                   armPitch: 26, armAbduct:  9, elbow: 60, wristPitch: 0,
+                   elbowAbduct:-84, wristAbduct:-84,
+                   // 右腕を上・手前、左腕を下・奥にして重なりを作る
+                   armPitchR: 32, elbowR: 58,
+                   armPitchL: 22, elbowL: 68 }
+    };
+
+    /**
+     * 胴体チェーン: 骨盤(HIP)を基点に、上へ行くほど脊柱の回転を強める。
+     * 各セグメントは長さを保ったまま回されるので、胴体長はポーズで変わらない。
+     */
+    function bendTrunk(pose){
+      const root=V3(0,pose.rootY*H,pose.rootZ*H);
+      const top=P.SKULL_BASE-P.HIP;
+      const ease=y=>{const t=THREE.MathUtils.clamp(y/top,0,1);return t*t*(3-2*t);};
+      const local=TRUNK.map(s=>({s,l:V3(0,(s.y-P.HIP)*H,s.z*H),a:pose.spine*ease(s.y-P.HIP)*D2R}));
+      let anchor=0;
+      for(let i=1;i<local.length;i++) if(Math.abs(local[i].s.y-P.HIP)<Math.abs(local[anchor].s.y-P.HIP)) anchor=i;
+      const out=new Array(local.length);
+      out[anchor]={p:root.clone(),a:local[anchor].a};
+      const rot=(v,a)=>v.clone().applyAxisAngle(V3(1,0,0),a);   // 正の角度で前傾する
+      for(let i=anchor+1;i<local.length;i++){
+        const d=V3().subVectors(local[i].l,local[i-1].l);
+        out[i]={p:out[i-1].p.clone().add(rot(d,local[i].a)),a:local[i].a};
+      }
+      for(let i=anchor-1;i>=0;i--){
+        const d=V3().subVectors(local[i].l,local[i+1].l);
+        out[i]={p:out[i+1].p.clone().add(rot(d,local[i].a)),a:local[i].a};
+      }
+      return out;
+    }
+    // 胴体チェーン上の任意の高さの位置と回転を取り出す
+    function atHeight(chain,y){
+      for(let i=0;i<chain.length-1;i++){
+        const a=TRUNK[i].y,b=TRUNK[i+1].y;
+        if(y>=a&&y<=b){
+          const f=(y-a)/(b-a);
+          return {p:chain[i].p.clone().lerp(chain[i+1].p,f),a:THREE.MathUtils.lerp(chain[i].a,chain[i+1].a,f)};
+        }
+      }
+      return {p:chain[chain.length-1].p.clone(),a:chain[chain.length-1].a};
+    }
+
+    /** 骨格生成: 名前付きジョイント一式を返す */
+    function buildSkeleton(poseName){
+      const q=POSES[poseName]||POSES.standing, chain=bendTrunk(q), J={_chain:chain,_pose:q};
+      const off=(base,x,y,z)=>base.p.clone().add(V3(x,y,z).applyAxisAngle(V3(1,0,0),base.a));
+
+      const pelvis=atHeight(chain,P.HIP), girdle=atHeight(chain,P.GIRDLE), skull=atHeight(chain,P.SKULL_BASE);
+      J.pelvis=pelvis.p.clone();
+      J.chest=atHeight(chain,P.CHEST).p.clone();
+      J.neck=atHeight(chain,P.NECK).p.clone();
+      J.head=off(skull,0,(P.HEAD_C-P.SKULL_BASE)*H,-0.004*H);
+      J.headAngle=skull.a+q.head*D2R;
+
+      [['L',-1],['R',1]].forEach(([S,sg])=>{
+        // 左右非対称ポーズ用：q.xxxL/xxxR があればそちらを優先し、無ければ左右共通のq.xxxを使う
+        const o=k=>q[k+S]??q[k];
+        const qHip=o('hip'), qKnee=o('knee'), qFootPitch=o('footPitch');
+        const qHipAbduct=q['hipAbduct'+S]??1.2, qKneeAbduct=q['kneeAbduct'+S]??0.6;
+        const qArmPitch=o('armPitch'), qArmAbduct=o('armAbduct'), qElbow=o('elbow'), qWristPitch=o('wristPitch');
+        // 前腕・手の外転は既定では上腕の0.5倍/0.3倍。腕組みのように前腕だけ体の前へ倒す場合は個別に上書きする
+        const qElbowAbduct=q['elbowAbduct'+S]??q.elbowAbduct??qArmAbduct*0.5, qWristAbduct=q['wristAbduct'+S]??q.wristAbduct??qArmAbduct*0.3;
+        // 脚: 股関節 → 膝 → 足首 → 爪先（固定骨長のFK）
+        const hip=off(pelvis,sg*P.HIP_X*H,-0.006*H,0);
+        const knee=hip.clone().addScaledVector(dir(qHip,qHipAbduct,sg),P.THIGH*H);
+        const ankle=knee.clone().addScaledVector(dir(qHip+qKnee,qKneeAbduct,sg),P.SHANK*H);
+        const toe=ankle.clone().add(V3(0,0,1).applyAxisAngle(V3(1,0,0),-qFootPitch*D2R).multiplyScalar((P.FOOT_LEN-P.HEEL_LEN)*H));
+        J['hip'+S]=hip; J['knee'+S]=knee; J['ankle'+S]=ankle; J['foot'+S]=toe;
+        // 腕: 肩 → 肘 → 手首 → 手
+        const sh=off(girdle,sg*P.SHOULDER_X*H,(P.SHOULDER_J-P.GIRDLE)*H,0.004*H);
+        const el=sh.clone().addScaledVector(dir(qArmPitch,qArmAbduct,sg),P.UPPER_ARM*H);
+        const wr=el.clone().addScaledVector(dir(qArmPitch+qElbow,qElbowAbduct,sg),P.FOREARM*H);
+        const hd=wr.clone().addScaledVector(dir(qArmPitch+qElbow+qWristPitch,qWristAbduct,sg),P.HAND*H);
+        J['shoulder'+S]=sh; J['elbow'+S]=el; J['hand'+S]=hd; J['wrist'+S]=wr;
+      });
+      return J;
+    }
+
+    /* ----------------------------------------------------------------------
+       STEP 4-9: ボリューム生成
+       ---------------------------------------------------------------------- */
+
+    // 胴体: 骨盤 → 腰 → 腹 → 胸郭 → 肩甲帯 → 首 → 頭蓋底 を1本のロフトで作る
+    function buildTrunk(J){
+      const stations=J._chain.map((c,i)=>({p:c.p.clone(),w:TRUNK[i].w*H,dF:TRUNK[i].dF*H,dB:TRUNK[i].dB*H,n:TRUNK[i].n,sep:(TRUNK[i].sep||0)*H,pinch:TRUNK[i].pinch||0}));
+      return loft(stations,{radial:36,seg:140,capStart:false});
+    }
+
+    // 脚: 股関節 → 大腿 → 膝 → ふくらはぎ → 足首 を1本のロフトで作る
+    function buildLeg(J,S){
+      const hip=J['hip'+S],knee=J['knee'+S],ankle=J['ankle'+S];
+      const sg=S==='L'?-1:1;
+      const stations=LEG.map(s=>{
+        const a=s.seg==='thigh'?hip:knee, b=s.seg==='thigh'?knee:ankle;
+        const p=a.clone().lerp(b,s.t);
+        if(s.ox) p.x+=sg*s.ox*H;   // 骨盤側は内側へ寄せて腰との段差をなくす
+        return {p,w:s.w*H,dF:s.dF*H,dB:s.dB*H,n:s.n};
+      });
+      return loft(stations,{radial:26,seg:64,capStart:false});
+    }
+
+    // 腕: 肩甲帯の内側 → 三角筋 → 上腕 → 肘 → 前腕 → 手首 → 手 を1本のロフトで作る
+    function buildArm(J,S){
+      const sh=J['shoulder'+S],el=J['elbow'+S],wr=J['wrist'+S],hd=J['hand'+S];
+      const pair={upper:[sh,el],fore:[el,wr],hand:[wr,hd]};
+      const sg=S==='L'?-1:1;
+      const stations=ARM.map(s=>{
+        const[a,b]=pair[s.seg];
+        const p=a.clone().lerp(b,s.t);
+        if(s.ox) p.x+=sg*s.ox*H;   // 付け根は内側へ寄せ、開口を胴体の中に隠す
+        return {p,w:s.w*H,dF:s.dF*H,dB:s.dB*H,n:s.n};
+      });
+      return loft(stations,{radial:22,seg:60});
+    }
+
+    /* ----------------------------------------------------------------------
+       STEP 13-17: 頭部
+       頭蓋と顔面を1枚の連続した面として生成する。
+       目玉・眉毛・唇・鼻を別Geometryで貼らない。すべて同じ面の変位で作る。
+       ---------------------------------------------------------------------- */
+    function buildHead(){
+      const RU=52, RV=40;
+      const HW=P.HEAD_W*H, HH=P.HEAD_H*H, HD=P.HEAD_D*H, S=H/1.8;
+      const gauss=(v,c,s)=>Math.exp(-((v-c)/s)*((v-c)/s));
+      const smooth=(a,b,t)=>{const x=THREE.MathUtils.clamp((t-a)/(b-a),0,1);return x*x*(3-2*x);};
+      const pos=[],idx=[];
+      for(let iv=0;iv<=RV;iv++){
+        const phi=iv/RV*Math.PI, uy=Math.cos(phi), ur=Math.sin(phi);
+        for(let iu=0;iu<RU;iu++){
+          const th=iu/RU*Math.PI*2;                 // th=0 が正面(+Z)
+          const ux=ur*Math.sin(th), uz=ur*Math.cos(th);
+          let px=ux*HW, py=uy*HH, pz=uz*HD;
+
+          // 頭蓋: 下方を顎に向かって絞る／後頭部をわずかに膨らませる
+          const jaw=smooth(-0.26,-0.98,uy);
+          px*=1-0.36*jaw;
+          if(pz<0){ pz*=(1-0.30*jaw)*(1+0.07*gauss(uy,0.12,0.55)); }
+          else {                                     // 顔面は球より平らな「面」にする
+            const face=Math.max(0,uz)*smooth(0.44,0.02,uy);   // 眉から下の顔面
+            pz*=(1-0.20*jaw)*(1-0.09*Math.max(0,uz)-0.11*face);
+          }
+
+          // 顔の座標（-1..1）。正面ほど効き、側面へ滑らかに消える
+          const fx=px/HW, fy=py/HH, fw=Math.max(0,uz);
+          let d=0;
+          d+=0.0105*gauss(fy,0.13,0.10)*gauss(fx,0,0.60);                        // 眉骨
+          d-=0.0105*(gauss(fx,0.42,0.21)+gauss(fx,-0.42,0.21))*gauss(fy,0.00,0.13);  // 眼窩（浅い後退）
+          d+=0.0275*gauss(fx,0,0.12)*smooth(0.26,-0.04,fy)*smooth(-0.42,-0.26,fy);   // 鼻根→鼻梁→鼻先
+          d+=0.0070*(gauss(fx,0.150,0.08)+gauss(fx,-0.150,0.08))*gauss(fy,-0.29,0.07); // 小鼻
+          d+=0.0090*(gauss(fx,0.54,0.30)+gauss(fx,-0.54,0.30))*gauss(fy,-0.20,0.26);   // 頬
+          d-=0.0055*gauss(fy,-0.52,0.11)*gauss(fx,0,0.34);                       // 口元（わずかな後退）
+          d+=0.0095*gauss(fy,-0.84,0.15)*gauss(fx,0,0.30);                       // 顎の丸み
+          pz+=d*S*fw;
+
+          pos.push(px,py,pz);
+        }
+      }
+      for(let iv=0;iv<RV;iv++)for(let iu=0;iu<RU;iu++){
+        const a=iv*RU+iu,b=iv*RU+(iu+1)%RU,c=(iv+1)*RU+(iu+1)%RU,e=(iv+1)*RU+iu;
+        idx.push(a,e,b, b,e,c);
+      }
+      const g=new THREE.BufferGeometry();
+      g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+      g.setIndex(idx);
+      g.computeVertexNormals();
+      return g;
+    }
+
+    // 足: 踵 → 甲 → 爪先
+    function buildFoot(J,S){
+      const ankle=J['ankle'+S],toe=J['foot'+S];
+      const fwd=V3().subVectors(toe,ankle).setY(0).normalize();
+      const p=(fz,fy)=>ankle.clone().addScaledVector(fwd,fz*H).add(V3(0,fy*H,0));
+      const stations=[
+        {p:p(-P.HEEL_LEN,0.010),      w:0.022,dF:0.018,dB:0.018,n:2.3},
+        {p:p(-P.HEEL_LEN*0.3,-0.005), w:0.027,dF:0.024,dB:0.024,n:2.4},
+        {p:p(0.022,-0.019),           w:0.030,dF:0.022,dB:0.022,n:2.5},
+        {p:p(0.072,-0.026),           w:P.FOOT_W,dF:0.014,dB:0.014,n:2.6},
+        {p:p(P.FOOT_LEN-P.HEEL_LEN,-0.028), w:0.024,dF:0.009,dB:0.009,n:2.6}
+      ].map(s=>({p:s.p,w:s.w*H,dF:s.dF*H,dB:s.dB*H,n:s.n}));
+      return loft(stations,{radial:22,seg:40,front:V3(0,1,0)});
+    }
+
+    // 2点間を結ぶ細い円柱（メガネのブリッジ・テンプル用）
+    function strut(a,b,radius,mat){
+      const dir=b.clone().sub(a), len=dir.length();
+      const m=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,len,8),mat);
+      m.position.copy(a).addScaledVector(dir,0.5);
+      m.quaternion.setFromUnitVectors(V3(0,1,0),dir.normalize());
+      m.castShadow=true;
+      return m;
+    }
+
+    // メガネ（細いメタルフレーム）: 頭部ローカル座標(J.headが原点)で組み立てる。
+    // 目の中心はbuildHead()の眼窩(fx≈±0.42,fy≈0)の実頂点をサンプリングして決めた実測値。
+    function buildGlasses(){
+      const g=new THREE.Group();
+      const EYE_X=0.040, EYE_Y=0.022, EYE_Z=0.098;   // 目の中心（実測ベース）
+      const LENS_R=0.021, TUBE_R=0.0016;
+      const HW=P.HEAD_W*H;                            // 頭部の左右半幅（buildHeadと同じ定義）
+      const mat=glassesMaterial;
+      [-1,1].forEach(side=>{
+        const lens=new THREE.Mesh(new THREE.TorusGeometry(LENS_R,TUBE_R,10,28),mat);
+        lens.position.set(side*EYE_X,EYE_Y,EYE_Z);
+        lens.castShadow=true; g.add(lens);
+        // テンプル（つる）: レンズ外側から頭の側面（耳の高さ・幅）まで直線で結ぶ
+        const lensOuter=V3(side*(EYE_X+LENS_R),EYE_Y,EYE_Z);
+        const earPoint=V3(side*HW*0.97,EYE_Y-0.03,0);
+        g.add(strut(lensOuter,earPoint,TUBE_R,mat));
+      });
+      // ブリッジ（鼻あて）: 左右レンズの内側をつなぐ
+      g.add(strut(V3(-(EYE_X-LENS_R),EYE_Y,EYE_Z),V3(EYE_X-LENS_R,EYE_Y,EYE_Z),TUBE_R,mat));
+      return g;
+    }
+
+    // 角丸長方形のTHREE.Shapeを作る（ボストン型フレームの外形・レンズ形状に使う）
+    function roundedRectShape(w,h,r){
+      const s=new THREE.Shape(), x=-w/2, y=-h/2;
+      s.moveTo(x+r,y);
+      s.lineTo(x+w-r,y);
+      s.quadraticCurveTo(x+w,y,x+w,y+r);
+      s.lineTo(x+w,y+h-r);
+      s.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+      s.lineTo(x+r,y+h);
+      s.quadraticCurveTo(x,y+h,x,y+h-r);
+      s.lineTo(x,y+r);
+      s.quadraticCurveTo(x,y,x+r,y);
+      return s;
+    }
+
+    // サングラス（ボストン型・黒レンズ）: buildGlassesと同じ目の中心・頭部ローカル座標を使い、
+    // 角丸長方形の輪郭でボストン型（丸みを帯びた四角形）のレンズ・フレームを組み立てる。
+    function buildSunglasses(){
+      const g=new THREE.Group();
+      const EYE_X=0.040, EYE_Y=0.022, EYE_Z=0.098;
+      const LENS_W=0.050, LENS_H=0.040, LENS_RADIUS=0.014;   // レンズの幅・高さ・角丸半径
+      const FRAME_T=0.005, FRAME_D=0.006, TUBE_R=0.0038;      // フレームの太さ・厚み、テンプル/ブリッジの太さ
+      const HW=P.HEAD_W*H;
+      const lensShape=roundedRectShape(LENS_W,LENS_H,LENS_RADIUS);
+      const lensGeo=new THREE.ShapeGeometry(lensShape,16);
+      const outerShape=roundedRectShape(LENS_W+FRAME_T*2,LENS_H+FRAME_T*2,LENS_RADIUS+FRAME_T);
+      outerShape.holes.push(roundedRectShape(LENS_W,LENS_H,LENS_RADIUS));
+      const frameGeo=new THREE.ExtrudeGeometry(outerShape,{depth:FRAME_D,bevelEnabled:false,curveSegments:16});
+      frameGeo.translate(0,0,-FRAME_D/2);
+      [-1,1].forEach(side=>{
+        const lens=new THREE.Mesh(lensGeo,sunglassLensMaterial);
+        lens.position.set(side*EYE_X,EYE_Y,EYE_Z-0.0015);
+        lens.castShadow=true; g.add(lens);
+        const frame=new THREE.Mesh(frameGeo,sunglassFrameMaterial);
+        frame.position.set(side*EYE_X,EYE_Y,EYE_Z);
+        frame.castShadow=true; g.add(frame);
+        const lensOuter=V3(side*(EYE_X+LENS_W/2+FRAME_T),EYE_Y,EYE_Z);
+        const earPoint=V3(side*HW*0.97,EYE_Y-0.03,0);
+        g.add(strut(lensOuter,earPoint,TUBE_R,sunglassFrameMaterial));
+      });
+      g.add(strut(V3(-(EYE_X-LENS_W/2-FRAME_T*0.5),EYE_Y,EYE_Z),V3(EYE_X-LENS_W/2-FRAME_T*0.5,EYE_Y,EYE_Z),TUBE_R,sunglassFrameMaterial));
+      return g;
+    }
+
+    // ネコ耳: 頭頂部左右に低ポリの三角錐を配置。マネキン本体と同じmaterialを使い、白黒ホリの色変更に自動追従させる。
+    function buildCatEars(){
+      const g=new THREE.Group();
+      const HW=P.HEAD_W*H, HH=P.HEAD_H*H;
+      const EAR_R=HW*0.34, EAR_H=HH*0.62;
+      [-1,1].forEach(side=>{
+        const ear=new THREE.Mesh(new THREE.ConeGeometry(EAR_R,EAR_H,4),material);
+        ear.position.set(side*HW*0.52,HH*0.92,-0.006);
+        ear.rotation.z=side*-0.30;
+        ear.rotation.x=-0.18;
+        ear.rotation.y=Math.PI/4;
+        ear.castShadow=true;
+        g.add(ear);
+      });
+      return g;
+    }
+
+    /* ----------------------------------------------------------------------
+       組み立て
+       ---------------------------------------------------------------------- */
+    const meshCache={};
+    function buildMannequin(poseName){
+      const g=new THREE.Group(), J=buildSkeleton(poseName);
+      // 影は落とすが自身では受けない（曲面が細かいため、受影にするとシャドウアクネが出る）
+      const add=geo=>{const m=new THREE.Mesh(geo,material);m.castShadow=true;g.add(m);};
+      add(buildTrunk(J));
+      ['L','R'].forEach(S=>{add(buildLeg(J,S));add(buildFoot(J,S));add(buildArm(J,S));});
+      const head=new THREE.Mesh(buildHead(),material);
+      head.position.copy(J.head); head.rotation.x=J.headAngle;
+      head.castShadow=true; g.add(head);
+      // 接地: どのポーズでも最下点が床(y=0)に来るようにする
+      const box=new THREE.Box3().setFromObject(g);
+      g.position.y=-box.min.y;
+      return g;
+    }
+    function mannequin(pose){
+      return meshCache[pose]||(meshCache[pose]=buildMannequin(pose));
+    }
+    let pose='standing',showGlasses=false,showSunglasses=false,showCatEars=false,model=mannequin(pose);scene.add(model);
+    function syncHeadAccessories(){const J=buildSkeleton(pose);[glasses,sunglasses,catEars].forEach(g=>{g.position.copy(J.head);g.rotation.x=J.headAngle});}
+    syncHeadAccessories();
+    const motionBarsGroup=new THREE.Group();scene.add(motionBarsGroup);
+    let motionBars=[];
+
+    /* ======================================================================
+       リグ — 30灯。座標はライブハウス標準トラス配置
+       PAR 6列×4行(天井 y=4) のうち中央4灯がムービング / サイド4灯 / バック足元2灯
+       ====================================================================== */
+    const RIG=(()=>{
+      const xs=[-3,-1.8,-0.6,0.6,1.8,3], zs=[-2,-0.833,0.333,1.5], a=[]; let id=0;
+      for(let r=0;r<4;r++) for(let c=0;c<6;c++) a.push({id:id++,type:'par',pos:V3(xs[c],4,zs[r]),col:c,row:r});
+      [{r:3,c:2},{r:3,c:3},{r:2,c:2},{r:2,c:3}].forEach(m=>{const j=m.r*6+m.c; if(a[j]) a[j].type='moving';});
+      a.push({id:id++,type:'side',pos:V3(-4.2,2.5,-0.8)},{id:id++,type:'side',pos:V3(-4.2,2.5,0.9)},
+             {id:id++,type:'side',pos:V3( 4.2,2.5,-0.8)},{id:id++,type:'side',pos:V3( 4.2,2.5,0.9)});
+      a.push({id:id++,type:'uplight',pos:V3(-2,0.15,-2.6)},{id:id++,type:'uplight',pos:V3(2,0.15,-2.6)});
+      return a;
+    })();
+    const N=RIG.length;
+
+    // 基準距離3mでの被写体面照度[lx]。小規模ライブハウスのLED灯体を想定した実効値
+    const REF_DIST=3, FIX_LUX={par:36,moving:70,side:25,uplight:15};
+    const CONE={par:0.22,moving:0.13,side:0.26,uplight:0.40};   // ビーム半角[rad]
+    const C_INCIDENT=2.5;                                       // 入射光式の定数 E = 2.5 × 2^EV100
+    const REAL_LIGHTS=8, SHADOW_LIGHTS=2;                       // 実光源とシャドウマップの上限（下の説明を参照）
+    const TONE_K=1.2;                                           // 適正露出のとき画面が中庸になるよう決めた係数
+
+    const SCENES=[
+      {id:'solo',  name:'弾き語り',  desc:'柔らかウォーム', color:'#ffcc88', bright:45,  tilt:-15, alt:'#ffb060'},
+      {id:'band',  name:'バンド',    desc:'ナチュラル白',   color:'#fff4e0', bright:70,  tilt:-25, alt:'#cfe4ff'},
+      {id:'rock',  name:'ロック',    desc:'赤×金 拡散',    color:'#ff2a2a', bright:85,  tilt:-35, alt:'#ffcc44'},
+      {id:'edm',   name:'EDM',       desc:'青×紫 グロー',   color:'#2a7fff', bright:90,  tilt:-45, alt:'#8a2aff'},
+      {id:'ballad',name:'バラード',  desc:'ピンク霞',       color:'#ff7fca', bright:38,  tilt:-10, alt:'#ff4fa3'},
+      {id:'encore',name:'アンコール',desc:'全開 金',        color:'#ffcc44', bright:100, tilt:-50, alt:'#fff0c0'}
+    ];
+    const SWATCHES=['#fff4e0','#ffcc88','#ff2a2a','#ff7fca','#2a7fff','#8a2aff','#2aff8a','#ffcc44'];
+
+    /* --- 卓の状態 -------------------------------------------------------- */
+    const board={
+      sceneId:'band', bright:70, tilt:-25, soft:62, blackout:false, smoke:false, rainbow:false,
+      group:'all', color:'#fff4e0',
+      chase:{mode:'front-back',speed:1.2,fade:0.6,loop:true,playing:false},
+      blink:{mode:'all',speed:1.8,playing:false},
+      fixtures:RIG.map(()=>({on:true,color:'#fff4e0',level:100}))
+    };
+    const randPhase=RIG.map(()=>Math.random()*Math.PI*2);   // ランダムモード用。灯体ごとに固定
+
+    /* --- グループ -------------------------------------------------------- */
+    const GROUPS={
+      all:      ()=>RIG.map(f=>f.id),
+      front:    ()=>RIG.filter(f=>f.pos.z>0).map(f=>f.id),
+      back:     ()=>RIG.filter(f=>f.pos.z<=0).map(f=>f.id),
+      par:      ()=>RIG.filter(f=>f.type==='par').map(f=>f.id),
+      moving:   ()=>RIG.filter(f=>f.type==='moving').map(f=>f.id),
+      side:     ()=>RIG.filter(f=>f.type==='side').map(f=>f.id),
+      uplight:  ()=>RIG.filter(f=>f.type==='uplight').map(f=>f.id)
+    };
+    const selectedIds=()=>GROUPS[board.group]();
+
+    /* --- 灯体の向き ------------------------------------------------------
+       PAR はチルト角どおりに床を狙う（前列は客席、後列は演者に落ちる）。
+       ムービングは常に演者を追い、サイドは腰から上、バック足元は背景幕を舐める。 */
+    const D2R_=Math.PI/180;
+    function aimOf(f){
+      if(f.type==='moving') return SUBJECT.clone();
+      if(f.type==='side')   return V3(0,1.5,f.pos.z*0.3);
+      if(f.type==='uplight')return V3(f.pos.x*0.6,3,-3.1);
+      // チルトは「垂直からステージ中央へ倒す角度」。前トラスは奥へ、後トラスは手前へ振る
+      const off=Math.tan(-board.tilt*D2R_)*f.pos.y, sign=f.pos.z>0?-1:1;
+      let z=f.pos.z+sign*off;
+      z=sign<0?Math.max(z,-0.8):Math.min(z,0.8);   // 中央を行き過ぎない
+      return V3(f.pos.x*0.55,0,z);
+    }
+
+    /* --- チェイス／ブリンク（時刻 t の純関数。表示なしで数値検証できる） --- */
+    let orderIdx=new Array(N).fill(0);
+    function rebuildOrder(){
+      const m=board.chase.mode;
+      const key = m==='front-back' ? (f=>f.pos.z)
+                : m==='left-right' ? (f=>f.pos.x)
+                : m==='center-out' ? (f=>Math.hypot(f.pos.x,f.pos.z))
+                : (f=>f.id);
+      const sorted=[...RIG].sort((a,b)=>key(a)-key(b));
+      sorted.forEach((f,k)=>{orderIdx[f.id]=k});
+    }
+    rebuildOrder();
+    function chaseMul(i,t){
+      const c=board.chase; if(!c.playing) return 1;
+      const k=orderIdx[i];
+      if(c.mode==='chase'){ const p=(t*c.speed)%N; return Math.floor(p)===k?1:0.08; }
+      const phase = c.mode==='random' ? randPhase[i] : k/Math.max(1,N-1)*Math.PI*1.2;
+      const y=(Math.sin(t*c.speed-phase*3)+1)/2;
+      return Math.max(0.08,(1-c.fade)+c.fade*y);
+    }
+    function blinkMul(i,t){
+      const b=board.blink; if(!b.playing) return 1;
+      const ph = b.mode==='all' ? 0 : randPhase[i]*3;
+      return Math.sin(t*b.speed*Math.PI*2+ph)>0?1:0.06;
+    }
+    // 0〜1。マスター明るさ・灯体レベル・ブラックアウト・チェイス・ブリンクをすべて含む
+    function levelAt(i,t){
+      const s=board.fixtures[i];
+      if(!s.on||board.blackout) return 0;
+      return (board.bright/100)*(s.level/100)*chaseMul(i,t)*blinkMul(i,t);
+    }
+    const _c=new THREE.Color();
+    function colorAt(i,t){
+      if(board.rainbow) return _c.setHSL(((t*0.18)+orderIdx[i]/N*0.3)%1,0.85,0.6).clone();
+      return new THREE.Color(board.fixtures[i].color);
+    }
+
+    /* --- 被写体面の照度 --------------------------------------------------
+       コーン内かどうかを角度で判定し、逆二乗で距離減衰させる。単位は lx。 */
+    function luxOf(i,t){
+      const f=RIG[i], lv=levelAt(i,t);
+      if(lv<=0) return 0;
+      const toSub=SUBJECT.clone().sub(f.pos), d=Math.max(0.5,toSub.length());
+      const axis=aimOf(f).sub(f.pos).normalize();
+      const ang=Math.acos(THREE.MathUtils.clamp(toSub.normalize().dot(axis),-1,1));
+      const cone=CONE[f.type], pen=THREE.MathUtils.lerp(0.25,0.9,board.soft/100);
+      const beam=1-THREE.MathUtils.smoothstep(ang,cone*(1-pen),cone);
+      if(beam<=0) return 0;
+      return FIX_LUX[f.type]*lv*beam*(REF_DIST*REF_DIST)/(d*d);
+    }
+    function stageLux(t){let s=0;for(let i=0;i<N;i++)s+=luxOf(i,t);return s}
+
+    /* ======================================================================
+       露出 — 舞台灯は連続光なのでガイドナンバー方式は使わない。
+       入射光式 EV100 = log2(E/2.5) と、カメラ側 EV100 = log2(F²/T) - log2(ISO/100) の差を段数で出す。
+       ====================================================================== */
+    const ISO_STOPS=[50,100,200,400,800,1600,3200,6400,12800,25600];
+    const F_STOPS=[1,1.4,2,2.8,4,5.6,8,11,16,22,32];
+    const SHUTTER_STOPS=[1/4,1/8,1/15,1/30,1/60,1/125,1/250,1/500,1/1000,1/2000,1/4000,1/8000];
+    const BLUR_LIMIT=1/60;          // これより遅いと被写体ブレ
+    const FLICKER_LIMIT=1/250;      // これより速いとLEDのPWM調光で色ムラ・横縞が出やすい
+    const SAFE_ACTION=1/125;        // 演者の動きを止められる目安
+    const NOISE_ISO=6400;
+    let expo={iso:1600,fstop:2.8,shutter:1/250,evCam:0,evScene:0,over:0,lux:0};
+    const evCamOf=(iso,f,t)=>Math.log2(f*f/t)-Math.log2(iso/100);
+    const evSceneOf=lux=>Math.log2(Math.max(lux,1e-4)/C_INCIDENT);
+    function calcExposure(t,luxIn){
+      const iso=ISO_STOPS[+document.querySelector('#isoR').value],
+            fstop=F_STOPS[+document.querySelector('#fstopR').value],
+            shutter=SHUTTER_STOPS[+document.querySelector('#shutterR').value];
+      const lux=(luxIn===undefined)?stageLux(t):luxIn, evCam=evCamOf(iso,fstop,shutter), evScene=evSceneOf(lux);
+      expo={iso,fstop,shutter,evCam,evScene,over:evScene-evCam,lux};
+      const den=Math.round(1/shutter), sgn=v=>(v>0?'+':'')+v.toFixed(1);
+      document.querySelector('#v-iso').textContent=iso;
+      document.querySelector('#v-fstop').textContent='F'+fstop;
+      document.querySelector('#v-shutter').textContent='1/'+den;
+      document.querySelector('#expoBadge').textContent=Math.abs(expo.over)<0.3?'適正':(sgn(expo.over)+'段');
+      const judge=Math.abs(expo.over)<0.3?'<span class="ok">適正</span>':(expo.over>0?'オーバー':'アンダー');
+      document.querySelector('#expoReadout').innerHTML=
+        '<strong>露出 '+sgn(expo.over)+'段 — '+judge+'</strong>'+
+        'ステージ照度 '+Math.round(lux)+' lx（EV'+expo.evScene.toFixed(1)+'）／カメラ EV'+expo.evCam.toFixed(1)+'。'+
+        'ライブはストロボを使えないので、明るさはISO・絞り・シャッターの3つだけで作ります。';
+      const w=[];
+      if(shutter>BLUR_LIMIT) w.push('⚠ 1/'+den+' は 1/60 より遅く、演者の動きがブレます。');
+      if(shutter<FLICKER_LIMIT) w.push('⚠ 1/'+den+' は 1/250 より速く、LED灯体のフリッカーで色ムラや横縞が出ることがあります。');
+      if(iso>=NOISE_ISO) w.push('⚠ ISO'+iso+' は暗部にノイズが乗ります。');
+      document.querySelector('#expoWarn').innerHTML=w.join('<br>');
+    }
+
+    /* ======================================================================
+       灯体の見た目 — 筐体＋加算ビーム。30灯すべてに出す（負荷が軽い）
+       実光源(SpotLight)は寄与の大きい 8 灯まで、シャドウマップは上位 2 灯まで。
+       WebGLのライト数とシャドウマップのコストに対する明示的な上限で、
+       残り 22 灯の寄与は AmbientLight に色平均として足し込んで補う。
+       ====================================================================== */
+    const rigGroup=new THREE.Group(); scene.add(rigGroup);
+    // プールの縁をぼかすための放射グラデーション。ハードエッジの円板に見えるのを防ぐ
+    const poolTex=(()=>{
+      const c=document.createElement('canvas'); c.width=c.height=128;
+      const x=c.getContext('2d'), g=x.createRadialGradient(64,64,0,64,64,64);
+      g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(0.55,'rgba(255,255,255,0.72)');
+      g.addColorStop(0.85,'rgba(255,255,255,0.18)'); g.addColorStop(1,'rgba(255,255,255,0)');
+      x.fillStyle=g; x.fillRect(0,0,128,128);
+      const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
+    })();
+    // ビームは根元が明るく先へ行くほど散って薄くなる。円錐のUVは v=1 が頂点(灯体側)
+    const beamTex=(()=>{
+      const c=document.createElement('canvas'); c.width=4; c.height=64;
+      const x=c.getContext('2d'), g=x.createLinearGradient(0,64,0,0);
+      g.addColorStop(0,'rgba(255,255,255,0.06)'); g.addColorStop(0.55,'rgba(255,255,255,0.35)'); g.addColorStop(1,'rgba(255,255,255,1)');
+      x.fillStyle=g; x.fillRect(0,0,4,64);
+      const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
+    })();
+    const bodyGeo=new THREE.BoxGeometry(.16,.2,.16), moverGeo=new THREE.SphereGeometry(.13,14,10);
+    const gear=RIG.map(f=>{
+      const g=new THREE.Group();
+      const bodyMat=new THREE.MeshStandardMaterial({color:'#15151a',roughness:.7});
+      const body=new THREE.Mesh(f.type==='moving'?moverGeo:bodyGeo,bodyMat);
+      body.position.copy(f.pos); g.add(body);
+      // ビーム: 底面を開いた円錐。additive で重ねると煙の中の光条に見える
+      const beamMat=new THREE.MeshBasicMaterial({color:'#000000',map:beamTex,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+      const beam=new THREE.Mesh(new THREE.ConeGeometry(1,1,20,1,true),beamMat);
+      g.add(beam);
+      // 床のプール（実光源は上位8灯までなので、床の当たりはこの加算ディスクが担う）
+      const poolMat=new THREE.MeshBasicMaterial({color:'#000000',map:poolTex,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false});
+      const pool=new THREE.Mesh(new THREE.PlaneGeometry(2,2),poolMat);
+      pool.rotation.x=-Math.PI/2; pool.position.y=0.02; pool.visible=false; g.add(pool);
+      // 灯体そのものの発光点
+      const lensMat=new THREE.MeshBasicMaterial({color:'#ffcc88'});
+      const lens=new THREE.Mesh(new THREE.SphereGeometry(.055,10,8),lensMat);
+      lens.position.copy(f.pos); g.add(lens);
+      rigGroup.add(g);
+      return {body,bodyMat,beam,beamMat,lens,lensMat,pool,poolMat};
+    });
+    const spots=Array.from({length:REAL_LIGHTS},(_,k)=>{
+      const l=new THREE.SpotLight('#ffffff',0,0,0.3,0.5,2), t=new THREE.Object3D();
+      if(k<SHADOW_LIGHTS){l.castShadow=true;l.shadow.mapSize.set(1024,1024);l.shadow.bias=-0.0012;l.shadow.camera.near=0.5;l.shadow.camera.far=20;}
+      l.target=t; scene.add(l,t); return l;
+    });
+
+    /* --- スモーク（漂うパーティクル。静止画でもヘイズとして見える） -------- */
+    const SMOKE_N=420;
+    const smokePos=new Float32Array(SMOKE_N*3), smokeVel=new Float32Array(SMOKE_N*3);
+    for(let i=0;i<SMOKE_N;i++){
+      smokePos[i*3]=(Math.random()-0.5)*9; smokePos[i*3+1]=Math.random()*4.2; smokePos[i*3+2]=(Math.random()-0.5)*7;
+      smokeVel[i*3]=(Math.random()-0.5)*0.004; smokeVel[i*3+1]=0.004+Math.random()*0.006; smokeVel[i*3+2]=(Math.random()-0.5)*0.004;
+    }
+    const smokeGeo=new THREE.BufferGeometry();
+    smokeGeo.setAttribute('position',new THREE.BufferAttribute(smokePos,3));
+    const smoke=new THREE.Points(smokeGeo,new THREE.PointsMaterial({color:'#8fa3b8',size:.34,transparent:true,opacity:.05,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
+    smoke.visible=false; scene.add(smoke);
+    function updateSmoke(dt){
+      if(!board.smoke) return;
+      for(let i=0;i<SMOKE_N;i++){
+        smokePos[i*3]+=smokeVel[i*3]*dt*60; smokePos[i*3+1]+=smokeVel[i*3+1]*dt*60; smokePos[i*3+2]+=smokeVel[i*3+2]*dt*60;
+        if(smokePos[i*3+1]>4.4){smokePos[i*3+1]=0.15;smokePos[i*3]=(Math.random()-0.5)*9;smokePos[i*3+2]=(Math.random()-0.5)*7;}
+      }
+      smokeGeo.attributes.position.needsUpdate=true;
+    }
+
+    /* ======================================================================
+       毎フレームの更新 — 照度を計算し、上位灯を実光源に割り当て、露出を出す
+       ====================================================================== */
+    const UP=V3(0,1,0), _q=new THREE.Quaternion(), _v=new THREE.Vector3();
+    function updateScene(t){
+      const contrib=[];
+      for(let i=0;i<N;i++){
+        const f=RIG[i], lv=levelAt(i,t), col=colorAt(i,t), aim=aimOf(f), g=gear[i];
+        const lux=luxOf(i,t);
+        contrib.push({i,lux,lv,col,aim});
+        // 筐体・レンズ・ビーム・床のプール。
+        // これらは加算合成の板だが、色の強さを「その位置の照度」から作るので
+        // トーンマッピング（＝カメラの露出）を通しても実光源と同じように増減する。
+        const dir=aim.clone().sub(f.pos), len=Math.max(0.4,dir.length());
+        const cone=CONE[f.type], rad=Math.tan(cone)*len;
+        const aimLux=FIX_LUX[f.type]*lv*(REF_DIST*REF_DIST)/(len*len);   // 狙った先の照度[lx]
+        g.lens.visible=lv>0.001;
+        if(g.lens.visible) g.lensMat.color.copy(col).multiplyScalar(FIX_LUX[f.type]*lv*30);
+        g.beam.visible=lv>0.001;
+        if(g.beam.visible){
+          g.beam.position.copy(f.pos).addScaledVector(dir,0.5);
+          _q.setFromUnitVectors(UP,dir.clone().normalize().negate());
+          g.beam.quaternion.copy(_q);
+          g.beam.scale.set(rad,len,rad);
+          // スモークがなければ空気中の散乱はほとんど見えない
+          g.beamMat.color.copy(col).multiplyScalar(aimLux*(board.smoke?0.05:0.008));
+        }
+        // 床のプール。床を狙う灯体だけに出す（実光源は上位8灯までなので床の当たりはここが担う）
+        const onFloor=aim.y<0.05&&lv>0.001;
+        g.pool.visible=onFloor;
+        if(onFloor){
+          g.pool.position.set(aim.x,0.02,aim.z);
+          g.pool.scale.set(rad,rad,1);
+          g.poolMat.color.copy(col).multiplyScalar(aimLux*0.22);   // 床の拡散反射の輝度
+        }
+      }
+      contrib.sort((a,b)=>b.lux-a.lux);
+      // 上位を実光源へ
+      const pen=THREE.MathUtils.lerp(0.15,0.85,board.soft/100);
+      spots.forEach((l,k)=>{
+        const c=contrib[k];
+        if(!c||c.lux<=0.01){l.intensity=0;l.visible=false;return}
+        const f=RIG[c.i], d=Math.max(0.5,SUBJECT.distanceTo(f.pos));
+        l.visible=true; l.position.copy(f.pos); l.target.position.copy(c.aim); l.target.updateMatrixWorld();
+        l.color.copy(c.col); l.angle=CONE[f.type]; l.penumbra=pen; l.decay=2; l.distance=0;
+        // E = I/d² なので、被写体面で c.lux になる光度[cd]を与える
+        l.intensity=c.lux*d*d;
+      });
+      // 残りは環境光として色平均で足す（実光源の上限による欠落の補償）
+      let rest=0; const restCol=new THREE.Color(0,0,0);
+      for(let k=REAL_LIGHTS;k<contrib.length;k++){const c=contrib[k];if(c.lux<=0)continue;rest+=c.lux;restCol.r+=c.col.r*c.lux;restCol.g+=c.col.g*c.lux;restCol.b+=c.col.b*c.lux}
+      if(rest>0){restCol.multiplyScalar(1/rest);ambient.color.copy(restCol);ambient.intensity=rest*0.35}else{ambient.intensity=0}
+      smoke.visible=board.smoke;
+      // 露出。シーン照度は上と同じ luxOf の合計を使う
+      calcExposure(t,contrib.reduce((s,c)=>s+c.lux,0));
+      renderer.toneMappingExposure=THREE.MathUtils.clamp(TONE_K*Math.pow(2,-expo.evCam),0.005,24);
+      renderChallengeStatus();
+    }
+
+    let clock=0;                                  // ステージ時刻[秒]。チェイスとブリンクはこれだけに依存する
+    const refresh=()=>updateScene(clock);
+
+    /* ======================================================================
+       光の棒 — シャッター速度による被写体ブレの模式図（ligutsetting から流用）
+       ====================================================================== */
+    const BAR_TRAIL_N=8, BAR_RADIUS=0.0035, BAR_HEAD_R=0.0035, BAR_AMP=0.85, BAR_Z=0.55, BAR_DEFAULT_HEIGHT=1.05;
+    const SHUTTER_FREEZE=1/250, FREEZE_DIST=0.005;                     // 1/250秒での移動量が5mm以下＝静止して見える、という基準
+    const BAR_MAX_SPEED=FREEZE_DIST/SHUTTER_FREEZE;                    // m/s
+    const BAR_SPEED=BAR_MAX_SPEED/BAR_AMP;                             // rad/s
+    const BAR_COLORS=['#ffb020','#38e1ff','#ff4fa3','#8effa0'];
+    function barPos(t,bar){
+      const x=Math.sin(t*BAR_SPEED+bar.phase)*BAR_AMP+bar.side*(1.05+bar.lane*0.32);
+      return V3(x,bar.height,BAR_Z);
+    }
+    function addMotionBar(){
+      const idx=motionBars.length,side=idx%2===0?1:-1,lane=Math.floor(idx/2);
+      const color=BAR_COLORS[idx%BAR_COLORS.length];
+      const mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false});
+      const group=new THREE.Group(),segs=[];
+      const head=new THREE.Mesh(new THREE.SphereGeometry(BAR_HEAD_R,12,10),mat);group.add(head);
+      for(let i=0;i<BAR_TRAIL_N;i++){const m=new THREE.Mesh(new THREE.CylinderGeometry(1,1,1,8),mat);group.add(m);segs.push(m)}
+      motionBarsGroup.add(group);
+      motionBars.push({id:'bar'+Date.now()+'_'+idx,side,lane,height:BAR_DEFAULT_HEIGHT,phase:Math.random()*Math.PI*2,color,mat,group,head,segs});
+      renderMotionBarList();
+    }
+    function removeMotionBar(id){
+      const bar=motionBars.find(b=>b.id===id);
+      if(!bar)return;
+      motionBarsGroup.remove(bar.group);
+      bar.head.geometry.dispose();
+      bar.segs.forEach(m=>m.geometry.dispose());
+      bar.mat.dispose();
+      motionBars=motionBars.filter(b=>b.id!==id);
+      renderMotionBarList();
+    }
+    function renderMotionBarList(){
+      const el=document.querySelector('#motionBarList');
+      if(!el)return;
+      el.innerHTML=motionBars.length?motionBars.map((b,i)=>
+        '<div class="light" style="cursor:default"><i class="dot" style="background:'+b.color+'"></i><span>棒 '+(i+1)+'</span><button type="button" data-id="'+b.id+'" style="background:transparent;border:1px solid var(--line);color:#cbd5d1;min-height:26px;padding:0 10px">×</button></div>'+
+        '<div class="slider"><div><span>高さ</span><strong>'+b.height.toFixed(2)+'m</strong></div><input type="range" data-height-id="'+b.id+'" min="0.2" max="1.7" step="0.05" value="'+b.height+'"></div>'
+      ).join(''):'<div class="status-note">まだ追加されていません。</div>';
+      el.querySelectorAll('button[data-id]').forEach(btn=>btn.onclick=()=>removeMotionBar(btn.dataset.id));
+      el.querySelectorAll('input[data-height-id]').forEach(inp=>inp.oninput=e=>{
+        const bar=motionBars.find(b=>b.id===e.target.dataset.heightId);
+        if(!bar)return;
+        bar.height=+e.target.value;
+        e.target.previousElementSibling.querySelector('strong').textContent=bar.height.toFixed(2)+'m';
+      });
+    }
+    function updateMotionBars(){
+      if(!motionBars.length)return;
+      const now=performance.now()/1000,shutterSec=expo.shutter;
+      motionBars.forEach(bar=>{
+        bar.head.position.copy(barPos(now,bar));
+        for(let i=0;i<BAR_TRAIL_N;i++){
+          const t0=now-(i/BAR_TRAIL_N)*shutterSec,t1=now-((i+1)/BAR_TRAIL_N)*shutterSec;
+          const a=barPos(t0,bar),b=barPos(t1,bar),dir=b.clone().sub(a),len=Math.max(dir.length(),1e-4);
+          const r=THREE.MathUtils.lerp(BAR_RADIUS,BAR_RADIUS*0.25,i/BAR_TRAIL_N),m=bar.segs[i];
+          m.position.copy(a).addScaledVector(dir,0.5);
+          m.quaternion.setFromUnitVectors(V3(0,1,0),dir.clone().normalize());
+          m.scale.set(r,len,r);
+        }
+      });
+    }
+
+    /* ======================================================================
+       課題 — 撮影(Lv1,Lv3)と照明(Lv2,Lv4)を交互に置く
+       check() は {status:'pass'|'fail'|'precond', msg} を返す
+       ====================================================================== */
+    const sgn=v=>(v>0?'+':'')+v.toFixed(1);
+    const groupLux=(ids,t)=>ids.reduce((s,i)=>s+luxOf(i,t),0);
+    // 白っぽさの判定。HSLの彩度は明るい色で1.0に張り付くので、最大値に対する彩度差(chroma)で見る
+    function chromaOf(hex){const n=parseInt(String(hex).slice(1),16),r=(n>>16&255)/255,g=(n>>8&255)/255,b=(n&255)/255;
+      const M=Math.max(r,g,b),m=Math.min(r,g,b);return M<=0?0:(M-m)/M}
+    const CHALLENGES=[
+      {id:'l1-rock-freeze',level:1,title:'Lv1: ロックのシーンを 1/125 以上で適正露出にする',
+        hint:'シャッターは 1/125 より遅くしない。ISOと絞りだけで合わせます',
+        check(){
+          if(board.sceneId!=='rock')return{status:'precond',msg:'シーンを「ロック」にしてください'};
+          if(expo.shutter>SAFE_ACTION)return{status:'precond',msg:'シャッターを 1/125 以上にしてください（現在 1/'+Math.round(1/expo.shutter)+'）'};
+          return{status:Math.abs(expo.over)<0.3?'pass':'fail',msg:'露出 '+sgn(expo.over)+'段（目標 ±0.3段以内）'};
+        }},
+      {id:'l2-rim-only',level:2,title:'Lv2: フロントを全部落とし、バックだけで輪郭を出す',
+        hint:'グループ「フロント（客席側）」を選択してOFF。バックとサイドの明るさで演者の縁を拾います',
+        check(){
+          const t=clock, front=GROUPS.front(), back=GROUPS.back();
+          const fl=groupLux(front,t), bl=groupLux(back,t);
+          if(fl>0.5)return{status:'fail',msg:'フロントがまだ '+fl.toFixed(1)+' lx 出ています（目標 0）'};
+          return{status:bl>=15?'pass':'fail',msg:'バックからの受光 '+bl.toFixed(1)+' lx（目標 15 lx 以上）'};
+        }},
+      {id:'l3-ballad-handheld',level:3,title:'Lv3: バラードを 1/60 以上・ISO6400以下で適正露出にする',
+        hint:'暗いシーンです。絞りを開けて足りない分をISOで補います',
+        check(){
+          if(board.sceneId!=='ballad')return{status:'precond',msg:'シーンを「バラード」にしてください'};
+          if(expo.shutter>BLUR_LIMIT)return{status:'fail',msg:'1/'+Math.round(1/expo.shutter)+' では手ブレ・被写体ブレが出ます（1/60 以上に）'};
+          if(expo.iso>NOISE_ISO)return{status:'fail',msg:'ISO'+expo.iso+' はノイズが乗ります（ISO6400 以下に）'};
+          return{status:Math.abs(expo.over)<0.4?'pass':'fail',msg:'露出 '+sgn(expo.over)+'段（目標 ±0.4段以内）'};
+        }},
+      {id:'l4-red-skin',level:4,title:'Lv4: 赤一色で潰れた顔を、フロントの白で起こす',
+        hint:'フロントの灯体を選び、色を白系（#fff4e0 など）にします。白い光が全体の35%以上になれば肌色が戻ります',
+        check(){
+          if(board.sceneId!=='rock')return{status:'precond',msg:'シーンを「ロック」にしてください'};
+          if(board.rainbow)return{status:'precond',msg:'レインボーを解除してください'};
+          const t=clock, total=stageLux(t);
+          if(total<1)return{status:'precond',msg:'まず灯体を点けてください'};
+          const white=GROUPS.front().filter(i=>chromaOf(board.fixtures[i].color)<0.25).reduce((s,i)=>s+luxOf(i,t),0);
+          const ratio=white/total;
+          return{status:ratio>=0.35?'pass':'fail',msg:'白系の割合 '+(ratio*100).toFixed(0)+'%（目標 35% 以上）'};
+        }}
+    ];
+    function renderChallengeStatus(){
+      const el=document.querySelector('#challengeStatus'),id=document.querySelector('#challengeSelect').value;
+      if(!el)return;
+      const c=CHALLENGES.find(v=>v.id===id);
+      if(!c){el.innerHTML='課題を選ぶと、いまの設定が目標を満たしているか判定します。';return}
+      const r=c.check();
+      const mark=r.status==='pass'?'✅ 達成':r.status==='precond'?'▶ 準備':'… 未達';
+      el.innerHTML='<strong>'+mark+'</strong>'+r.msg+'<br><span style="color:#87918e">'+c.hint+'</span>';
+    }
+
+    /* ======================================================================
+       永続化 — 設定とキュー（キューは当日の進行表として書き出せる）
+       ====================================================================== */
+    const STORAGE_KEY='livehouse-settings-v1';
+    const CUE_STORAGE_KEY='livehouse-cues-v1';
+    function collectSettings(){
+      return{
+        pose,showGlasses,showSunglasses,showCatEars,
+        mannequinColor:document.querySelector('#mannequinColor').value,
+        isoR:+document.querySelector('#isoR').value,
+        fstopR:+document.querySelector('#fstopR').value,
+        shutterR:+document.querySelector('#shutterR').value,
+        board:JSON.parse(JSON.stringify(board))
+      };
+    }
+    function saveSettings(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(collectSettings()))}catch(e){console.warn('設定の保存に失敗しました',e)}}
+    function readCues(){try{return JSON.parse(localStorage.getItem(CUE_STORAGE_KEY)||'{}')}catch(e){console.warn('キューの読み込みに失敗しました',e);return{}}}
+    function writeCues(c){try{localStorage.setItem(CUE_STORAGE_KEY,JSON.stringify(c))}catch(e){console.warn('キューの保存に失敗しました',e)}}
+    function cueStatus(text){const el=document.querySelector('#cueStatus');if(el)el.textContent=text}
+    function renderCueOptions(){
+      const select=document.querySelector('#cueSelect');if(!select)return;
+      const current=select.value;
+      select.innerHTML='<option value="">キューを選択</option>';
+      Object.keys(readCues()).sort((a,b)=>a.localeCompare(b,'ja')).forEach(name=>{
+        const o=document.createElement('option');o.value=name;o.textContent=name;select.append(o);
+      });
+      if(readCues()[current])select.value=current;
+    }
+    function saveCue(){
+      const name=document.querySelector('#cueName').value.trim();
+      if(!name){cueStatus('キュー名を入力してください。');return}
+      const cues=readCues();cues[name]=JSON.parse(JSON.stringify(board));writeCues(cues);
+      renderCueOptions();document.querySelector('#cueSelect').value=name;
+      cueStatus('キュー「'+name+'」を保存しました。');
+    }
+    function loadCue(){
+      const name=document.querySelector('#cueSelect').value,cue=readCues()[name];
+      if(!name||!cue){cueStatus('呼び出すキューを選択してください。');return}
+      applyBoard(cue);cueStatus('キュー「'+name+'」を呼び出しました。');
+      document.querySelector('#cueName').value=name;
+    }
+    function deleteCue(){
+      const name=document.querySelector('#cueSelect').value;
+      if(!name){cueStatus('削除するキューを選択してください。');return}
+      if(!confirm('キュー「'+name+'」を削除しますか？'))return;
+      const cues=readCues();delete cues[name];writeCues(cues);renderCueOptions();
+      cueStatus('キュー「'+name+'」を削除しました。');
+    }
+    function applyBoard(src){
+      Object.assign(board,{sceneId:src.sceneId,bright:src.bright,tilt:src.tilt,soft:src.soft,
+        blackout:!!src.blackout,smoke:!!src.smoke,rainbow:!!src.rainbow,group:GROUPS[src.group]?src.group:'all',color:src.color||'#fff4e0'});
+      Object.assign(board.chase,src.chase||{});Object.assign(board.blink,src.blink||{});
+      if(Array.isArray(src.fixtures))src.fixtures.forEach((s,i)=>{if(board.fixtures[i])Object.assign(board.fixtures[i],s)});
+      rebuildOrder();syncBoardUI();saveSettings();refresh();
+    }
+    function exportSettingsFile(){
+      saveSettings();
+      const payload={format:'livehouse-settings',version:1,exportedAt:new Date().toISOString(),settings:collectSettings(),cues:readCues()};
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download='livehouse-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url);
+      document.querySelector('#ioStatus').textContent='エクスポートしました。';
+    }
+    function importSettingsFile(file){
+      const reader=new FileReader();
+      reader.onload=()=>{
+        try{
+          const payload=JSON.parse(reader.result),settings=payload.settings||payload;
+          if(!settings||typeof settings!=='object'||!settings.board)throw new Error('invalid');
+          localStorage.setItem(STORAGE_KEY,JSON.stringify(settings));
+          if(payload.cues&&typeof payload.cues==='object')writeCues(payload.cues);
+          location.reload();
+        }catch(e){document.querySelector('#ioStatus').textContent='読み込めませんでした。JSONの形式を確認してください。'}
+      };
+      reader.readAsText(file);
+    }
+    function restoreSettings(){
+      let s=null;try{s=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null')}catch(e){console.warn('保存設定の読み込みに失敗しました',e)}
+      if(!s)return;
+      if(POSES[s.pose])pose=s.pose;
+      showGlasses=!!s.showGlasses;showSunglasses=!!s.showSunglasses;showCatEars=!!s.showCatEars;
+      ['isoR','fstopR','shutterR'].forEach(id=>{if(s[id]!==undefined)document.querySelector('#'+id).value=s[id]});
+      if(s.mannequinColor){document.querySelector('#mannequinColor').value=s.mannequinColor;material.color.set(s.mannequinColor);}
+      if(s.board)applyBoard(s.board);
+      scene.remove(model);model=mannequin(pose);scene.add(model);
+      glasses.visible=showGlasses;sunglasses.visible=showSunglasses;catEars.visible=showCatEars;syncHeadAccessories();
+    }
+
+    /* ======================================================================
+       UI
+       ====================================================================== */
+    const q=s=>document.querySelector(s);
+    function setToggle(id,on,label){const b=q('#'+id);b.classList.toggle('active',on);b.textContent=(on?'● ':'○ ')+label}
+    function applyScene(id){
+      const s=SCENES.find(v=>v.id===id); if(!s)return;
+      board.sceneId=id; board.bright=s.bright; board.tilt=s.tilt;
+      RIG.forEach(f=>{board.fixtures[f.id].on=true;board.fixtures[f.id].level=100;
+        board.fixtures[f.id].color=(f.type==='side'||f.type==='uplight')?s.alt:s.color});
+      board.color=s.color; board.blackout=false;
+      syncBoardUI(); saveSettings(); refresh();
+    }
+    function renderScenes(){
+      const el=q('#sceneList'); el.innerHTML='';
+      SCENES.forEach(s=>{
+        const b=document.createElement('button');
+        b.className='scene-btn'+(board.sceneId===s.id?' active':'');
+        b.innerHTML=s.name+'<small>'+s.desc+'</small>';
+        b.onclick=()=>applyScene(s.id);
+        el.append(b);
+      });
+      q('#sceneBadge').textContent=(SCENES.find(s=>s.id===board.sceneId)||{name:'—'}).name;
+    }
+    function renderSwatches(){
+      const el=q('#swatches'); el.innerHTML='';
+      SWATCHES.forEach(c=>{
+        const b=document.createElement('button');
+        b.className='swatch'+(board.color===c?' active':'');
+        b.style.background=c; b.title=c;
+        b.onclick=()=>{board.color=c;q('#colorPick').value=c;q('#v-color').textContent=c;applyColorToSelection();};
+        el.append(b);
+      });
+    }
+    function applyColorToSelection(){
+      selectedIds().forEach(i=>{board.fixtures[i].color=board.color});
+      renderSwatches(); renderFixtures(); saveSettings(); refresh();
+    }
+    function renderFixtures(){
+      const sel=new Set(selectedIds());
+      const cell=f=>{
+        const s=board.fixtures[f.id];
+        return '<button class="fix'+(s.on?' on':'')+(sel.has(f.id)?' sel':'')+'" data-fix="'+f.id+'" '+
+               'style="background:'+s.color+'" title="'+f.type+' #'+f.id+'">'+(f.type==='moving'?'◎':f.type==='side'?'◧':f.type==='uplight'?'▲':'')+'</button>';
+      };
+      q('#fixGrid').innerHTML=RIG.filter(f=>f.type==='par'||f.type==='moving').map(cell).join('');
+      q('#fixRow').innerHTML=RIG.filter(f=>f.type==='side'||f.type==='uplight').map(cell).join('');
+      document.querySelectorAll('button[data-fix]').forEach(b=>b.onclick=()=>{
+        const s=board.fixtures[+b.dataset.fix]; s.on=!s.on; renderFixtures(); saveSettings(); refresh();
+      });
+      const ids=selectedIds(), onCount=ids.filter(i=>board.fixtures[i].on).length;
+      q('#groupHint').textContent='選択 '+ids.length+'灯 / 点灯 '+onCount+'灯。マス目をタップすると1灯ずつON/OFFできます。';
+    }
+    function syncBoardUI(){
+      q('#brightR').value=board.bright; q('#v-bright').textContent=board.bright;
+      q('#tiltR').value=board.tilt;     q('#v-tilt').textContent=board.tilt+'°';
+      q('#softR').value=board.soft;     q('#v-soft').textContent=board.soft+'%';
+      q('#colorPick').value=board.color;q('#v-color').textContent=board.color;
+      q('#groupSelect').value=board.group;
+      q('#chaseMode').value=board.chase.mode;
+      q('#chaseSpeed').value=board.chase.speed; q('#v-chaseSpeed').textContent=board.chase.speed.toFixed(1);
+      q('#chaseFade').value=board.chase.fade;   q('#v-chaseFade').textContent=board.chase.fade.toFixed(2);
+      q('#blinkMode').value=board.blink.mode;
+      q('#blinkSpeed').value=board.blink.speed; q('#v-blinkSpeed').textContent=board.blink.speed.toFixed(1);
+      setToggle('smokeToggle',board.smoke,'スモーク');
+      setToggle('blackoutToggle',board.blackout,'ブラックアウト');
+      setToggle('rainbowToggle',board.rainbow,'レインボー');
+      q('#chasePlay').textContent=board.chase.playing?'■ 停止':'▶ 再生';
+      q('#chasePlay').classList.toggle('active',board.chase.playing);
+      q('#chaseLoop').classList.toggle('active',board.chase.loop);
+      q('#blinkPlay').textContent=board.blink.playing?'■ 停止':'▶ 再生';
+      q('#blinkPlay').classList.toggle('active',board.blink.playing);
+      renderScenes(); renderSwatches(); renderFixtures();
+    }
+
+    // タブ
+    document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+      document.querySelectorAll('.tab').forEach(v=>v.classList.toggle('active',v===b));
+      q('#panel-camera').classList.toggle('hidden',b.dataset.tab!=='camera');
+      q('#panel-board').classList.toggle('hidden',b.dataset.tab!=='board');
+    });
+
+    // 卓のスライダー
+    q('#brightR').oninput=e=>{board.bright=+e.target.value;q('#v-bright').textContent=board.bright;saveSettings();refresh()};
+    q('#tiltR').oninput=e=>{board.tilt=+e.target.value;q('#v-tilt').textContent=board.tilt+'°';saveSettings();refresh()};
+    q('#softR').oninput=e=>{board.soft=+e.target.value;q('#v-soft').textContent=board.soft+'%';saveSettings();refresh()};
+    q('#colorPick').oninput=e=>{board.color=e.target.value;q('#v-color').textContent=board.color;applyColorToSelection()};
+    q('#smokeToggle').onclick=()=>{board.smoke=!board.smoke;setToggle('smokeToggle',board.smoke,'スモーク');saveSettings();refresh()};
+    q('#blackoutToggle').onclick=()=>{board.blackout=!board.blackout;setToggle('blackoutToggle',board.blackout,'ブラックアウト');saveSettings();refresh()};
+    q('#rainbowToggle').onclick=()=>{board.rainbow=!board.rainbow;setToggle('rainbowToggle',board.rainbow,'レインボー');saveSettings();refresh()};
+    q('#groupSelect').onchange=e=>{board.group=e.target.value;renderFixtures();saveSettings()};
+    q('#groupOn').onclick=()=>{selectedIds().forEach(i=>board.fixtures[i].on=true);renderFixtures();saveSettings();refresh()};
+    q('#groupOff').onclick=()=>{selectedIds().forEach(i=>board.fixtures[i].on=false);renderFixtures();saveSettings();refresh()};
+
+    // チェイス／ブリンク
+    let chaseStart=0;
+    q('#chaseMode').onchange=e=>{board.chase.mode=e.target.value;rebuildOrder();saveSettings();refresh()};
+    q('#chaseSpeed').oninput=e=>{board.chase.speed=+e.target.value;q('#v-chaseSpeed').textContent=board.chase.speed.toFixed(1);saveSettings()};
+    q('#chaseFade').oninput=e=>{board.chase.fade=+e.target.value;q('#v-chaseFade').textContent=board.chase.fade.toFixed(2);saveSettings()};
+    q('#chasePlay').onclick=()=>{board.chase.playing=!board.chase.playing;chaseStart=clock;syncBoardUI();saveSettings();refresh()};
+    q('#chaseLoop').onclick=()=>{board.chase.loop=!board.chase.loop;q('#chaseLoop').classList.toggle('active',board.chase.loop);saveSettings()};
+    q('#blinkMode').onchange=e=>{board.blink.mode=e.target.value;saveSettings();refresh()};
+    q('#blinkSpeed').oninput=e=>{board.blink.speed=+e.target.value;q('#v-blinkSpeed').textContent=board.blink.speed.toFixed(1);saveSettings()};
+    q('#blinkPlay').onclick=()=>{board.blink.playing=!board.blink.playing;syncBoardUI();saveSettings();refresh()};
+
+    // キュー・入出力
+    q('#saveCue').onclick=saveCue; q('#loadCue').onclick=loadCue; q('#deleteCue').onclick=deleteCue;
+    q('#cueSelect').onchange=()=>{const n=q('#cueSelect').value;if(n)q('#cueName').value=n};
+    q('#exportSettings').onclick=exportSettingsFile;
+    q('#importSettings').onclick=()=>q('#importFile').click();
+    q('#importFile').onchange=e=>{if(e.target.files[0])importSettingsFile(e.target.files[0]);e.target.value=''};
+    q('#resetSettings').onclick=()=>{if(confirm('設定と保存したキューを初期状態に戻しますか？')){localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(CUE_STORAGE_KEY);location.reload()}};
+
+    // カメラ側
+    document.querySelectorAll('#isoR,#fstopR,#shutterR').forEach(e=>e.oninput=()=>{saveSettings();refresh()});
+    document.querySelectorAll('#poses button').forEach(b=>b.onclick=()=>{
+      pose=b.dataset.pose; scene.remove(model); model=mannequin(pose); scene.add(model); syncHeadAccessories();
+      document.querySelectorAll('#poses button').forEach(v=>v.classList.toggle('active',v===b));
+      applyPoseProps(); saveSettings(); refresh();
+    });
+    function applyPoseProps(){chair.visible=pose==='seated';leanWall.visible=pose==='leaning'}
+    q('#glassesToggle').onclick=()=>{showGlasses=!showGlasses;if(showGlasses)showSunglasses=false;glasses.visible=showGlasses;sunglasses.visible=showSunglasses;setToggle('glassesToggle',showGlasses,'メガネ');setToggle('sunglassesToggle',showSunglasses,'サングラス');saveSettings()};
+    q('#sunglassesToggle').onclick=()=>{showSunglasses=!showSunglasses;if(showSunglasses)showGlasses=false;sunglasses.visible=showSunglasses;glasses.visible=showGlasses;setToggle('sunglassesToggle',showSunglasses,'サングラス');setToggle('glassesToggle',showGlasses,'メガネ');saveSettings()};
+    q('#catEarsToggle').onclick=()=>{showCatEars=!showCatEars;catEars.visible=showCatEars;setToggle('catEarsToggle',showCatEars,'ネコ耳');saveSettings()};
+    q('#mannequinColor').oninput=e=>{material.color.set(e.target.value);q('#v-mannequinColor').textContent=e.target.value;saveSettings()};
+    q('#addMotionBar').onclick=addMotionBar;
+    CHALLENGES.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.title;q('#challengeSelect').append(o)});
+    q('#challengeSelect').onchange=renderChallengeStatus;
+
+    /* ======================================================================
+       初期化とループ
+       ====================================================================== */
+    applyScene(board.sceneId);
+    restoreSettings();
+    applyPoseProps();
+    document.querySelectorAll('#poses button').forEach(v=>v.classList.toggle('active',v.dataset.pose===pose));
+    setToggle('glassesToggle',showGlasses,'メガネ');
+    setToggle('sunglassesToggle',showSunglasses,'サングラス');
+    setToggle('catEarsToggle',showCatEars,'ネコ耳');
+    q('#v-mannequinColor').textContent=q('#mannequinColor').value;
+    renderCueOptions(); renderMotionBarList(); syncBoardUI(); refresh();
+
+    function resize(){
+      const w=host.clientWidth,h=host.clientHeight;
+      camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(w,h);
+    }
+    addEventListener('resize',resize); resize();
+
+    let last=performance.now();
+    function loop(now){
+      requestAnimationFrame(loop);
+      const dt=Math.min((now-last)/1000,0.05); last=now;
+      const animating=board.chase.playing||board.blink.playing||board.rainbow;
+      if(animating){
+        clock+=dt;
+        // ループOFFのときは1周したら止める
+        if(board.chase.playing&&!board.chase.loop&&(clock-chaseStart)*board.chase.speed>N*0.6){
+          board.chase.playing=false; syncBoardUI();
+        }
+        updateScene(clock);
+      }
+      if(board.smoke) updateSmoke(dt);
+      if(motionBars.length) updateMotionBars();
+      controls.update();
+      renderer.render(scene,camera);
+    }
+    requestAnimationFrame(loop);
+
+    // 数値検証用。表示に依存せずチェイス／露出／照度を読み出せる
+    window.__livehouse={RIG,board,levelAt,luxOf,stageLux,evCamOf,evSceneOf,getExpo:()=>expo,CHALLENGES,updateScene,
+      setClock(t){clock=t;updateScene(t)},render(){renderer.render(scene,camera)},applyBoard,toneExposure(){return renderer.toneMappingExposure},triangles(){return renderer.info.render.triangles},lightStats(){return{spots:spots.filter(l=>l.visible&&l.intensity>0).length,shadows:spots.filter(l=>l.castShadow).length}}};
+  </script>
+</body>
+</html>
