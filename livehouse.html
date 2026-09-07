@@ -528,11 +528,11 @@
                    // 右腕を上・手前、左腕を下・奥にして重なりを作る
                    armPitchR: 32, elbowR: 58,
                    armPitchL: 22, elbowL: 68 },
-      // 4枚目を基準にしたアイドル立ち。胸に添える手、裾へ流す手、前で交差する脚をFKで作る。
-      idolSoft: { rootY:P.HIP, rootZ:0.002, spine:3.5, head:-2,
+      // 4枚目を基準にしたアイドル立ち。支持脚へ重心を置き、遊脚は足首付近だけを浅く交差させる。
+      idolSoft: { rootY:P.HIP, rootZ:0.000, spine:2.0, head:-1,
                   hip:-1, knee:3, ankle:0, footPitch:0,
-                  hipR:-2, kneeR:4, hipAbductR:5, kneeAbductR:2,
-                  hipL:14, kneeL:-20, hipAbductL:-24, kneeAbductL:-12,
+                  hipR:-1, kneeR:3, hipAbductR:-2, kneeAbductR:-1,
+                  hipL:10, kneeL:-18, hipAbductL:-8, kneeAbductL:-4,
                   armPitch:3, armAbduct:9, elbow:8, wristPitch:2,
                   armPitchL:20, armAbductL:16, elbowL:110, wristPitchL:-23,
                   elbowAbductL:-35, wristAbductL:-32,
@@ -610,30 +610,42 @@
         J['shoulder'+S]=sh; J['elbow'+S]=el; J['hand'+S]=hd; J['wrist'+S]=wr;
       });
 
-      // アイドル立ちだけ、手の最終位置を身体上の目標点から組み直す。
-      // 角度の寄せ集めより「胸へ添える手」「スカート脇へ流す手」が安定し、
-      // 体型寸法を変えても上腕・前腕・手の骨長は維持される。
+      // アイドル立ちだけ、二関節IKで肘の曲がる面を指定して腕を組み直す。
+      // 手先だけを順番に狙う方式では肘が胴体側へ折れやすいため、肩→手首を先に固定し、
+      // poleで肘を身体の外側へ向ける。反対腕は腰へ置かず、スカート脇へ自然に下ろす。
       if(poseName==='idolSoft'){
         const waist=atHeight(chain,P.WAIST).p;
-        const aim=(from,target,length)=>from.clone().add(
-          target.clone().sub(from).normalize().multiplyScalar(length)
-        );
-        const place=(S,elbowTarget,wristTarget,handTarget)=>{
+        const solveJoint=(root,end,l1,l2,pole)=>{
+          const axis=end.clone().sub(root),d=axis.length();
+          const forward=axis.normalize();
+          const poleDir=pole.clone().sub(root).addScaledVector(forward,-pole.clone().sub(root).dot(forward));
+          if(poleDir.lengthSq()<1e-8) poleDir.set(1,0,0).cross(forward);
+          poleDir.normalize();
+          const reach=THREE.MathUtils.clamp(d,Math.abs(l1-l2)+1e-5,l1+l2-1e-5);
+          const along=(l1*l1-l2*l2+reach*reach)/(2*reach);
+          const lift=Math.sqrt(Math.max(0,l1*l1-along*along));
+          return root.clone().addScaledVector(forward,along).addScaledVector(poleDir,lift);
+        };
+        const place=(S,wristTarget,pole,handTarget)=>{
           const sh=J['shoulder'+S];
-          const el=aim(sh,elbowTarget,P.UPPER_ARM*H);
-          const wr=aim(el,wristTarget,P.FOREARM*H);
-          const hd=aim(wr,handTarget,P.HAND*H);
+          const wr=wristTarget.clone();
+          const el=solveJoint(sh,wr,P.UPPER_ARM*H,P.FOREARM*H,pole);
+          const hd=wr.clone().add(
+            handTarget.clone().sub(wr).normalize().multiplyScalar(P.HAND*H)
+          );
           J['elbow'+S]=el;J['wrist'+S]=wr;J['hand'+S]=hd;
         };
+        // 左手は胸の面より十分前へ出し、指先を鎖骨の中央へ流す。
         place('L',
-          J.chest.clone().add(V3(-0.118*H,-0.068*H,0.090*H)),
-          J.chest.clone().add(V3(-0.054*H, 0.012*H,0.118*H)),
-          J.chest.clone().add(V3( 0.006*H, 0.010*H,0.128*H))
+          J.chest.clone().add(V3(-0.046*H,0.012*H,0.118*H)),
+          J.shoulderL.clone().add(V3(-0.150*H,-0.110*H,0.130*H)),
+          J.chest.clone().add(V3(0.020*H,0.018*H,0.132*H))
         );
+        // 右腕は肘をわずかに外へ逃がし、手を腰ではなくスカートの外側へ縦に下ろす。
         place('R',
-          waist.clone().add(V3(0.155*H,0.095*H,0.060*H)),
-          waist.clone().add(V3(0.128*H,0.025*H,0.105*H)),
-          waist.clone().add(V3(0.123*H,-0.040*H,0.100*H))
+          waist.clone().add(V3(0.140*H,-0.115*H,0.045*H)),
+          J.shoulderR.clone().add(V3(0.160*H,-0.160*H,0.090*H)),
+          waist.clone().add(V3(0.145*H,-0.195*H,0.050*H))
         );
       }
       return J;
