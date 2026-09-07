@@ -276,7 +276,7 @@
         ELBOW:0.632, WRIST:0.492, KNEE:0.292, ANKLE:0.040,
         SHOULDER_X:0.070, HIP_X:0.050,
         HEAD_W:0.0500, HEAD_D:0.0625,
-        HAND:0.083, FOOT_LEN:0.132, HEEL_LEN:0.025, FOOT_W:0.028
+        HAND:0.083, FOOT_LEN:0.126, HEEL_LEN:0.025, FOOT_W:0.028
       });
       return {id:'idol',label:'アイドル',height:1.62,faceRelief:0.55,costume:'idol',P,
       TRUNK:[
@@ -626,14 +626,14 @@
           J['elbow'+S]=el;J['wrist'+S]=wr;J['hand'+S]=hd;
         };
         place('L',
-          J.chest.clone().add(V3(-0.115*H,-0.075*H,0.075*H)),
-          J.chest.clone().add(V3(-0.052*H, 0.010*H,0.095*H)),
-          J.chest.clone().add(V3( 0.004*H, 0.008*H,0.110*H))
+          J.chest.clone().add(V3(-0.118*H,-0.068*H,0.090*H)),
+          J.chest.clone().add(V3(-0.054*H, 0.012*H,0.118*H)),
+          J.chest.clone().add(V3( 0.006*H, 0.010*H,0.128*H))
         );
         place('R',
-          waist.clone().add(V3(0.130*H,0.105*H,0.030*H)),
-          waist.clone().add(V3(0.098*H,0.018*H,0.075*H)),
-          waist.clone().add(V3(0.108*H,-0.038*H,0.085*H))
+          waist.clone().add(V3(0.155*H,0.095*H,0.060*H)),
+          waist.clone().add(V3(0.128*H,0.025*H,0.105*H)),
+          waist.clone().add(V3(0.123*H,-0.040*H,0.100*H))
         );
       }
       return J;
@@ -955,16 +955,16 @@
     const idolMouthMaterial=new THREE.MeshStandardMaterial({color:'#8f6475',roughness:.62,metalness:0});
 
     // 円錐そのままではなく、裾へ向かってごく浅いひだを持つスカート面。
-    // 揺れ幅は最大3%未満に抑え、照明を受けた時だけ立体感が読めるようにする。
+    // 揺れ幅を約1%に抑え、裾がギザギザに見えず照明でだけ浅いひだが読めるようにする。
     function buildIdolSkirt(profile,lobes=8,radial=40){
       const pos=[],idx=[],rows=profile.length;
       for(let i=0;i<rows;i++){
         const t=i/Math.max(1,rows-1),flare=t*t;
         for(let j=0;j<radial;j++){
           const a=j/radial*Math.PI*2;
-          const fold=1+0.026*flare*Math.cos(lobes*a);
+          const fold=1+0.012*flare*Math.cos(lobes*a);
           const r=profile[i].x*fold;
-          const y=profile[i].y+(i===rows-1?0.0025*H*Math.cos(lobes*a+Math.PI/2):0);
+          const y=profile[i].y+(i===rows-1?0.0007*H*Math.cos(lobes*a+Math.PI/2):0);
           pos.push(Math.cos(a)*r,y,Math.sin(a)*r);
         }
       }
@@ -1111,18 +1111,18 @@
         // 足はそのままの形を一回り大きくして靴にする
         const shoe=buildFoot(J,S);
         shoe.translate(-ankle.x,-ankle.y,-ankle.z);
-        shoe.scale(1.09,1.08,1.06);
+        shoe.scale(1.06,1.06,1.00);
         shoe.translate(ankle.x,ankle.y,ankle.z);
         addM(shoe,costumeMaterial);
         const shaft=[0.00,0.08,0.15,0.21].map((t,i)=>({
           p:ankle.clone().lerp(knee,t),
-          w:[0.027,0.028,0.029,0.030][i]*H,
-          dF:[0.028,0.029,0.030,0.030][i]*H,dB:[0.028,0.029,0.030,0.030][i]*H,n:2.3
+          w:[0.026,0.027,0.028,0.029][i]*H,
+          dF:[0.027,0.028,0.029,0.029][i]*H,dB:[0.027,0.028,0.029,0.029][i]*H,n:2.3
         }));
         addM(loft(shaft,{radial:15,seg:16}),costumeMaterial);
         const cuff=[
-          {p:ankle.clone().lerp(knee,0.195),w:0.031*H,dF:0.031*H,dB:0.031*H,n:2.3},
-          {p:ankle.clone().lerp(knee,0.225),w:0.0315*H,dF:0.0315*H,dB:0.0315*H,n:2.3}
+          {p:ankle.clone().lerp(knee,0.195),w:0.0295*H,dF:0.0295*H,dB:0.0295*H,n:2.3},
+          {p:ankle.clone().lerp(knee,0.225),w:0.0300*H,dF:0.0300*H,dB:0.0300*H,n:2.3}
         ];
         addM(loft(cuff,{radial:15,seg:4}),costumeAccentMaterial);
       });
