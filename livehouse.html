@@ -53,7 +53,7 @@
           <div class="slider hidden" id="costumeColorRow"><div><span>衣装の色</span><strong id="v-costumeColor">#f2e9f4</strong></div><input type="color" id="costumeColor" value="#f2e9f4" /></div>
         </section>
         <section class="section"><div class="label"><span>被写体の姿勢</span><small>POSE</small></div>
-          <div class="two" id="poses"><button class="pose" data-pose="standing">直立</button><button class="pose active" data-pose="idolFinal">アイドル立ち</button><button class="pose" data-pose="crouching">しゃがみ</button><button class="pose" data-pose="seated">椅子</button><button class="pose" data-pose="leaning">壁にもたれ</button><button class="pose" data-pose="armsCrossed">腕組み</button></div>
+          <div class="two" id="poses"><button class="pose" data-pose="standing">直立</button><button class="pose active" data-pose="idolSoft">アイドル立ち</button><button class="pose" data-pose="crouching">しゃがみ</button><button class="pose" data-pose="seated">椅子</button><button class="pose" data-pose="leaning">壁にもたれ</button><button class="pose" data-pose="armsCrossed">腕組み</button></div>
         </section>
         <section class="section"><div class="label"><span>アクセサリー</span><small>ACCESSORY</small></div>
           <div class="two"><button class="mode" id="glassesToggle">○ メガネ</button><button class="mode" id="sunglassesToggle">○ サングラス</button></div>
@@ -270,15 +270,15 @@
        顔の起伏は faceRelief で浅くし、髪と衣装は buildIdolCostume() が付ける。 */
     BODIES.idol=(()=>{
       const P=derive({
-        CROWN:0.998, CHIN:0.870, SKULL_BASE:0.898, NECK:0.878,
+        CROWN:0.998, CHIN:0.858, SKULL_BASE:0.898, NECK:0.878,
         NECK_ROOT:0.854, GIRDLE:0.822, SHOULDER_J:0.808, CHEST:0.748, RIB:0.706,
         ABDOMEN:0.672, WAIST:0.640, HIP:0.535, CROTCH:0.478,
         ELBOW:0.632, WRIST:0.492, KNEE:0.292, ANKLE:0.040,
-        SHOULDER_X:0.0720, HIP_X:0.0520,
-        HEAD_W:0.0415, HEAD_D:0.0540,
-        HAND:0.0860, FOOT_LEN:0.1260, HEEL_LEN:0.0230, FOOT_W:0.0265
+        SHOULDER_X:0.076, HIP_X:0.050,
+        HEAD_W:0.0458, HEAD_D:0.0585,
+        HAND:0.092, FOOT_LEN:0.132, HEEL_LEN:0.025, FOOT_W:0.028
       });
-      return {id:'idol',label:'アイドル',height:1.62,faceRelief:0.46,costume:'idol',P,
+      return {id:'idol',label:'アイドル',height:1.62,faceRelief:0.55,costume:'idol',P,
       TRUNK:[
         { y:P.CROTCH,    z: 0.004, w:0.0800,dF:0.041, dB:0.044, n:2.1, sep:0.044, pinch:0.76 },
         { y:0.494,       z: 0.002, w:0.0910,dF:0.051, dB:0.058, n:2.1, sep:0.038, pinch:0.55 },
@@ -290,13 +290,13 @@
         { y:P.WAIST,     z: 0.008, w:0.0680,dF:0.053, dB:0.047, n:2.4 },  // 腰（最も細い）
         { y:P.ABDOMEN,   z: 0.005, w:0.0720,dF:0.058, dB:0.049, n:2.4 },
         { y:P.RIB,       z: 0.000, w:0.0770,dF:0.064, dB:0.053, n:2.5 },
-        { y:P.CHEST,     z:-0.004, w:0.0780,dF:0.071, dB:0.055, n:2.5 },  // 胸（前方に厚い）
-        { y:0.788,       z:-0.008, w:0.0770,dF:0.060, dB:0.057, n:2.5 },
-        { y:0.812,       z:-0.009, w:0.0730,dF:0.054, dB:0.055, n:2.5 },
-        { y:P.GIRDLE,    z:-0.010, w:0.0660,dF:0.050, dB:0.053, n:2.4 },  // 肩甲帯（なで肩）
-        { y:0.840,       z:-0.011, w:0.0550,dF:0.041, dB:0.047, n:2.3 },
-        { y:P.NECK_ROOT, z:-0.010, w:0.0395,dF:0.034, dB:0.041, n:2.2 },
-        { y:P.NECK,      z:-0.005, w:0.0265,dF:0.026, dB:0.029, n:2.1 },  // 首（細い）
+        { y:P.CHEST,     z:-0.004, w:0.0790,dF:0.076, dB:0.055, n:2.5 },  // 胸（前方に厚い）
+        { y:0.788,       z:-0.008, w:0.0790,dF:0.062, dB:0.058, n:2.5 },
+        { y:0.812,       z:-0.009, w:0.0760,dF:0.056, dB:0.056, n:2.5 },
+        { y:P.GIRDLE,    z:-0.010, w:0.0700,dF:0.052, dB:0.055, n:2.4 },  // 肩甲帯（なで肩）
+        { y:0.840,       z:-0.011, w:0.0580,dF:0.043, dB:0.049, n:2.3 },
+        { y:P.NECK_ROOT, z:-0.010, w:0.0420,dF:0.036, dB:0.043, n:2.2 },
+        { y:P.NECK,      z:-0.005, w:0.0280,dF:0.027, dB:0.030, n:2.1 },  // 首（細い）
         { y:P.SKULL_BASE,z:-0.002, w:0.0270,dF:0.026, dB:0.030, n:2.0 }
       ],
       LEG:[
@@ -312,10 +312,10 @@
         { seg:'shank', t: 1.00, w:0.0165,dF:0.017, dB:0.019, n:2.2 }
       ],
       ARM:[
-        { seg:'upper', t:-0.03, ox:-0.015, w:0.0260,dF:0.027, dB:0.027, n:2.2 },
-        { seg:'upper', t: 0.03, w:0.0325,dF:0.033, dB:0.033, n:2.2 },
-        { seg:'upper', t: 0.26, w:0.0290,dF:0.029, dB:0.030, n:2.2 },
-        { seg:'upper', t: 0.60, w:0.0235,dF:0.024, dB:0.024, n:2.2 },
+        { seg:'upper', t:-0.03, ox:-0.015, w:0.0275,dF:0.028, dB:0.028, n:2.2 },
+        { seg:'upper', t: 0.03, w:0.0355,dF:0.036, dB:0.036, n:2.2 },
+        { seg:'upper', t: 0.26, w:0.0310,dF:0.031, dB:0.032, n:2.2 },
+        { seg:'upper', t: 0.60, w:0.0245,dF:0.025, dB:0.025, n:2.2 },
         { seg:'upper', t: 0.92, w:0.0210,dF:0.021, dB:0.021, n:2.3 },
         { seg:'fore',  t: 0.04, w:0.0220,dF:0.021, dB:0.022, n:2.4 },
         { seg:'fore',  t: 0.26, w:0.0220,dF:0.021, dB:0.023, n:2.2 },
@@ -528,18 +528,16 @@
                    // 右腕を上・手前、左腕を下・奥にして重なりを作る
                    armPitchR: 32, elbowR: 58,
                    armPitchL: 22, elbowL: 68 },
-      // アイドル専用: 左手を胸元、右手をスカート横へ添え、左脚を前で軽く交差する
-      idolFinal: { rootY:P.HIP, rootZ:0.006, spine:2.5, head:-2,
-                   hip:-1, knee:3, ankle:0, footPitch:0,
-                   hipR:-1, kneeR:4, ankleR:0, footPitchR:0,
-                   hipAbductR:2.0, kneeAbductR:0.8,
-                   hipL:7, kneeL:-12, ankleL:4, footPitchL:0,
-                   hipAbductL:-11, kneeAbductL:-5,
-                   armPitch:6, armAbduct:10, elbow:12, wristPitch:2,
-                   armPitchL:50, armAbductL:17, elbowL:96, wristPitchL:-12,
-                   elbowAbductL:-34, wristAbductL:-18,
-                   armPitchR:8, armAbductR:12, elbowR:20, wristPitchR:4,
-                   elbowAbductR:6, wristAbductR:4 }
+      // 元の体型を崩さない、控えめなステージ立ち。左手は鎖骨より下、左足だけ少し前へ出す。
+      idolSoft: { rootY:P.HIP, rootZ:0.002, spine:2.5, head:-1,
+                  hip:-1, knee:3, ankle:0, footPitch:0,
+                  hipR:-1, kneeR:3, hipAbductR:2.8, kneeAbductR:1.0,
+                  hipL:6, kneeL:-6, hipAbductL:2.4, kneeAbductL:0.8,
+                  armPitch:3, armAbduct:9, elbow:8, wristPitch:2,
+                  armPitchL:8, armAbductL:18, elbowL:117, wristPitchL:-18,
+                  elbowAbductL:-55, wristAbductL:-43,
+                  armPitchR:2, armAbductR:9, elbowR:10, wristPitchR:2,
+                  elbowAbductR:5, wristAbductR:3 }
     };}
 
     /**
@@ -642,43 +640,13 @@
       const sh=J['shoulder'+S],el=J['elbow'+S],wr=J['wrist'+S],hd=J['hand'+S];
       const pair={upper:[sh,el],fore:[el,wr],hand:[wr,hd]};
       const sg=S==='L'?-1:1;
-      // アイドルは手首までを腕ロフトにし、手は buildIdolHand() で別に作る
-      const rows=BODY.costume==='idol'?ARM.filter(s=>s.seg!=='hand'):ARM;
-      const stations=rows.map(s=>{
+      const stations=ARM.map(s=>{
         const[a,b]=pair[s.seg];
         const p=a.clone().lerp(b,s.t);
         if(s.ox) p.x+=sg*s.ox*H;   // 付け根は内側へ寄せ、開口を胴体の中に隠す
         return {p,w:s.w*H,dF:s.dF*H,dB:s.dB*H,n:s.n};
       });
       return loft(stations,{radial:22,seg:60});
-    }
-
-    // アイドル専用の低ポリ手。手のひら＋まとまりのある4指＋親指で軽量に見せる。
-    function buildIdolHand(J,S){
-      const g=new THREE.Group(),wr=J['wrist'+S],hd=J['hand'+S];
-      const axis=hd.clone().sub(wr),handLength=axis.length();axis.normalize();
-      let side=V3(0,0,1).cross(axis).normalize();
-      if(side.lengthSq()<0.2)side=V3(1,0,0);
-      const front=axis.clone().cross(side).normalize();
-      const handQ=new THREE.Quaternion().setFromUnitVectors(V3(0,1,0),axis);
-      const addEllipsoid=(center,sx,sy,sz,q=handQ)=>{
-        const m=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),material);
-        m.position.copy(center);m.scale.set(sx,sy,sz);m.quaternion.copy(q);m.castShadow=true;g.add(m);
-      };
-      addEllipsoid(wr.clone().addScaledVector(axis,handLength*0.32),0.0106*H,handLength*0.31,0.0060*H);
-      const offsets=[-0.0058,-0.0019,0.0019,0.0058],lengths=[0.29,0.34,0.33,0.27];
-      offsets.forEach((offset,i)=>{
-        const len=handLength*lengths[i];
-        const center=wr.clone().addScaledVector(axis,handLength*0.57+len*0.47).addScaledVector(side,offset*H);
-        addEllipsoid(center,0.00205*H,len*0.49,0.0019*H);
-      });
-      const thumbAxis=axis.clone().multiplyScalar(0.76)
-        .addScaledVector(side,S==='L'?-0.46:0.46).normalize();
-      const thumbQ=new THREE.Quaternion().setFromUnitVectors(V3(0,1,0),thumbAxis);
-      const thumbCenter=wr.clone().addScaledVector(axis,handLength*0.34)
-        .addScaledVector(side,(S==='L'?-0.0085:0.0085)*H).addScaledVector(front,0.0014*H);
-      addEllipsoid(thumbCenter,0.0025*H,handLength*0.16,0.0024*H,thumbQ);
-      return g;
     }
 
     /* ----------------------------------------------------------------------
@@ -701,12 +669,13 @@
           let px=ux*HW, py=uy*HH, pz=uz*HD;
 
           // 頭蓋: 下方を顎に向かって絞る／後頭部をわずかに膨らませる
-          const jaw=smooth(-0.22,-0.98,uy);
-          px*=1-(BODY.costume==='idol'?0.44:0.36)*jaw;
-          if(pz<0){ pz*=(1-(BODY.costume==='idol'?0.28:0.30)*jaw)*(1+0.07*gauss(uy,0.12,0.55)); }
+          const jaw=smooth(-0.26,-0.98,uy);
+          // アイドルはV字に尖らせず、元の丸さを残したまま顎幅だけ約5%細くする
+          px*=1-(BODY.costume==='idol'?0.38:0.36)*jaw;
+          if(pz<0){ pz*=(1-0.30*jaw)*(1+0.07*gauss(uy,0.12,0.55)); }
           else {                                     // 顔面は球より平らな「面」にする
             const face=Math.max(0,uz)*smooth(0.44,0.02,uy);   // 眉から下の顔面
-            pz*=(1-(BODY.costume==='idol'?0.18:0.20)*jaw)*(1-0.09*Math.max(0,uz)-(BODY.costume==='idol'?0.10:0.11)*face);
+            pz*=(1-0.20*jaw)*(1-0.09*Math.max(0,uz)-0.11*face);
           }
 
           // 顔の座標（-1..1）。正面ほど効き、側面へ滑らかに消える
@@ -733,32 +702,6 @@
       g.setIndex(idx);
       g.computeVertexNormals();
       return g;
-    }
-
-    // アイドル専用の顔パーツ。頭部ローカルで作り、照明に反応する非発光マテリアルを使う。
-    const idolEyeWhiteMaterial=new THREE.MeshStandardMaterial({color:0xe7e7e4,roughness:.36,metalness:0});
-    const idolIrisMaterial=new THREE.MeshStandardMaterial({color:0x777b7d,roughness:.42,metalness:0});
-    const idolPupilMaterial=new THREE.MeshStandardMaterial({color:0x3f4244,roughness:.45,metalness:0});
-    const idolMouthMaterial=new THREE.MeshStandardMaterial({color:0x777777,roughness:.65,metalness:0});
-    function buildIdolFaceDetails(J){
-      const g=new THREE.Group(),HD=P.HEAD_D*H;
-      g.position.copy(J.head);g.rotation.x=J.headAngle;
-      [-1,1].forEach(sg=>{
-        const eye=new THREE.Mesh(new THREE.SphereGeometry(1,16,10),idolEyeWhiteMaterial);
-        eye.position.set(sg*0.0160*H,0.0105*H,HD*0.785);
-        eye.scale.set(0.0115*H,0.0066*H,0.0047*H);eye.castShadow=true;g.add(eye);
-        const iris=new THREE.Mesh(new THREE.CircleGeometry(0.0056*H,18),idolIrisMaterial);
-        iris.position.set(sg*0.0160*H,0.0103*H,HD*0.878);g.add(iris);
-        const pupil=new THREE.Mesh(new THREE.CircleGeometry(0.00235*H,16),idolPupilMaterial);
-        pupil.position.set(sg*0.0160*H,0.0103*H,HD*0.882);g.add(pupil);
-      });
-      const mouthCurve=new THREE.QuadraticBezierCurve3(
-        V3(-0.0078*H,-0.0300*H,HD*0.777),
-        V3(0,-0.0330*H,HD*0.786),
-        V3(0.0078*H,-0.0300*H,HD*0.777)
-      );
-      const mouth=new THREE.Mesh(new THREE.TubeGeometry(mouthCurve,12,0.00065*H,5,false),idolMouthMaterial);
-      g.add(mouth);return g;
     }
 
     // 足: 踵 → 甲 → 爪先
@@ -878,7 +821,12 @@
        骨格 J から組み立てるので全ポーズに追従する。ロフトは既存の loft() を使う。
        ====================================================================== */
     const costumeMaterial=new THREE.MeshStandardMaterial({color:'#f2e9f4',roughness:.62,metalness:.02,side:THREE.DoubleSide});
-    const hairMaterial   =new THREE.MeshStandardMaterial({color:'#2a2026',roughness:.52,metalness:.05});
+    const costumeAccentMaterial=new THREE.MeshStandardMaterial({color:'#d7a6c5',roughness:.55,metalness:.03,side:THREE.DoubleSide});
+    const sockMaterial=new THREE.MeshStandardMaterial({color:'#eee8ef',roughness:.68,metalness:.01});
+    const hairMaterial=new THREE.MeshStandardMaterial({color:'#33262d',roughness:.58,metalness:.025});
+    const idolEyeWhiteMaterial=new THREE.MeshStandardMaterial({color:'#eeeae7',roughness:.42,metalness:0});
+    const idolIrisMaterial=new THREE.MeshStandardMaterial({color:'#4e3b43',roughness:.48,metalness:0});
+    const idolMouthMaterial=new THREE.MeshStandardMaterial({color:'#8f6475',roughness:.62,metalness:0});
 
     function buildIdolCostume(J){
       const g=new THREE.Group();
@@ -887,53 +835,48 @@
       const hp=(x,y,z)=>J.head.clone().add(V3(x,y,z).applyAxisAngle(V3(1,0,0),J.headAngle));
       const HW=P.HEAD_W*H, HH=P.HEAD_H*H, HD=P.HEAD_D*H;
 
-      /* --- 髪: 小さなキャップ＋分割前髪＋横髪＋一本のポニーテール ----- */
-      // 球の切り口は水平なので、切る角度がそのまま「髪の生え際の高さ」になる。
-      // 眉のすぐ上で切らないと顔が全部隠れる（= 別人になる）ので 0.50π で止める。
-      const cap=addM(new THREE.SphereGeometry(1,22,15,0,Math.PI*2,0,Math.PI*0.48),hairMaterial);
-      cap.scale.set(HW*1.08,HH*1.12,HD*1.12);
-      cap.position.copy(hp(0,HH*0.06,-HD*0.03)); cap.rotation.x=J.headAngle;
-      // 後ろ髪: 後頭部からうなじへ落ちる塊。顔側は頭部に隠れる位置に置く
-      const back=addM(new THREE.SphereGeometry(1,20,14,0,Math.PI*2,0,Math.PI*0.66),hairMaterial);
-      back.scale.set(HW*1.02,HH*1.10,HD*1.04);
-      back.position.copy(hp(0,HH*0.01,-HD*0.30)); back.rotation.x=J.headAngle;
-      // 前髪は7束へ分け、横一線のヘルメット感を消す
-      [-0.72,-0.48,-0.24,0,0.24,0.48,0.72].forEach((u,i)=>{
-        const tipY=-(0.10+(i%2)*0.045)*HH;
-        const bang=[
-          {p:hp(u*HW*0.72,HH*0.56,HD*0.38),w:0.0070*H,dF:0.0055*H,dB:0.0055*H,n:2.2},
-          {p:hp(u*HW*0.80,HH*0.18,HD*0.78),w:0.0060*H,dF:0.0045*H,dB:0.0045*H,n:2.2},
-          {p:hp(u*HW*0.76,tipY,HD*0.91),w:0.0024*H,dF:0.0020*H,dB:0.0020*H,n:2.2}
-        ];
-        addM(loft(bang,{radial:9,seg:9}),hairMaterial);
+      /* --- 髪: 丸い前髪と、三方向から読める一本のサイドポニー -------- */
+      const cap=addM(new THREE.SphereGeometry(1,22,15,0,Math.PI*2,0,Math.PI*0.50),hairMaterial);
+      cap.scale.set(HW*1.08,HH*1.10,HD*1.10);
+      cap.position.copy(hp(0,HH*0.07,-HD*0.04));cap.rotation.x=J.headAngle;
+      // 後ろ髪は肩まで伸ばさず、元モデルの首と輪郭を残す
+      const back=addM(new THREE.SphereGeometry(1,18,13),hairMaterial);
+      back.scale.set(HW*1.01,HH*0.84,HD*0.60);
+      back.position.copy(hp(0,-HH*0.12,-HD*0.45));back.rotation.x=J.headAngle;
+      // 尖った束ではなく、低ポリの丸い房を5つだけ重ねる
+      [-0.66,-0.34,0,0.34,0.66].forEach((u,i)=>{
+        const bang=addM(new THREE.SphereGeometry(1,10,7),hairMaterial);
+        const center=i===2;
+        bang.scale.set(HW*(center?0.20:0.18),HH*(center?0.26:0.22),HD*0.10);
+        bang.position.copy(hp(u*HW*0.78,HH*(center?0.32:0.38),HD*0.82));
+        bang.rotation.x=J.headAngle;bang.rotation.z=-u*0.10;
       });
-      // 顎を隠しすぎない細い横髪
+      // 頬を覆わない細い横髪
       [-1,1].forEach(sg=>{
-        const sideLock=[
-          {p:hp(sg*HW*0.91,HH*0.16,HD*0.18),w:0.0085*H,dF:0.0070*H,dB:0.0070*H,n:2.2},
-          {p:hp(sg*HW*1.00,-HH*0.12,HD*0.35),w:0.0080*H,dF:0.0065*H,dB:0.0065*H,n:2.2},
-          {p:hp(sg*HW*0.84,-HH*0.46,HD*0.40),w:0.0060*H,dF:0.0050*H,dB:0.0050*H,n:2.2},
-          {p:hp(sg*HW*0.98,-HH*0.70,HD*0.32),w:0.0028*H,dF:0.0024*H,dB:0.0024*H,n:2.2}
+        const lock=[
+          {p:hp(sg*HW*0.88,HH*0.22,HD*0.18),w:0.0075*H,dF:0.0065*H,dB:0.0065*H,n:2.2},
+          {p:hp(sg*HW*0.96,-HH*0.18,HD*0.30),w:0.0065*H,dF:0.0055*H,dB:0.0055*H,n:2.2},
+          {p:hp(sg*HW*0.83,-HH*0.52,HD*0.26),w:0.0025*H,dF:0.0022*H,dB:0.0022*H,n:2.2}
         ];
-        addM(loft(sideLock,{radial:10,seg:18}),hairMaterial);
+        addM(loft(lock,{radial:9,seg:14}),hairMaterial);
       });
-      // 後頭部上部から立ち上がる一本の高いポニーテール
-      const ponyTie=hp(0,HH*0.56,-HD*0.79);
+      // 頭の右上から外へ張り出し、横・後ろ・正面のすべてで輪郭が見える
       const pony=[
-        {p:ponyTie,w:0.017*H,dF:0.016*H,dB:0.016*H,n:2.2},
-        {p:hp(HW*0.18,HH*0.90,-HD*0.95),w:0.024*H,dF:0.022*H,dB:0.022*H,n:2.2},
-        {p:hp(HW*0.58,HH*0.76,-HD*1.06),w:0.028*H,dF:0.025*H,dB:0.025*H,n:2.2},
-        {p:hp(HW*0.93,HH*0.35,-HD*1.02),w:0.022*H,dF:0.020*H,dB:0.020*H,n:2.2},
-        {p:hp(HW*1.04,-HH*0.10,-HD*0.91),w:0.008*H,dF:0.007*H,dB:0.007*H,n:2.2}
+        {p:hp(HW*0.72,HH*0.58,-HD*0.58),w:0.015*H,dF:0.014*H,dB:0.014*H,n:2.2},
+        {p:hp(HW*1.13,HH*0.66,-HD*0.55),w:0.022*H,dF:0.020*H,dB:0.020*H,n:2.2},
+        {p:hp(HW*1.52,HH*0.34,-HD*0.47),w:0.024*H,dF:0.022*H,dB:0.022*H,n:2.2},
+        {p:hp(HW*1.55,-HH*0.15,-HD*0.34),w:0.018*H,dF:0.016*H,dB:0.016*H,n:2.2},
+        {p:hp(HW*1.28,-HH*0.64,-HD*0.20),w:0.0055*H,dF:0.0050*H,dB:0.0050*H,n:2.2}
       ];
-      addM(loft(pony,{radial:14,seg:34}),hairMaterial);
-      const ponyKnot=addM(new THREE.SphereGeometry(1,12,8),costumeMaterial);
-      ponyKnot.scale.set(0.017*H,0.014*H,0.014*H); ponyKnot.position.copy(ponyTie);
+      addM(loft(pony,{radial:13,seg:34}),hairMaterial);
+      const tie=pony[0].p;
+      const knot=addM(new THREE.SphereGeometry(1,10,7),costumeAccentMaterial);
+      knot.scale.set(0.010*H,0.010*H,0.008*H);knot.position.copy(tie);
       [-1,1].forEach(sg=>{
-        const wing=addM(new THREE.SphereGeometry(1,10,7),costumeMaterial);
-        wing.scale.set(0.020*H,0.013*H,0.006*H);
-        wing.position.copy(ponyTie).add(V3(sg*0.019*H,-0.002*H,0));
-        wing.rotation.z=sg*24*D2R;
+        const wing=addM(new THREE.SphereGeometry(1,10,7),costumeAccentMaterial);
+        wing.scale.set(0.020*H,0.027*H,0.006*H);
+        wing.position.copy(tie).add(V3(sg*0.016*H,-0.002*H,0));
+        wing.rotation.z=sg*0.42;
       });
 
       /* --- フレアスカート --------------------------------------------------
@@ -942,82 +885,86 @@
       // ウエストは比率(P.WAIST)ではなく、姿勢後の胴体チェーン上の実位置から取る。
       // 定数の高さに置くと しゃがみ・椅子 で腰だけ沈んでスカートが取り残される。
       const waist=atHeight(J._chain,P.WAIST);
-      const upperProf=[[0.056,0.000],[0.078,-0.040],[0.112,-0.095],[0.145,-0.155]]
+      const prof=[[0.056,0.000],[0.068,-0.035],[0.087,-0.075],[0.108,-0.115],[0.121,-0.150]]
         .map(([r,y])=>new THREE.Vector2(r*H,y*H));
-      const lowerProf=[[0.105,-0.125],[0.128,-0.158],[0.143,-0.190],[0.150,-0.215]]
+      const skirt=addM(new THREE.LatheGeometry(prof,30),costumeMaterial);
+      skirt.position.copy(waist.p);
+      // 二枚目の大きなスカートは作らず、裾に薄い色帯だけを重ねる
+      const hemProf=[[0.111,-0.137],[0.121,-0.149],[0.123,-0.157]]
         .map(([r,y])=>new THREE.Vector2(r*H,y*H));
-      const upperSkirt=addM(new THREE.LatheGeometry(upperProf,32),costumeMaterial);
-      upperSkirt.position.copy(waist.p);
-      const lowerSkirt=addM(new THREE.LatheGeometry(lowerProf,32),costumeMaterial);
-      lowerSkirt.position.copy(waist.p);
-      const belt=addM(new THREE.CylinderGeometry(0.058*H,0.058*H,0.008*H,24),costumeMaterial);
-      belt.position.copy(waist.p).add(V3(0,-0.004*H,0));
+      const hem=addM(new THREE.LatheGeometry(hemProf,30),costumeAccentMaterial);
+      hem.position.copy(waist.p);
 
       /* --- パフスリーブ: ノースリーブの肩に載る膨らみ --------------------- */
-      [['L',-1],['R',1]].forEach(([S])=>{
+      ['L','R'].forEach(S=>{
         const sh=J['shoulder'+S], el=J['elbow'+S];
         const puff=addM(new THREE.SphereGeometry(1,12,9),costumeMaterial);
-        puff.scale.set(0.037*H,0.032*H,0.037*H);
-        puff.position.copy(sh.clone().lerp(el,0.12));
+        puff.scale.set(0.034*H,0.028*H,0.033*H);
+        puff.position.copy(sh.clone().lerp(el,0.11));
       });
 
-      /* --- ニーハイ＋細身のショートブーツ ------------------------------- */
-      [['L',-1],['R',1]].forEach(([S])=>{
-        const ankle=J['ankle'+S], knee=J['knee'+S], hip=J['hip'+S];
-        const sockTop=knee.clone().lerp(hip,0.12);
+      /* --- ニーハイ＋一体型ショートブーツ ------------------------------- */
+      ['L','R'].forEach(S=>{
+        const ankle=J['ankle'+S],knee=J['knee'+S],hip=J['hip'+S];
+        const bootTop=ankle.clone().lerp(knee,0.21);
+        const sockTop=knee.clone().lerp(hip,0.20);
         const sock=[
-          {p:ankle.clone().lerp(knee,0.10),w:0.020*H,dF:0.020*H,dB:0.021*H,n:2.3},
-          {p:knee.clone().lerp(ankle,0.12),w:0.030*H,dF:0.030*H,dB:0.029*H,n:2.3},
+          {p:bootTop,w:0.023*H,dF:0.023*H,dB:0.024*H,n:2.3},
           {p:knee.clone(),w:0.031*H,dF:0.031*H,dB:0.030*H,n:2.3},
-          {p:sockTop,w:0.034*H,dF:0.034*H,dB:0.033*H,n:2.3}
+          {p:sockTop,w:0.035*H,dF:0.035*H,dB:0.034*H,n:2.3}
         ];
-        addM(loft(sock,{radial:16,seg:24}),costumeMaterial);
+        addM(loft(sock,{radial:15,seg:20}),sockMaterial);
+        // 靴下の境界は上端の一本だけにして、脚を分断しない
         const band=[
-          {p:sockTop.clone().add(V3(0,-0.006*H,0)),w:0.035*H,dF:0.035*H,dB:0.034*H,n:2.3},
-          {p:sockTop.clone().add(V3(0, 0.006*H,0)),w:0.035*H,dF:0.035*H,dB:0.034*H,n:2.3}
+          {p:sockTop.clone().add(V3(0,-0.004*H,0)),w:0.036*H,dF:0.036*H,dB:0.035*H,n:2.3},
+          {p:sockTop.clone().add(V3(0, 0.004*H,0)),w:0.036*H,dF:0.036*H,dB:0.035*H,n:2.3}
         ];
-        addM(loft(band,{radial:16,seg:4}),costumeMaterial);
-
+        addM(loft(band,{radial:15,seg:3}),costumeAccentMaterial);
+        // 足はそのままの形を一回り大きくして靴にする
         const shoe=buildFoot(J,S);
         shoe.translate(-ankle.x,-ankle.y,-ankle.z);
-        shoe.scale(1.10,1.08,1.06);
+        shoe.scale(1.09,1.08,1.06);
         shoe.translate(ankle.x,ankle.y,ankle.z);
-        addM(shoe,costumeMaterial);
-        const shaft=[0.00,0.08,0.16,0.21].map((t,i)=>({
+        addM(shoe,hairMaterial);
+        const shaft=[0.00,0.08,0.15,0.21].map((t,i)=>({
           p:ankle.clone().lerp(knee,t),
-          w:[0.028,0.029,0.030,0.031][i]*H,
-          dF:[0.029,0.030,0.031,0.031][i]*H,
-          dB:[0.029,0.030,0.031,0.031][i]*H,n:2.3
+          w:[0.027,0.028,0.029,0.030][i]*H,
+          dF:[0.028,0.029,0.030,0.030][i]*H,dB:[0.028,0.029,0.030,0.030][i]*H,n:2.3
         }));
-        addM(loft(shaft,{radial:16,seg:16}),costumeMaterial);
+        addM(loft(shaft,{radial:15,seg:16}),hairMaterial);
       });
 
       /* --- 胸のリボン: 飾りは1つだけ置く --------------------------------- */
       const neck=J.neck, ang=J._chain.length?J._chain[J._chain.length-2].a:0;
       const cp=(x,y,z)=>neck.clone().add(V3(x,y,z).applyAxisAngle(V3(1,0,0),ang));
-      [-1,1].forEach(sg=>{
-        const collar=addM(new THREE.SphereGeometry(1,12,8),costumeMaterial);
-        collar.scale.set(0.025*H,0.011*H,0.0055*H);
-        collar.position.copy(cp(sg*0.020*H,-0.018*H,0.030*H));
-        collar.rotation.z=sg*10*D2R;
-      });
       [[-1,18],[1,-18]].forEach(([sg,rot])=>{
-        const wing=addM(new THREE.SphereGeometry(1,12,10),costumeMaterial);
-        wing.scale.set(0.021*H,0.012*H,0.0055*H);
-        wing.position.copy(cp(sg*0.018*H,-0.035*H,0.034*H));
+        const wing=addM(new THREE.SphereGeometry(1,11,8),costumeAccentMaterial);
+        wing.scale.set(0.020*H,0.011*H,0.005*H);
+        wing.position.copy(cp(sg*0.017*H,-0.045*H,0.034*H));
         wing.rotation.z=rot*D2R;
       });
-      const center=addM(new THREE.SphereGeometry(1,10,8),costumeMaterial);
-      center.scale.set(0.0075*H,0.0075*H,0.006*H); center.position.copy(cp(0,-0.034*H,0.037*H));
-      [-1,1].forEach(sg=>{
-        const tail=[
-          {p:cp(sg*0.004*H,-0.038*H,0.034*H),w:0.0045*H,dF:0.0024*H,dB:0.0024*H,n:2.3},
-          {p:cp(sg*0.009*H,-0.070*H,0.034*H),w:0.0030*H,dF:0.0018*H,dB:0.0018*H,n:2.3}
-        ];
-        addM(loft(tail,{radial:8,seg:5}),costumeMaterial);
-      });
+      const center=addM(new THREE.SphereGeometry(1,9,7),costumeAccentMaterial);
+      center.scale.set(0.007*H,0.007*H,0.0055*H);center.position.copy(cp(0,-0.045*H,0.037*H));
 
       return g;
+    }
+
+    // 遠景でも表情が消えない最小限の顔。すべて非発光で、照明の明暗にはそのまま反応する。
+    function buildIdolFaceDetails(J){
+      const g=new THREE.Group(),HD=P.HEAD_D*H;
+      g.position.copy(J.head);g.rotation.x=J.headAngle;
+      [-1,1].forEach(sg=>{
+        const eye=new THREE.Mesh(new THREE.SphereGeometry(1,14,9),idolEyeWhiteMaterial);
+        eye.position.set(sg*0.017*H,0.006*H,HD*0.86);
+        eye.scale.set(0.010*H,0.0062*H,0.0032*H);eye.castShadow=true;g.add(eye);
+        const iris=new THREE.Mesh(new THREE.CircleGeometry(0.0046*H,16),idolIrisMaterial);
+        iris.position.set(sg*0.017*H,0.006*H,HD*0.925);g.add(iris);
+      });
+      const smile=new THREE.QuadraticBezierCurve3(
+        V3(-0.007*H,-0.030*H,HD*0.835),V3(0,-0.033*H,HD*0.848),V3(0.007*H,-0.030*H,HD*0.835)
+      );
+      const mouth=new THREE.Mesh(new THREE.TubeGeometry(smile,10,0.00055*H,5,false),idolMouthMaterial);
+      g.add(mouth);return g;
     }
 
     function buildMannequin(poseName){
@@ -1032,8 +979,6 @@
       if(BODY.costume==='idol'){
         g.add(buildIdolCostume(J));
         g.add(buildIdolFaceDetails(J));
-        g.add(buildIdolHand(J,'L'));
-        g.add(buildIdolHand(J,'R'));
       }
       // 接地: どのポーズでも最下点が床(y=0)に来るようにする
       const box=new THREE.Box3().setFromObject(g);
@@ -1044,7 +989,7 @@
       const key=bodyId+':'+pose;
       return meshCache[key]||(meshCache[key]=buildMannequin(pose));
     }
-    let pose='idolFinal',showGlasses=false,showSunglasses=false,showCatEars=false,model=mannequin(pose);scene.add(model);
+    let pose='idolSoft',showGlasses=false,showSunglasses=false,showCatEars=false,model=mannequin(pose);scene.add(model);
     function syncHeadAccessories(){
       const J=buildSkeleton(pose);
       [glasses,sunglasses,catEars].forEach(g=>{g.position.copy(J.head);g.rotation.x=J.headAngle});
@@ -1677,9 +1622,8 @@
     });
     function applyPoseProps(){chair.visible=pose==='seated';leanWall.visible=pose==='leaning'}
     function setBody(id){
-      // アイドル専用ポーズを標準体型へ持ち越さず、初回のアイドル切替では完成ポーズを見せる
-      if(id==='idol'&&bodyId!=='idol'&&pose==='standing')pose='idolFinal';
-      if(id!=='idol'&&pose==='idolFinal')pose='standing';
+      if(id==='idol'&&bodyId!=='idol'&&pose==='standing')pose='idolSoft';
+      if(id!=='idol'&&pose==='idolSoft')pose='standing';
       useBody(id);
       rebuildAccessories();
       glasses.visible=showGlasses; sunglasses.visible=showSunglasses; catEars.visible=showCatEars;
