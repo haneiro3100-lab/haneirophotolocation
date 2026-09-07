@@ -295,9 +295,9 @@
         { y:0.812,       z:-0.009, w:0.0750,dF:0.055, dB:0.055, n:2.5 },
         { y:P.GIRDLE,    z:-0.010, w:0.0685,dF:0.051, dB:0.054, n:2.4 },  // なで肩を維持
         { y:0.840,       z:-0.011, w:0.0580,dF:0.043, dB:0.049, n:2.3 },
-        { y:P.NECK_ROOT, z:-0.010, w:0.0410,dF:0.035, dB:0.042, n:2.2 },
-        { y:P.NECK,      z:-0.005, w:0.0280,dF:0.027, dB:0.030, n:2.1 },  // 首（短く細い）
-        { y:P.SKULL_BASE,z:-0.002, w:0.0270,dF:0.026, dB:0.030, n:2.0 }
+        { y:P.NECK_ROOT, z:-0.010, w:0.0380,dF:0.033,  dB:0.038,  n:2.2 },
+        { y:P.NECK,      z:-0.005, w:0.0235,dF:0.0235, dB:0.0255, n:2.1 },  // 後ろ姿で太い柱に見えない細い首筋
+        { y:P.SKULL_BASE,z:-0.002, w:0.0230,dF:0.023,  dB:0.025,  n:2.0 }
       ],
       LEG:[
         { seg:'thigh', t: 0.05, w:0.0520,dF:0.050, dB:0.066, n:2.2 },
@@ -641,16 +641,16 @@
           J.shoulderL.clone().add(V3(-0.145*H,-0.125*H,0.115*H)),
           J.chest.clone().add(V3(0.015*H,0.027*H,0.095*H))
         );
-        // 画面右側の左腕は演技させず、肩から裾の外側へほぼ真っすぐ自然に流す。
-        // 肘はロックせず、ごく浅い屈曲だけを残して硬さを避ける。
+        // 画面右側の左腕は肩から自然に落とし、肘だけを外へごく浅く緩める。
+        // 前腕の延長で手を垂らさず、手首から外斜め下へ反らして余韻を作る。
         place('R',
-          waist.clone().add(V3(0.132*H,-0.135*H,0.030*H)),
-          J.shoulderR.clone().add(V3(0.120*H,-0.180*H,0.055*H)),
-          waist.clone().add(V3(0.137*H,-0.205*H,0.032*H))
+          waist.clone().add(V3(0.134*H,-0.138*H,0.028*H)),
+          J.shoulderR.clone().add(V3(0.140*H,-0.160*H,0.050*H)),
+          waist.clone().add(V3(0.176*H,-0.208*H,0.026*H))
         );
-        // 手の長軸だけでなく掌の法線も指定する。左掌は胸へ、右掌は太腿側へ向ける。
+        // 手の長軸だけでなく掌の法線も指定する。下ろした手は掌を床、手の甲を上へ向ける。
         J.handNormalL=V3(0,0,-1);
-        J.handNormalR=V3(-1,0,-0.15).normalize();
+        J.handNormalR=V3(0,-1,0.10).normalize();
       }
       return J;
     }
@@ -1166,27 +1166,27 @@
         addM(loft(cuff,{radial:15,seg:4}),costumeAccentMaterial);
       });
 
-      /* --- 丸い襟＋胸のリボン -------------------------------------------- */
+      /* --- 平たい丸襟＋小さな胸リボン（装飾は1個だけ） ------------------- */
       const neck=J.neck, ang=J._chain.length?J._chain[J._chain.length-2].a:0;
       const cp=(x,y,z)=>neck.clone().add(V3(x,y,z).applyAxisAngle(V3(1,0,0),ang));
       [-1,1].forEach(sg=>{
         const collar=addM(new THREE.SphereGeometry(1,12,8),costumeMaterial);
-        collar.scale.set(0.027*H,0.016*H,0.0055*H);
-        collar.position.copy(cp(sg*0.020*H,-0.020*H,0.033*H));
-        collar.rotation.z=sg*-0.28;
+        collar.scale.set(0.0225*H,0.0095*H,0.0035*H);
+        collar.position.copy(cp(sg*0.0235*H,-0.024*H,0.031*H));
+        collar.rotation.z=sg*-0.20;
       });
       [[-1,18],[1,-18]].forEach(([sg,rot])=>{
         const wing=addM(new THREE.SphereGeometry(1,11,8),costumeAccentMaterial);
-        wing.scale.set(0.021*H,0.012*H,0.005*H);
-        wing.position.copy(cp(sg*0.018*H,-0.047*H,0.036*H));
+        wing.scale.set(0.012*H,0.0065*H,0.0035*H);
+        wing.position.copy(cp(sg*0.011*H,-0.046*H,0.034*H));
         wing.rotation.z=rot*D2R;
       });
       const center=addM(new THREE.SphereGeometry(1,9,7),costumeAccentMaterial);
-      center.scale.set(0.0075*H,0.0075*H,0.0055*H);center.position.copy(cp(0,-0.047*H,0.039*H));
+      center.scale.set(0.0055*H,0.0055*H,0.0038*H);center.position.copy(cp(0,-0.046*H,0.036*H));
       [-1,1].forEach(sg=>{
-        const ribbonTail=addM(new THREE.ConeGeometry(0.0065*H,0.040*H,5),costumeAccentMaterial);
-        ribbonTail.position.copy(cp(sg*0.008*H,-0.070*H,0.036*H));
-        ribbonTail.rotation.z=sg*0.18;
+        const ribbonTail=addM(new THREE.ConeGeometry(0.0038*H,0.018*H,5),costumeAccentMaterial);
+        ribbonTail.position.copy(cp(sg*0.0045*H,-0.058*H,0.034*H));
+        ribbonTail.rotation.z=sg*0.14;
       });
 
       return g;
@@ -1286,8 +1286,8 @@
         const head=idolFaceTemplate.clone(true);
         const scale=(P.CROWN-P.CHIN)*H/IDOL_FACE_SOURCE_HEAD_HEIGHT;
         head.scale.setScalar(scale);
-        // 顔の大きさは変えず、約2.3cmだけ上げて顎と襟の間に首を見せる。
-        head.position.copy(J.head).add(V3(0,0.014*H,0));head.rotation.x=J.headAngle;
+        // 顔の大きさは変えず、上昇量を約1.5cmへ戻して首を長く見せすぎない。
+        head.position.copy(J.head).add(V3(0,0.0095*H,0));head.rotation.x=J.headAngle;
         head.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=false;}});
         g.add(head);
       }else{
