@@ -641,11 +641,12 @@
           J.shoulderL.clone().add(V3(-0.145*H,-0.125*H,0.115*H)),
           J.chest.clone().add(V3(0.015*H,0.027*H,0.095*H))
         );
-        // 右腕は真下へ落とさず、肘から先を裾の外側へ斜め下に開く。
+        // 画面右側の左腕は演技させず、肩から裾の外側へほぼ真っすぐ自然に流す。
+        // 肘はロックせず、ごく浅い屈曲だけを残して硬さを避ける。
         place('R',
-          waist.clone().add(V3(0.150*H,-0.100*H,0.045*H)),
-          J.shoulderR.clone().add(V3(0.170*H,-0.150*H,0.090*H)),
-          waist.clone().add(V3(0.185*H,-0.145*H,0.045*H))
+          waist.clone().add(V3(0.132*H,-0.135*H,0.030*H)),
+          J.shoulderR.clone().add(V3(0.120*H,-0.180*H,0.055*H)),
+          waist.clone().add(V3(0.137*H,-0.205*H,0.032*H))
         );
         // 手の長軸だけでなく掌の法線も指定する。左掌は胸へ、右掌は太腿側へ向ける。
         J.handNormalL=V3(0,0,-1);
@@ -1285,7 +1286,8 @@
         const head=idolFaceTemplate.clone(true);
         const scale=(P.CROWN-P.CHIN)*H/IDOL_FACE_SOURCE_HEAD_HEIGHT;
         head.scale.setScalar(scale);
-        head.position.copy(J.head);head.rotation.x=J.headAngle;
+        // 顔の大きさは変えず、約2.3cmだけ上げて顎と襟の間に首を見せる。
+        head.position.copy(J.head).add(V3(0,0.014*H,0));head.rotation.x=J.headAngle;
         head.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=false;}});
         g.add(head);
       }else{
