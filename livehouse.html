@@ -270,13 +270,13 @@
        顔の起伏は faceRelief で浅くし、髪と衣装は buildIdolCostume() が付ける。 */
     BODIES.idol=(()=>{
       const P=derive({
-        CROWN:0.998, CHIN:0.858, SKULL_BASE:0.898, NECK:0.878,
-        NECK_ROOT:0.854, GIRDLE:0.822, SHOULDER_J:0.808, CHEST:0.748, RIB:0.706,
+        CROWN:0.998, CHIN:0.854, SKULL_BASE:0.898, NECK:0.883,
+        NECK_ROOT:0.860, GIRDLE:0.822, SHOULDER_J:0.808, CHEST:0.748, RIB:0.706,
         ABDOMEN:0.672, WAIST:0.640, HIP:0.535, CROTCH:0.478,
         ELBOW:0.632, WRIST:0.492, KNEE:0.292, ANKLE:0.040,
-        SHOULDER_X:0.076, HIP_X:0.050,
-        HEAD_W:0.0458, HEAD_D:0.0585,
-        HAND:0.092, FOOT_LEN:0.132, HEEL_LEN:0.025, FOOT_W:0.028
+        SHOULDER_X:0.070, HIP_X:0.050,
+        HEAD_W:0.0481, HEAD_D:0.0614,
+        HAND:0.083, FOOT_LEN:0.132, HEEL_LEN:0.025, FOOT_W:0.028
       });
       return {id:'idol',label:'アイドル',height:1.62,faceRelief:0.55,costume:'idol',P,
       TRUNK:[
@@ -295,8 +295,8 @@
         { y:0.812,       z:-0.009, w:0.0760,dF:0.056, dB:0.056, n:2.5 },
         { y:P.GIRDLE,    z:-0.010, w:0.0700,dF:0.052, dB:0.055, n:2.4 },  // 肩甲帯（なで肩）
         { y:0.840,       z:-0.011, w:0.0580,dF:0.043, dB:0.049, n:2.3 },
-        { y:P.NECK_ROOT, z:-0.010, w:0.0420,dF:0.036, dB:0.043, n:2.2 },
-        { y:P.NECK,      z:-0.005, w:0.0280,dF:0.027, dB:0.030, n:2.1 },  // 首（細い）
+        { y:P.NECK_ROOT, z:-0.010, w:0.0410,dF:0.035, dB:0.042, n:2.2 },
+        { y:P.NECK,      z:-0.005, w:0.0280,dF:0.027, dB:0.030, n:2.1 },  // 首（短く細い）
         { y:P.SKULL_BASE,z:-0.002, w:0.0270,dF:0.026, dB:0.030, n:2.0 }
       ],
       LEG:[
@@ -313,17 +313,17 @@
       ],
       ARM:[
         { seg:'upper', t:-0.03, ox:-0.015, w:0.0275,dF:0.028, dB:0.028, n:2.2 },
-        { seg:'upper', t: 0.03, w:0.0355,dF:0.036, dB:0.036, n:2.2 },
-        { seg:'upper', t: 0.26, w:0.0310,dF:0.031, dB:0.032, n:2.2 },
+        { seg:'upper', t: 0.03, w:0.0325,dF:0.033, dB:0.033, n:2.2 },
+        { seg:'upper', t: 0.26, w:0.0295,dF:0.030, dB:0.030, n:2.2 },
         { seg:'upper', t: 0.60, w:0.0245,dF:0.025, dB:0.025, n:2.2 },
         { seg:'upper', t: 0.92, w:0.0210,dF:0.021, dB:0.021, n:2.3 },
         { seg:'fore',  t: 0.04, w:0.0220,dF:0.021, dB:0.022, n:2.4 },
         { seg:'fore',  t: 0.26, w:0.0220,dF:0.021, dB:0.023, n:2.2 },
         { seg:'fore',  t: 0.62, w:0.0175,dF:0.017, dB:0.018, n:2.2 },
         { seg:'fore',  t: 1.00, w:0.0128,dF:0.011, dB:0.012, n:2.3 },
-        { seg:'hand',  t: 0.30, w:0.0120,dF:0.021, dB:0.020, n:2.7 },
-        { seg:'hand',  t: 0.72, w:0.0110,dF:0.020, dB:0.018, n:2.7 },
-        { seg:'hand',  t: 1.00, w:0.0068,dF:0.014, dB:0.012, n:2.7 }
+        { seg:'hand',  t: 0.30, w:0.0110,dF:0.019, dB:0.018, n:2.4 },
+        { seg:'hand',  t: 0.72, w:0.0095,dF:0.0175,dB:0.016, n:2.3 },
+        { seg:'hand',  t: 1.00, w:0.0045,dF:0.0105,dB:0.009, n:2.1 }
       ]};
     })();
 
@@ -534,9 +534,9 @@
                   hipR:-1, kneeR:3, hipAbductR:2.8, kneeAbductR:1.0,
                   hipL:6, kneeL:-6, hipAbductL:2.4, kneeAbductL:0.8,
                   armPitch:3, armAbduct:9, elbow:8, wristPitch:2,
-                  armPitchL:8, armAbductL:18, elbowL:117, wristPitchL:-18,
-                  elbowAbductL:-55, wristAbductL:-43,
-                  armPitchR:2, armAbductR:9, elbowR:10, wristPitchR:2,
+                  armPitchL:24, armAbductL:17, elbowL:102, wristPitchL:-10,
+                  elbowAbductL:-48, wristAbductL:-40,
+                  armPitchR:2, armAbductR:12, elbowR:8, wristPitchR:2,
                   elbowAbductR:5, wristAbductR:3 }
     };}
 
@@ -821,7 +821,7 @@
        骨格 J から組み立てるので全ポーズに追従する。ロフトは既存の loft() を使う。
        ====================================================================== */
     const costumeMaterial=new THREE.MeshStandardMaterial({color:'#f2e9f4',roughness:.62,metalness:.02,side:THREE.DoubleSide});
-    const costumeAccentMaterial=new THREE.MeshStandardMaterial({color:'#d7a6c5',roughness:.55,metalness:.03,side:THREE.DoubleSide});
+    const costumeAccentMaterial=new THREE.MeshStandardMaterial({color:'#cfb0c3',roughness:.57,metalness:.025,side:THREE.DoubleSide});
     const sockMaterial=new THREE.MeshStandardMaterial({color:'#eee8ef',roughness:.68,metalness:.01});
     const hairMaterial=new THREE.MeshStandardMaterial({color:'#33262d',roughness:.58,metalness:.025});
     const idolEyeWhiteMaterial=new THREE.MeshStandardMaterial({color:'#eeeae7',roughness:.42,metalness:0});
@@ -847,8 +847,8 @@
       [-0.66,-0.34,0,0.34,0.66].forEach((u,i)=>{
         const bang=addM(new THREE.SphereGeometry(1,10,7),hairMaterial);
         const center=i===2;
-        bang.scale.set(HW*(center?0.20:0.18),HH*(center?0.26:0.22),HD*0.10);
-        bang.position.copy(hp(u*HW*0.78,HH*(center?0.32:0.38),HD*0.82));
+        bang.scale.set(HW*(center?0.19:0.17),HH*(center?0.20:0.18),HD*0.09);
+        bang.position.copy(hp(u*HW*0.78,HH*(center?0.47:0.50),HD*0.84));
         bang.rotation.x=J.headAngle;bang.rotation.z=-u*0.10;
       });
       // 頬を覆わない細い横髪
@@ -860,22 +860,25 @@
         ];
         addM(loft(lock,{radial:9,seg:14}),hairMaterial);
       });
-      // 頭の右上から外へ張り出し、横・後ろ・正面のすべてで輪郭が見える
-      const pony=[
-        {p:hp(HW*0.72,HH*0.58,-HD*0.58),w:0.015*H,dF:0.014*H,dB:0.014*H,n:2.2},
-        {p:hp(HW*1.13,HH*0.66,-HD*0.55),w:0.022*H,dF:0.020*H,dB:0.020*H,n:2.2},
-        {p:hp(HW*1.52,HH*0.34,-HD*0.47),w:0.024*H,dF:0.022*H,dB:0.022*H,n:2.2},
-        {p:hp(HW*1.55,-HH*0.15,-HD*0.34),w:0.018*H,dF:0.016*H,dB:0.016*H,n:2.2},
-        {p:hp(HW*1.28,-HH*0.64,-HD*0.20),w:0.0055*H,dF:0.0050*H,dB:0.0050*H,n:2.2}
-      ];
-      addM(loft(pony,{radial:13,seg:34}),hairMaterial);
-      const tie=pony[0].p;
+      // 太い輪に見えないよう、同じ結び目から3本の細い毛束へ分ける
+      const tie=hp(HW*0.72,HH*0.58,-HD*0.58);
+      [-1,0,1].forEach(o=>{
+        const side=o*0.28, width=o===0?1:0.74;
+        const pony=[
+          {p:tie.clone(),w:0.0070*H*width,dF:0.0065*H*width,dB:0.0065*H*width,n:2.2},
+          {p:hp(HW*(1.08+side*0.30),HH*(0.65-o*0.035),-HD*(0.55-o*0.08)),w:0.0100*H*width,dF:0.0092*H*width,dB:0.0092*H*width,n:2.2},
+          {p:hp(HW*(1.48+side),HH*(0.31-o*0.075),-HD*(0.45-o*0.18)),w:0.0120*H*width,dF:0.0110*H*width,dB:0.0110*H*width,n:2.2},
+          {p:hp(HW*(1.56+side*1.25),-HH*(0.22+o*0.060),-HD*(0.31-o*0.20)),w:0.0085*H*width,dF:0.0078*H*width,dB:0.0078*H*width,n:2.2},
+          {p:hp(HW*(1.24+side*1.65),-HH*(0.84+o*0.09),-HD*(0.20-o*0.20)),w:0.0028*H*width,dF:0.0026*H*width,dB:0.0026*H*width,n:2.2}
+        ];
+        addM(loft(pony,{radial:10,seg:30}),hairMaterial);
+      });
       const knot=addM(new THREE.SphereGeometry(1,10,7),costumeAccentMaterial);
       knot.scale.set(0.010*H,0.010*H,0.008*H);knot.position.copy(tie);
       [-1,1].forEach(sg=>{
         const wing=addM(new THREE.SphereGeometry(1,10,7),costumeAccentMaterial);
-        wing.scale.set(0.020*H,0.027*H,0.006*H);
-        wing.position.copy(tie).add(V3(sg*0.016*H,-0.002*H,0));
+        wing.scale.set(0.022*H,0.030*H,0.006*H);
+        wing.position.copy(tie).add(V3(sg*0.018*H,-0.002*H,0));
         wing.rotation.z=sg*0.42;
       });
 
@@ -885,12 +888,12 @@
       // ウエストは比率(P.WAIST)ではなく、姿勢後の胴体チェーン上の実位置から取る。
       // 定数の高さに置くと しゃがみ・椅子 で腰だけ沈んでスカートが取り残される。
       const waist=atHeight(J._chain,P.WAIST);
-      const prof=[[0.056,0.000],[0.068,-0.035],[0.087,-0.075],[0.108,-0.115],[0.121,-0.150]]
+      const prof=[[0.056,0.000],[0.067,-0.037],[0.086,-0.080],[0.108,-0.124],[0.124,-0.165]]
         .map(([r,y])=>new THREE.Vector2(r*H,y*H));
       const skirt=addM(new THREE.LatheGeometry(prof,30),costumeMaterial);
       skirt.position.copy(waist.p);
       // 二枚目の大きなスカートは作らず、裾に薄い色帯だけを重ねる
-      const hemProf=[[0.111,-0.137],[0.121,-0.149],[0.123,-0.157]]
+      const hemProf=[[0.116,-0.153],[0.124,-0.163],[0.126,-0.169]]
         .map(([r,y])=>new THREE.Vector2(r*H,y*H));
       const hem=addM(new THREE.LatheGeometry(hemProf,30),costumeAccentMaterial);
       hem.position.copy(waist.p);
@@ -916,8 +919,8 @@
         addM(loft(sock,{radial:15,seg:20}),sockMaterial);
         // 靴下の境界は上端の一本だけにして、脚を分断しない
         const band=[
-          {p:sockTop.clone().add(V3(0,-0.004*H,0)),w:0.036*H,dF:0.036*H,dB:0.035*H,n:2.3},
-          {p:sockTop.clone().add(V3(0, 0.004*H,0)),w:0.036*H,dF:0.036*H,dB:0.035*H,n:2.3}
+          {p:sockTop.clone().add(V3(0,-0.002*H,0)),w:0.0355*H,dF:0.0355*H,dB:0.0345*H,n:2.3},
+          {p:sockTop.clone().add(V3(0, 0.002*H,0)),w:0.0355*H,dF:0.0355*H,dB:0.0345*H,n:2.3}
         ];
         addM(loft(band,{radial:15,seg:3}),costumeAccentMaterial);
         // 足はそのままの形を一回り大きくして靴にする
