@@ -110,6 +110,9 @@
           <div class="slider"><div><span>ビームのやわらかさ</span><strong id="v-soft">62%</strong></div><input type="range" id="softR" min="0" max="100" step="1" value="62" /></div>
           <div class="slider"><div><span>フロント照明</span><strong id="v-frontFill">58%</strong></div><input type="range" id="frontFillR" min="0" max="100" step="1" value="58" /></div>
           <div class="two" style="margin-top:8px"><button class="mode" id="smokeToggle">○ スモーク</button><button class="mode" id="blackoutToggle">○ ブラックアウト</button></div>
+          <div class="label" style="margin-top:14px"><span>光線の質感</span><small>BEAM LOOK</small></div>
+          <div class="two"><button class="mode" data-beam-style="diffuse">拡散光</button><button class="mode" data-beam-style="rays">光条</button></div>
+          <div class="hint" id="beamStyleHint">灯体から広がり、床へ近づくほど薄くなる柔らかい光です。</div>
         </section>
         <section class="section"><div class="label"><span>色</span><small>COLOR</small></div>
           <div class="slider"><div><span>選択中の灯体に適用</span><strong id="v-color">#fff4e0</strong></div><input type="color" id="colorPick" value="#fff4e0" /></div>
@@ -1790,7 +1793,7 @@
 
     /* --- 卓の状態 -------------------------------------------------------- */
     const board={
-      sceneId:'band', bright:70, tilt:-25, soft:62, frontFill:58, blackout:false, smoke:false, rainbow:false,
+      sceneId:'band', bright:70, tilt:-25, soft:62, frontFill:58, blackout:false, smoke:false, rainbow:false,beamStyle:'diffuse',
       group:'all', color:'#fff4e0',
       chase:{mode:'front-back',speed:1.2,fade:0.6,loop:true,playing:false},
       blink:{mode:'all',speed:1.8,playing:false},
@@ -1968,6 +1971,21 @@
       x.putImageData(img,0,0);
       const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.NoColorSpace;return t;
     })();
+    // Broad fallback mask: strongest at the fixture and continuously weaker toward the floor.
+    const beamDiffuseTex=(()=>{
+      const c=document.createElement('canvas');c.width=128;c.height=256;
+      const x=c.getContext('2d'),img=x.createImageData(c.width,c.height);
+      for(let py=0;py<c.height;py++)for(let px=0;px<c.width;px++){
+        const u=px/(c.width-1),v=1-py/(c.height-1),half=Math.max(.001,1-v);
+        const across=Math.max(0,1-Math.abs((u-.5)*2)/half);
+        const ramp=Math.min(1,across/.58),edge=ramp*ramp*(3-2*ramp)*Math.pow(across,.28);
+        const down=Math.pow(v,.72)*Math.min(1,v/.10);
+        const a=Math.round(255*edge*down),j=(py*c.width+px)*4;
+        img.data[j]=img.data[j+1]=img.data[j+2]=a;img.data[j+3]=255;
+      }
+      x.putImageData(img,0,0);
+      const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.NoColorSpace;return t;
+    })();
 
     // カメラに正対する面が濃く、輪郭が消える外側ヘイズ。
     // 散乱強度はRGB側に入れ、透明度と二重に掛けない。
@@ -1976,6 +1994,7 @@
         uniforms:{
           uColor:{value:new THREE.Color('#ffffff')},
           uScatter:{value:0},
+          uStyle:{value:1},
           uSoftness:{value:.6},
           uTime:{value:0},
           uSeed:{value:seed}
@@ -1991,6 +2010,7 @@
         fragmentShader:`
           uniform vec3 uColor;
           uniform float uScatter;
+          uniform float uStyle;
           uniform float uSoftness;
           uniform float uTime;
           uniform float uSeed;
@@ -2002,13 +2022,15 @@
             float halfWidth=max(.001,1.0-vUv.y);
             float localX=abs((vUv.x-.5)*2.0)/halfWidth;
             float across=max(0.0,1.0-localX);
-            float softEdge=pow(across,mix(2.8,.82,uSoftness));
-            float floorFade=smoothstep(0.0,.15,vUv.y);
-            float lengthFade=.48+.52*pow(vUv.y,.38);
+            float rayEdge=pow(across,mix(2.8,.82,uSoftness));
+            float diffuseEdge=smoothstep(0.0,mix(.42,.68,uSoftness),across)*pow(across,mix(.42,.18,uSoftness));
+            float rayLength=smoothstep(0.0,.15,vUv.y)*(.48+.52*pow(vUv.y,.38));
+            float diffuseLength=smoothstep(0.0,.10,vUv.y)*pow(vUv.y,.72);
             float broad=sin(vUv.y*31.0+uTime*.20+uSeed*4.1);
             float fine=sin(vUv.y*83.0-uTime*.11+vUv.x*12.566+uSeed*9.3);
-            float wisps=.78+.14*broad+.08*fine;
-            float scatter=uScatter*softEdge*floorFade*lengthFade*clamp(wisps,.42,1.0);
+            float rayShape=rayEdge*rayLength*clamp(.78+.14*broad+.08*fine,.42,1.0);
+            float diffuseShape=diffuseEdge*diffuseLength*clamp(.90+.07*broad+.03*fine,.68,1.0);
+            float scatter=uScatter*mix(rayShape,diffuseShape,uStyle);
             if(scatter<.001) discard;
             // 散乱量をRGBに直接持たせ、加算合成でアルファが二度掛けされるのを防ぐ。
             gl_FragColor=vec4(uColor*scatter,1.0);
@@ -2139,22 +2161,29 @@
         g.beam.visible=lv>0.001;
         g.core.visible=g.beam.visible;
         if(g.beam.visible){
+          const diffuseStyle=board.beamStyle!=='rays';
           g.beam.position.copy(f.pos).addScaledVector(dir,0.5);
           g.beamAxis.copy(dir).normalize();
           g.beam.scale.set(rad,len,rad);
           g.core.position.copy(g.beam.position);
-          g.core.scale.set(rad*.52,len,rad*.52);
+          g.core.scale.set(rad*(diffuseStyle?.96:.52),len,rad*(diffuseStyle?.96:.52));
           faceBeamToCamera(g);
           // スモーク時は照度の平方根に比例して散乱光を出す。
           // RGBに光量を持たせるため、アルファによる二重減衰は起きない。
           g.beamMat.uniforms.uColor.value.copy(col);
           const typeDensity=f.type==='moving'?1.12:(f.type==='side'?.82:1);
           const scatterLux=Math.sqrt(Math.max(aimLux,0));
-          g.beamMat.uniforms.uScatter.value=(board.smoke?.145:.004)*scatterLux*typeDensity;
+          g.beamMat.uniforms.uStyle.value=diffuseStyle?1:0;
+          g.beamMat.uniforms.uScatter.value=(board.smoke
+            ?(diffuseStyle?.055:.145)
+            :(diffuseStyle?.0015:.004))*scatterLux*typeDensity;
           g.beamMat.uniforms.uSoftness.value=board.soft/100;
           g.beamMat.uniforms.uTime.value=t;
-          // 光芯は標準材質で常に確保。外側ヘイズより細く、強さも控える。
-          g.coreMat.color.copy(col).multiplyScalar((board.smoke?.052:.003)*scatterLux*typeDensity);
+          // 拡散光は幅広マスク、光条は細い光芯マスクを使う。
+          const coreTex=diffuseStyle?beamDiffuseTex:beamCoreTex;
+          if(g.coreMat.alphaMap!==coreTex)g.coreMat.alphaMap=coreTex;
+          const coreGain=board.smoke?(diffuseStyle?.016:.052):(diffuseStyle?.0008:.003);
+          g.coreMat.color.copy(col).multiplyScalar(coreGain*scatterLux*typeDensity);
         }
         // 床のプール。人物狙いの灯も、延長した光柱が舞台面に当たれば着地光を出す。
         const onStageFloor=beamEnd.y<.06&&Math.abs(beamEnd.x)<=STAGE_W/2+.2&&
@@ -2367,7 +2396,9 @@
     function applyBoard(src){
       Object.assign(board,{sceneId:src.sceneId,bright:src.bright,tilt:src.tilt,soft:src.soft,
         frontFill:Number.isFinite(src.frontFill)?src.frontFill:board.frontFill,
-        blackout:!!src.blackout,smoke:!!src.smoke,rainbow:!!src.rainbow,group:GROUPS[src.group]?src.group:'all',color:src.color||'#fff4e0'});
+        blackout:!!src.blackout,smoke:!!src.smoke,rainbow:!!src.rainbow,
+        beamStyle:src.beamStyle==='rays'?'rays':'diffuse',
+        group:GROUPS[src.group]?src.group:'all',color:src.color||'#fff4e0'});
       Object.assign(board.chase,src.chase||{});Object.assign(board.blink,src.blink||{});
       if(Array.isArray(src.fixtures))src.fixtures.forEach((s,i)=>{if(board.fixtures[i])Object.assign(board.fixtures[i],s)});
       rebuildOrder();syncBoardUI();saveSettings();refresh();
@@ -2488,6 +2519,10 @@
       setToggle('smokeToggle',board.smoke,'スモーク');
       setToggle('blackoutToggle',board.blackout,'ブラックアウト');
       setToggle('rainbowToggle',board.rainbow,'レインボー');
+      document.querySelectorAll('[data-beam-style]').forEach(b=>b.classList.toggle('active',b.dataset.beamStyle===board.beamStyle));
+      q('#beamStyleHint').textContent=board.beamStyle==='diffuse'
+        ?'灯体から広がり、床へ近づくほど薄くなる柔らかい光です。'
+        :'細い光の筋と煙の流れを強調する演出用の光条です。';
       q('#chasePlay').textContent=board.chase.playing?'■ 停止':'▶ 再生';
       q('#chasePlay').classList.toggle('active',board.chase.playing);
       q('#chaseLoop').classList.toggle('active',board.chase.loop);
@@ -2512,6 +2547,9 @@
     q('#smokeToggle').onclick=()=>{board.smoke=!board.smoke;setToggle('smokeToggle',board.smoke,'スモーク');saveSettings();refresh()};
     q('#blackoutToggle').onclick=()=>{board.blackout=!board.blackout;setToggle('blackoutToggle',board.blackout,'ブラックアウト');saveSettings();refresh()};
     q('#rainbowToggle').onclick=()=>{board.rainbow=!board.rainbow;setToggle('rainbowToggle',board.rainbow,'レインボー');saveSettings();refresh()};
+    document.querySelectorAll('[data-beam-style]').forEach(b=>b.onclick=()=>{
+      board.beamStyle=b.dataset.beamStyle;syncBoardUI();saveSettings();refresh();
+    });
     q('#groupSelect').onchange=e=>{board.group=e.target.value;renderFixtures();saveSettings()};
     q('#groupOn').onclick=()=>{selectedIds().forEach(i=>board.fixtures[i].on=true);renderFixtures();saveSettings();refresh()};
     q('#groupOff').onclick=()=>{selectedIds().forEach(i=>board.fixtures[i].on=false);renderFixtures();saveSettings();refresh()};
