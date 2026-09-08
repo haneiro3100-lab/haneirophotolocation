@@ -269,8 +269,9 @@
     const sunglassFrameMaterial=new THREE.MeshStandardMaterial({color:'#141414',roughness:.55,metalness:.05});
     const sunglassLensMaterial=new THREE.MeshStandardMaterial({color:'#0a0a0c',roughness:.15,metalness:.3,side:THREE.DoubleSide});
 
-    scene.background=new THREE.Color('#07080a');
-    scene.fog=new THREE.FogExp2('#07080a',0.012);
+    const CLEAR_BG=new THREE.Color('#07080a'),CLEAR_FOG=new THREE.Color('#07080a'),HAZE_WHITE=new THREE.Color('#fff4ea');
+    scene.background=CLEAR_BG.clone();
+    scene.fog=new THREE.FogExp2(CLEAR_FOG.clone(),0.012);
     // 小規模ライブハウス：舞台天端を人体の接地面 y=0 とし、客席を75cm下げる。
     const STAGE_HEIGHT=.75,STAGE_W=6.8,STAGE_D=4.6,STAGE_Z=-.8,STAGE_FRONT=STAGE_Z+STAGE_D/2;
     const venue=new THREE.Group();venue.name='SmallLivehouse';scene.add(venue);
@@ -363,6 +364,9 @@
     // 客席側からの僅かな回り込み。真っ黒を防ぐだけの最低限
     const hemi=new THREE.HemisphereLight('#3a4756','#101014',.05); scene.add(hemi);
     const ambient=new THREE.AmbientLight('#ffffff',0); scene.add(ambient);
+    // 壁・床・ヘイズからカメラ側へ戻る光の近似。顔材質を発光させず、実光源として起こす。
+    const faceBounceTarget=new THREE.Object3D();faceBounceTarget.position.set(0,1.32,0);scene.add(faceBounceTarget);
+    const faceBounce=new THREE.DirectionalLight('#fff4e6',0);faceBounce.target=faceBounceTarget;scene.add(faceBounce);
 
 
     const SUBJECT=new THREE.Vector3(0,1.4,0);   // 露出計算の基準点（演者の顔の高さ）
@@ -1898,6 +1902,48 @@
     }
     function stageLux(t){let s=0;for(let i=0;i<N;i++)s+=luxOf(i,t);return s}
 
+    // 写真の見た目に合わせた顔面スポット測光。
+    // 舞台総照度だけでは、強いバックライトで顔が暗いのに「オーバー」と判定されるため、
+    // カメラ側を向く面へ入る光・色の視感度・壁とヘイズの回り込みを分けて見積もる。
+    const _meterNormal=new THREE.Vector3(),_meterToLight=new THREE.Vector3();
+    function faceExposureOf(contrib){
+      _meterNormal.copy(camera.position).sub(SUBJECT);
+      if(_meterNormal.lengthSq()<1e-6)_meterNormal.set(0,.15,1);
+      _meterNormal.normalize();_meterNormal.y+=.16;_meterNormal.normalize();
+      let direct=0,stage=0;
+      for(const c of contrib){
+        stage+=c.lux;
+        _meterToLight.copy(RIG[c.i].pos).sub(SUBJECT).normalize();
+        const incidence=Math.max(0,_meterNormal.dot(_meterToLight));
+        const luminance=THREE.MathUtils.clamp(.2126*c.col.r+.7152*c.col.g+.0722*c.col.b,.025,1);
+        const colorResponse=.35+.65*Math.sqrt(luminance);
+        direct+=c.lux*(.08+.92*incidence)*colorResponse;
+      }
+      const bounce=stage*(board.smoke?.06:.025);
+      return{direct,bounce,lux:direct+bounce,stage};
+    }
+    function selectRenderLights(contrib){
+      const lights=[],used=new Set();
+      const add=(c,background=false)=>{
+        if(!c||used.has(c.i)||lights.length>=REAL_LIGHTS)return;
+        used.add(c.i);lights.push({...c,background,renderLux:background?c.aimLux:c.lux});
+      };
+      // 肌と衣装を作る6灯を顔面寄与で選び、影付き2灯もこの先頭から割り当てる。
+      [...contrib].sort((a,b)=>(b.faceLux||0)-(a.faceLux||0)).forEach(c=>{
+        if(lights.length<6&&(c.faceLux||0)>.01)add(c,false);
+      });
+      // 残り2枠は背景幕と空気を照らす灯へ予約し、逆光が可視ビームだけになるのを防ぐ。
+      [...contrib].filter(c=>!used.has(c.i)).sort((a,b)=>{
+        const af=RIG[a.i],bf=RIG[b.i];
+        const aw=a.aimLux*(af.type==='uplight'?2:(af.type==='side'?1.25:1));
+        const bw=b.aimLux*(bf.type==='uplight'?2:(bf.type==='side'?1.25:1));
+        return bw-aw;
+      }).forEach(c=>{if(lights.length<REAL_LIGHTS)add(c,true)});
+      // 消灯が多い場合だけ通常順位で補充する。
+      [...contrib].sort((a,b)=>b.lux-a.lux).forEach(c=>{if(lights.length<REAL_LIGHTS&&c.lux>.01)add(c,false)});
+      return{lights,used};
+    }
+
     /* ======================================================================
        露出 — 舞台灯は連続光なのでガイドナンバー方式は使わない。
        入射光式 EV100 = log2(E/2.5) と、カメラ側 EV100 = log2(F²/T) - log2(ISO/100) の差を段数で出す。
@@ -1912,15 +1958,16 @@
     const FLICKER_LIMIT=1/250;      // これより速いとLEDのPWM調光で色ムラ・横縞が出やすい
     const SAFE_ACTION=1/125;        // 演者の動きを止められる目安
     const NOISE_ISO=6400;
-    let expo={iso:1600,fstop:2.8,shutter:1/250,evCam:0,evScene:0,over:0,lux:0};
+    let expo={iso:1600,fstop:2.8,shutter:1/250,evCam:0,evScene:0,stageEV:0,over:0,lux:0,stageLux:0};
     const evCamOf=(iso,f,t)=>Math.log2(f*f/t)-Math.log2(iso/100);
     const evSceneOf=lux=>Math.log2(Math.max(lux,1e-4)/C_INCIDENT);
-    function calcExposure(t,luxIn){
+    function calcExposure(t,luxIn,stageLuxIn){
       const iso=ISO_STOPS[+document.querySelector('#isoR').value],
             fstop=F_STOPS[+document.querySelector('#fstopR').value],
             shutter=SHUTTER_STOPS[+document.querySelector('#shutterR').value];
-      const lux=(luxIn===undefined)?stageLux(t):luxIn, evCam=evCamOf(iso,fstop,shutter), evScene=evSceneOf(lux);
-      expo={iso,fstop,shutter,evCam,evScene,over:evScene-evCam,lux};
+      const lux=(luxIn===undefined)?stageLux(t):luxIn, stageTotal=stageLuxIn===undefined?stageLux(t):stageLuxIn,
+            evCam=evCamOf(iso,fstop,shutter), evScene=evSceneOf(lux),stageEV=evSceneOf(stageTotal);
+      expo={iso,fstop,shutter,evCam,evScene,stageEV,over:evScene-evCam,lux,stageLux:stageTotal};
       const den=Math.round(1/shutter), sgn=v=>(v>0?'+':'')+v.toFixed(1);
       document.querySelector('#v-iso').textContent=iso;
       document.querySelector('#v-fstop').textContent='F'+fstop;
@@ -1929,7 +1976,7 @@
       const judge=Math.abs(expo.over)<0.3?'<span class="ok">適正</span>':(expo.over>0?'オーバー':'アンダー');
       document.querySelector('#expoReadout').innerHTML=
         '<strong>露出 '+sgn(expo.over)+'段 — '+judge+'</strong>'+
-        'ステージ照度 '+Math.round(lux)+' lx（EV'+expo.evScene.toFixed(1)+'）／カメラ EV'+expo.evCam.toFixed(1)+'。'+
+        '顔の実効照度 '+Math.round(lux)+' lx（EV'+expo.evScene.toFixed(1)+'）／舞台総照度 '+Math.round(stageTotal)+' lx（EV'+stageEV.toFixed(1)+'）／カメラ EV'+expo.evCam.toFixed(1)+'。'+
         'ライブはストロボを使えないので、明るさはISO・絞り・シャッターの3つだけで作ります。';
       const w=[];
       if(shutter>BLUR_LIMIT) w.push('⚠ 1/'+den+' は 1/60 より遅く、演者の動きがブレます。');
@@ -2026,10 +2073,11 @@
             float diffuseEdge=smoothstep(0.0,mix(0.42,0.68,uSoftness),across)*pow(across,mix(0.42,0.18,uSoftness));
             float rayLength=smoothstep(0.0,0.15,vUv.y)*(0.48+0.52*pow(vUv.y,0.38));
             float diffuseLength=smoothstep(0.0,0.10,vUv.y)*pow(vUv.y,0.72);
-            float broad=sin(vUv.y*31.0+uTime*0.20+uSeed*4.1);
-            float fine=sin(vUv.y*83.0-uTime*0.11+vUv.x*12.566+uSeed*9.3);
-            float rayShape=rayEdge*rayLength*clamp(0.78+0.14*broad+0.08*fine,0.42,1.0);
-            float diffuseShape=diffuseEdge*diffuseLength*clamp(0.90+0.07*broad+0.03*fine,0.68,1.0);
+            float broad=sin(vUv.y*7.0+uTime*0.18+uSeed*4.1);
+            float fine=sin(vUv.y*17.0-uTime*0.09+vUv.x*5.2+uSeed*9.3);
+            float sourceBoost=1.0+0.48*smoothstep(0.72,1.0,vUv.y);
+            float rayShape=rayEdge*rayLength*sourceBoost*clamp(0.76+0.15*broad+0.09*fine,0.38,1.0);
+            float diffuseShape=diffuseEdge*diffuseLength*sourceBoost*clamp(0.88+0.08*broad+0.04*fine,0.62,1.0);
             float scatter=uScatter*mix(rayShape,diffuseShape,uStyle);
             if(scatter<0.001) discard;
             // 散乱量をRGBに直接持たせ、加算合成でアルファが二度掛けされるのを防ぐ。
@@ -2127,7 +2175,8 @@
        毎フレームの更新 — 照度を計算し、上位灯を実光源に割り当て、露出を出す
        ====================================================================== */
     const _v=new THREE.Vector3(),_beamY=new THREE.Vector3(),_beamZ=new THREE.Vector3(),
-      _beamX=new THREE.Vector3(),_beamM=new THREE.Matrix4(),_beamQ=new THREE.Quaternion();
+      _beamX=new THREE.Vector3(),_beamM=new THREE.Matrix4(),_beamQ=new THREE.Quaternion(),
+      _atmosphereColor=new THREE.Color();
     function faceBeamToCamera(g){
       // 光軸を固定したまま、断面の正面だけをカメラへ向ける。
       _beamY.copy(g.beamAxis).negate();
@@ -2149,13 +2198,13 @@
       for(let i=0;i<N;i++){
         const f=RIG[i], lv=levelAt(i,t), col=colorAt(i,t), aim=aimOf(f), g=gear[i];
         const lux=luxOf(i,t);
-        contrib.push({i,lux,lv,col,aim});
         // 筐体・レンズ・ビーム・床のプール。照明の狙いと光柱の終点は分離する。
         // 実光源は aim で人物を照らし、可視光柱は beamEnd の床／天井まで通す。
         const beamEnd=beamEndOf(f,aim), dir=beamEnd.clone().sub(f.pos), len=Math.max(0.4,dir.length());
         const cone=CONE[f.type], rad=Math.tan(cone)*len;
         const aimDistance=Math.max(.5,aim.distanceTo(f.pos));
         const aimLux=FIX_LUX[f.type]*lv*(REF_DIST*REF_DIST)/(aimDistance*aimDistance);   // 狙った先の照度[lx]
+        contrib.push({i,lux,aimLux,lv,col,aim});
         g.lens.visible=lv>0.001;
         if(g.lens.visible) g.lensMat.color.copy(col).multiplyScalar(FIX_LUX[f.type]*lv*30);
         g.beam.visible=lv>0.001;
@@ -2197,25 +2246,59 @@
           g.poolMat.color.copy(col).multiplyScalar(aimLux*0.22);   // 床の拡散反射の輝度
         }
       }
-      contrib.sort((a,b)=>b.lux-a.lux);
-      // 上位を実光源へ
+      const meter=faceExposureOf(contrib),hazeOn=board.smoke&&!board.blackout;
+      _atmosphereColor.setRGB(0,0,0);
+      if(meter.stage>0){
+        for(const c of contrib){
+          _atmosphereColor.r+=c.col.r*c.lux;
+          _atmosphereColor.g+=c.col.g*c.lux;
+          _atmosphereColor.b+=c.col.b*c.lux;
+        }
+        _atmosphereColor.multiplyScalar(1/meter.stage).lerp(HAZE_WHITE,.12);
+      }else _atmosphereColor.copy(HAZE_WHITE);
+
+      // 空間ヘイズ：黒を一様に持ち上げず、背景・距離フォグ・粒子へだけ低周波の散乱色を渡す。
+      const hazeStrength=THREE.MathUtils.clamp(meter.stage/450,0,1);
+      if(hazeOn){
+        scene.background.copy(CLEAR_BG).lerp(_atmosphereColor,.006+.002*hazeStrength);
+        scene.fog.color.copy(CLEAR_FOG).lerp(_atmosphereColor,.12+.06*hazeStrength);
+        scene.fog.density=.022+.016*hazeStrength;
+        smoke.material.color.copy(_atmosphereColor).lerp(HAZE_WHITE,.16);
+        smoke.material.opacity=.022+.018*hazeStrength;
+        hemi.color.copy(CLEAR_FOG).lerp(_atmosphereColor,.18);
+        hemi.intensity=.07+.05*hazeStrength;
+      }else{
+        scene.background.copy(CLEAR_BG);scene.fog.color.copy(CLEAR_FOG);scene.fog.density=.012;
+        smoke.material.color.set('#93a2b2');smoke.material.opacity=.032;
+        hemi.color.set('#3a4756');hemi.intensity=board.blackout?0:.05;
+      }
+
+      // 前壁・床・ヘイズからの反射を、カメラ側から来る弱い実光源として近似する。
+      // 強さは顔面測光にも同じ値で含め、表示だけを持ち上げる偽の発光にはしない。
+      faceBounce.position.copy(camera.position);faceBounceTarget.position.copy(SUBJECT);
+      faceBounce.color.copy(_atmosphereColor).lerp(HAZE_WHITE,.62);
+      faceBounce.intensity=board.blackout?0:meter.bounce;
+      faceBounceTarget.updateMatrixWorld();
+
+      const renderSelection=selectRenderLights(contrib);
+      // 顔用6灯＋背景用2灯を、実光源の上限8灯へ割り当てる。
       const pen=THREE.MathUtils.lerp(0.15,0.85,board.soft/100);
       spots.forEach((l,k)=>{
-        const c=contrib[k];
-        if(!c||c.lux<=0.01){l.intensity=0;l.visible=false;return}
-        const f=RIG[c.i], d=Math.max(0.5,SUBJECT.distanceTo(f.pos));
+        const c=renderSelection.lights[k];
+        if(!c||c.renderLux<=0.01){l.intensity=0;l.visible=false;return}
+        const f=RIG[c.i], d=Math.max(0.5,c.background?c.aim.distanceTo(f.pos):SUBJECT.distanceTo(f.pos));
         l.visible=true; l.position.copy(f.pos); l.target.position.copy(c.aim); l.target.updateMatrixWorld();
         l.color.copy(c.col); l.angle=CONE[f.type]; l.penumbra=pen; l.decay=2; l.distance=0;
-        // E = I/d² なので、被写体面で c.lux になる光度[cd]を与える
-        l.intensity=c.lux*d*d;
+        // E = I/d²。顔用は被写体点、背景用は灯体の狙い位置で所定照度になる光度[cd]を与える。
+        l.intensity=c.renderLux*d*d;
       });
-      // 残りは環境光として色平均で足す（実光源の上限による欠落の補償）
+      // 未割当灯は上限付きの環境反射へ回し、無方向光で会場が平坦になるのを防ぐ。
       let rest=0; const restCol=new THREE.Color(0,0,0);
-      for(let k=REAL_LIGHTS;k<contrib.length;k++){const c=contrib[k];if(c.lux<=0)continue;rest+=c.lux;restCol.r+=c.col.r*c.lux;restCol.g+=c.col.g*c.lux;restCol.b+=c.col.b*c.lux}
-      if(rest>0){restCol.multiplyScalar(1/rest);ambient.color.copy(restCol);ambient.intensity=rest*0.35}else{ambient.intensity=0}
+      for(const c of contrib){if(renderSelection.used.has(c.i)||c.lux<=0)continue;rest+=c.lux;restCol.r+=c.col.r*c.lux;restCol.g+=c.col.g*c.lux;restCol.b+=c.col.b*c.lux}
+      if(rest>0){restCol.multiplyScalar(1/rest);ambient.color.copy(restCol);ambient.intensity=Math.min(rest*.28,14)}else{ambient.intensity=0}
       smoke.visible=board.smoke&&!board.blackout;
       // 露出。シーン照度は上と同じ luxOf の合計を使う
-      calcExposure(t,contrib.reduce((s,c)=>s+c.lux,0));
+      calcExposure(t,meter.lux,meter.stage);
       renderer.toneMappingExposure=THREE.MathUtils.clamp(TONE_K*Math.pow(2,-expo.evCam),0.005,24);
       renderChallengeStatus();
     }
@@ -2695,7 +2778,7 @@
     // 数値検証用。表示に依存せずチェイス／露出／照度を読み出せる
     window.__livehouse={RIG,board,levelAt,luxOf,stageLux,evCamOf,evSceneOf,getExpo:()=>expo,CHALLENGES,updateScene,
       setClock(t){clock=t;updateScene(t)},setBody:(id)=>setBody(id),getBodyId:()=>bodyId,BODIES,camera,CAMERA_PRESETS,
-      stage:{height:STAGE_HEIGHT,width:STAGE_W,depth:STAGE_D},setCameraPreset:applyCameraPreset,setFocalLength:applyFocalLength,focalLengths:FOCAL_LENGTHS,panCameraView,moveCameraFree,enterPositionMap,exitPositionMap,getCameraMode:()=>cameraMode,updateVenueCutaway,
+      stage:{height:STAGE_HEIGHT,width:STAGE_W,depth:STAGE_D},setCameraPreset:applyCameraPreset,setFocalLength:applyFocalLength,focalLengths:FOCAL_LENGTHS,panCameraView,moveCameraFree,enterPositionMap,exitPositionMap,getCameraMode:()=>cameraMode,updateVenueCutaway,faceExposureOf,selectRenderLights,
       setPose:(n)=>document.querySelector('[data-pose="'+n+'"]').click(),render(){renderer.render(scene,camera)},applyBoard,toneExposure(){return renderer.toneMappingExposure},triangles(){return renderer.info.render.triangles},lightStats(){return{spots:spots.filter(l=>l.visible&&l.intensity>0).length,shadows:spots.filter(l=>l.castShadow).length}}};
   </script>
 </body>
