@@ -1826,6 +1826,22 @@
       return V3(f.pos.x*0.55,0,z);
     }
 
+    /* 可視化用の光柱は「狙い位置」で止めない。
+       SpotLight は従来どおり人物を狙い、ヘイズ中の光だけをその先の床まで延長する。
+       これにより、頭や上半身で三角形が途切れる見え方を防ぐ。 */
+    function beamEndOf(f,aim){
+      const axis=aim.clone().sub(f.pos).normalize();
+      if(f.type==='uplight'){
+        const ceilingY=3.28, t=axis.y>0.04?(ceilingY-f.pos.y)/axis.y:6;
+        return f.pos.clone().addScaledVector(axis,THREE.MathUtils.clamp(t,1,8));
+      }
+      if(axis.y<-.04){
+        const t=(.025-f.pos.y)/axis.y;
+        return f.pos.clone().addScaledVector(axis,THREE.MathUtils.clamp(t,.6,10));
+      }
+      return f.pos.clone().addScaledVector(axis,7);
+    }
+
     /* --- チェイス／ブリンク（時刻 t の純関数。表示なしで数値検証できる） --- */
     let orderIdx=new Array(N).fill(0);
     function rebuildOrder(){
@@ -1935,23 +1951,74 @@
       x.fillStyle=g; x.fillRect(0,0,128,128);
       const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
     })();
-    // ビームは根元が明るく先へ行くほど散って薄くなる。円錐のUVは v=1 が頂点(灯体側)
-    const beamTex=(()=>{
-      const c=document.createElement('canvas'); c.width=4; c.height=64;
-      const x=c.getContext('2d'), g=x.createLinearGradient(0,64,0,0);
-      g.addColorStop(0,'rgba(255,255,255,0.06)'); g.addColorStop(0.55,'rgba(255,255,255,0.35)'); g.addColorStop(1,'rgba(255,255,255,1)');
-      x.fillStyle=g; x.fillRect(0,0,4,64);
-      const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
-    })();
+    // カメラに正対する面だけが濃くなるヘイズ用シェーダー。
+    // 輪郭でアルファが 0 へ落ちるため、従来の「半透明の三角板」が見えない。
+    function makeBeamMaterial(seed){
+      const mat=new THREE.ShaderMaterial({
+        uniforms:{
+          uColor:{value:new THREE.Color('#ffffff')},
+          uDensity:{value:0},
+          uSoftness:{value:.6},
+          uTime:{value:0},
+          uSeed:{value:seed}
+        },
+        vertexShader:`
+          varying vec2 vUv;
+          varying vec3 vViewNormal;
+          varying vec3 vViewDir;
+          void main(){
+            vUv=uv;
+            vec4 mvPosition=modelViewMatrix*vec4(position,1.0);
+            vViewNormal=normalize(normalMatrix*normal);
+            vViewDir=normalize(-mvPosition.xyz);
+            gl_Position=projectionMatrix*mvPosition;
+          }
+        `,
+        fragmentShader:`
+          uniform vec3 uColor;
+          uniform float uDensity;
+          uniform float uSoftness;
+          uniform float uTime;
+          uniform float uSeed;
+          varying vec2 vUv;
+          varying vec3 vViewNormal;
+          varying vec3 vViewDir;
+          #include <tonemapping_pars_fragment>
+          #include <colorspace_pars_fragment>
+          void main(){
+            float facing=clamp(abs(dot(normalize(vViewNormal),normalize(vViewDir))),0.0,1.0);
+            float softEdge=pow(facing,mix(1.65,.48,uSoftness));
+            float floorFade=smoothstep(0.0,.15,vUv.y);
+            float lengthFade=.48+.52*pow(vUv.y,.38);
+            float broad=sin(vUv.y*31.0+uTime*.20+uSeed*4.1);
+            float fine=sin(vUv.y*83.0-uTime*.11+vUv.x*12.566+uSeed*9.3);
+            float wisps=.78+.14*broad+.08*fine;
+            float alpha=uDensity*softEdge*floorFade*lengthFade*clamp(wisps,.42,1.0);
+            if(alpha<.001) discard;
+            gl_FragColor=vec4(uColor,alpha);
+            #include <tonemapping_fragment>
+            #include <colorspace_fragment>
+          }
+        `,
+        transparent:true,
+        blending:THREE.AdditiveBlending,
+        depthTest:true,
+        depthWrite:false,
+        side:THREE.DoubleSide,
+        toneMapped:true
+      });
+      mat.forceSinglePass=true;
+      return mat;
+    }
     const bodyGeo=new THREE.BoxGeometry(.16,.2,.16), moverGeo=new THREE.SphereGeometry(.13,14,10);
     const gear=RIG.map(f=>{
       const g=new THREE.Group();
       const bodyMat=new THREE.MeshStandardMaterial({color:'#15151a',roughness:.7});
       const body=new THREE.Mesh(f.type==='moving'?moverGeo:bodyGeo,bodyMat);
       body.position.copy(f.pos); g.add(body);
-      // ビーム: 底面を開いた円錐。additive で重ねると煙の中の光条に見える
-      const beamMat=new THREE.MeshBasicMaterial({color:'#000000',map:beamTex,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
-      const beam=new THREE.Mesh(new THREE.ConeGeometry(1,1,20,1,true),beamMat);
+      // ビーム: 十分に丸い開放円錐と視線依存の濃度で、容積を持つ光柱に見せる。
+      const beamMat=makeBeamMaterial(f.id/N);
+      const beam=new THREE.Mesh(new THREE.ConeGeometry(1,1,32,5,true),beamMat);
       g.add(beam);
       // 床のプール（実光源は上位8灯までなので、床の当たりはこの加算ディスクが担う）
       const poolMat=new THREE.MeshBasicMaterial({color:'#000000',map:poolTex,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false});
@@ -2002,12 +2069,12 @@
         const f=RIG[i], lv=levelAt(i,t), col=colorAt(i,t), aim=aimOf(f), g=gear[i];
         const lux=luxOf(i,t);
         contrib.push({i,lux,lv,col,aim});
-        // 筐体・レンズ・ビーム・床のプール。
-        // これらは加算合成の板だが、色の強さを「その位置の照度」から作るので
-        // トーンマッピング（＝カメラの露出）を通しても実光源と同じように増減する。
-        const dir=aim.clone().sub(f.pos), len=Math.max(0.4,dir.length());
+        // 筐体・レンズ・ビーム・床のプール。照明の狙いと光柱の終点は分離する。
+        // 実光源は aim で人物を照らし、可視光柱は beamEnd の床／天井まで通す。
+        const beamEnd=beamEndOf(f,aim), dir=beamEnd.clone().sub(f.pos), len=Math.max(0.4,dir.length());
         const cone=CONE[f.type], rad=Math.tan(cone)*len;
-        const aimLux=FIX_LUX[f.type]*lv*(REF_DIST*REF_DIST)/(len*len);   // 狙った先の照度[lx]
+        const aimDistance=Math.max(.5,aim.distanceTo(f.pos));
+        const aimLux=FIX_LUX[f.type]*lv*(REF_DIST*REF_DIST)/(aimDistance*aimDistance);   // 狙った先の照度[lx]
         g.lens.visible=lv>0.001;
         if(g.lens.visible) g.lensMat.color.copy(col).multiplyScalar(FIX_LUX[f.type]*lv*30);
         g.beam.visible=lv>0.001;
@@ -2016,14 +2083,21 @@
           _q.setFromUnitVectors(UP,dir.clone().normalize().negate());
           g.beam.quaternion.copy(_q);
           g.beam.scale.set(rad,len,rad);
-          // スモークがなければ空気中の散乱はほとんど見えない
-          g.beamMat.color.copy(col).multiplyScalar(aimLux*(board.smoke?0.05:0.008));
+          // スモークがなければ空気中の散乱はほとんど見えない。
+          // 照度は平方根で圧縮し、多灯が重なっても白飛びしにくくする。
+          g.beamMat.uniforms.uColor.value.copy(col);
+          const typeDensity=f.type==='moving'?1.12:(f.type==='side'?.82:1);
+          g.beamMat.uniforms.uDensity.value=(board.smoke?.060:.0035)*Math.sqrt(lv)*typeDensity;
+          g.beamMat.uniforms.uSoftness.value=board.soft/100;
+          g.beamMat.uniforms.uTime.value=t;
         }
-        // 床のプール。床を狙う灯体だけに出す（実光源は上位8灯までなので床の当たりはここが担う）
-        const onFloor=aim.y<0.05&&lv>0.001;
+        // 床のプール。人物狙いの灯も、延長した光柱が舞台面に当たれば着地光を出す。
+        const onStageFloor=beamEnd.y<.06&&Math.abs(beamEnd.x)<=STAGE_W/2+.2&&
+          beamEnd.z>=STAGE_Z-STAGE_D/2-.2&&beamEnd.z<=STAGE_FRONT+.2;
+        const onFloor=onStageFloor&&lv>0.001;
         g.pool.visible=onFloor;
         if(onFloor){
-          g.pool.position.set(aim.x,0.02,aim.z);
+          g.pool.position.set(beamEnd.x,0.02,beamEnd.z);
           g.pool.scale.set(rad,rad,1);
           g.poolMat.color.copy(col).multiplyScalar(aimLux*0.22);   // 床の拡散反射の輝度
         }
@@ -2498,7 +2572,12 @@
         }
         updateScene(clock);
       }
-      if(board.smoke) updateSmoke(dt);
+      if(board.smoke){
+        updateSmoke(dt);
+        // 操作が止まっている間も、煙の密度ムラだけはごくゆっくり流す。
+        const hazeTime=now*.001;
+        for(const g of gear)if(g.beam.visible)g.beamMat.uniforms.uTime.value=hazeTime;
+      }
       if(motionBars.length) updateMotionBars();
       updatePositionMarker(now);
       if(cameraMode!=='map'&&lookPointerId===null)controls.update();
