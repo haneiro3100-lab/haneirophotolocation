@@ -1358,17 +1358,23 @@
     function idolEase(a,b,x){const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);}
     function idolFaceWidth(y){
       const v=Math.max(-1,Math.min(1,y/.074));
-      return .060*Math.sqrt(Math.max(0,1-v*v))*(1-.24*idolEase(.0,.95,-v));
+      // 目の下までは頬幅を保ち、口元から小さな顎へ緩やかに絞る。
+      return .060*Math.sqrt(Math.max(0,1-v*v))*(1-.17*idolEase(.18,.96,-v));
     }
     function idolFaceZ(x,y){
       const v=Math.max(-1,Math.min(1,y/.074)),w=idolFaceWidth(y);
       const side=Math.sqrt(Math.max(0,1-(x/Math.max(w,1e-8))**2));
-      const base=.054*Math.sqrt(Math.max(0,1-v*v))*side;
+      // 下顔面は球面より緩やかに回り込ませ、口元から顎に出る暗い一枚面を分ける。
+      const lowerFront=Math.pow(Math.max(0,1-Math.pow(Math.max(0,-v),2.4)),1/2.4);
+      const frontCurve=v<0?lowerFront:Math.sqrt(Math.max(0,1-v*v));
+      const base=.054*frontCurve*side;
       const ga=(x0,y0,sx,sy)=>Math.exp(-(((x-x0)/sx)**2+((y-y0)/sy)**2));
       const relief=.0028*ga(0,-.014,.0110,.019)+.0018*ga(0,.001,.0075,.022)
-        +.0014*(ga(-.027,-.023,.014,.011)+ga(.027,-.023,.014,.011))
-        +.0010*ga(0,-.039,.020,.014);
-      return base+relief*side*side;
+        +.0017*(ga(-.025,-.024,.020,.022)+ga(.025,-.024,.020,.022))
+        +.0010*ga(0,-.040,.026,.020)+.0013*ga(0,-.057,.020,.014);
+      // 球の上下端では前面と後面を同じ一点へ閉じ、顎下の切り口を作らない。
+      const poleFade=idolEase(0,.16,1-Math.abs(v));
+      return base+relief*side*side*poleFade;
     }
     // UV境界を保持したまま、同じ座標の頂点へ同じ法線を与える。
     function idolSmoothNormals(geo){
