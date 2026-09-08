@@ -224,6 +224,7 @@
       camera.position.add(move);controls.target.add(move);controls.update();markCameraCustom();
     }
     let lookPointerId=null,lookYaw=0,lookPolar=Math.PI/2,lookDistance=4,lastLookX=0,lastLookY=0;
+    const lookAnchor=new THREE.Vector3(),lookTargetAnchor=new THREE.Vector3();
     function readLookDirection(){
       const direction=controls.target.clone().sub(camera.position);
       lookDistance=THREE.MathUtils.clamp(direction.length(),.65,28);direction.normalize();
@@ -232,12 +233,16 @@
     function applyLookDirection(){
       const horizontal=Math.sin(lookPolar);
       const direction=new THREE.Vector3(Math.sin(lookYaw)*horizontal,Math.cos(lookPolar),-Math.cos(lookYaw)*horizontal);
-      controls.target.copy(camera.position).add(direction.multiplyScalar(lookDistance));controls.update();markCameraCustom();
+      camera.position.copy(lookAnchor);
+      controls.target.copy(lookAnchor).add(direction.multiplyScalar(lookDistance));
+      camera.lookAt(controls.target);markCameraCustom();
     }
     renderer.domElement.addEventListener('pointerdown',e=>{
       if(cameraMode!=='fps'||e.button!==0)return;
-      readLookDirection();lookPointerId=e.pointerId;lastLookX=e.clientX;lastLookY=e.clientY;
-      controls.enableDamping=false;renderer.domElement.setPointerCapture(e.pointerId);renderer.domElement.style.cursor='grabbing';
+      lookAnchor.copy(camera.position);lookTargetAnchor.copy(controls.target);
+      controls.enableDamping=false;controls.update();camera.position.copy(lookAnchor);controls.target.copy(lookTargetAnchor);camera.lookAt(controls.target);
+      readLookDirection();lookPointerId=e.pointerId;lastLookX=e.clientX;lastLookY=e.clientY;controls.enabled=false;
+      renderer.domElement.setPointerCapture(e.pointerId);renderer.domElement.style.cursor='grabbing';
     });
     renderer.domElement.addEventListener('pointermove',e=>{
       if(e.pointerId!==lookPointerId||cameraMode!=='fps')return;
@@ -247,7 +252,8 @@
     });
     function finishLook(e){
       if(e.pointerId!==lookPointerId)return;
-      lookPointerId=null;controls.enableDamping=true;renderer.domElement.style.cursor='';
+      lookPointerId=null;camera.position.copy(lookAnchor);camera.lookAt(controls.target);
+      controls.enabled=true;controls.update();controls.enableDamping=true;renderer.domElement.style.cursor='';
       if(renderer.domElement.hasPointerCapture(e.pointerId))renderer.domElement.releasePointerCapture(e.pointerId);
       saveSettings();
     }
@@ -2495,7 +2501,7 @@
       if(board.smoke) updateSmoke(dt);
       if(motionBars.length) updateMotionBars();
       updatePositionMarker(now);
-      if(cameraMode!=='map')controls.update();
+      if(cameraMode!=='map'&&lookPointerId===null)controls.update();
       updateVenueCutaway();
       renderer.render(scene,camera);
     }
