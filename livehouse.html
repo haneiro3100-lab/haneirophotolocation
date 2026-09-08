@@ -149,9 +149,8 @@
     const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,1.35,0); controls.enableDamping=true; controls.maxPolarAngle=Math.PI/2.02; controls.minDistance=2; controls.maxDistance=16;
 
     const material=new THREE.MeshStandardMaterial({color:'#d6d7d2',roughness:.76,metalness:.015});
-    // 埋め込み顔テクスチャの素肌色（約 #ece8e5）へ、アイドルの首・腕・脚だけを合わせる。
-    // 標準マネキンの材質は material のまま残し、顔テクスチャ自体には手を加えない。
-    const idolSkinMaterial=new THREE.MeshStandardMaterial({color:'#ece8e5',roughness:.80,metalness:.015});
+    // 新アイドルの顔・首・手足を同一の肌材質に統一。標準体型の材質は変更しない。
+    const idolSkinMaterial=new THREE.MeshStandardMaterial({color:'#f1dfd6',roughness:.82,metalness:0});
     const glassesMaterial=new THREE.MeshStandardMaterial({color:'#2b2e30',roughness:.28,metalness:.85});
     const sunglassFrameMaterial=new THREE.MeshStandardMaterial({color:'#141414',roughness:.55,metalness:.05});
     const sunglassLensMaterial=new THREE.MeshStandardMaterial({color:'#0a0a0c',roughness:.15,metalness:.3,side:THREE.DoubleSide});
@@ -268,9 +267,9 @@
       ]};
     })();
 
-    /* --- 女性アイドル体型（1.62m）----------------------------------------
-       小顔・なで肩・高く細いウエスト・広い骨盤・細い四肢。
-       顔の起伏は faceRelief で浅くし、髪と衣装は buildIdolCostume() が付ける。 */
+    /* --- 新アイドル体型（1.562m）----------------------------------------
+       丸い頬と小さな顎、ツインテール、低い僧帽筋。骨格・6姿勢の仕組みは共有する。
+       頭部は buildNewIdolHead、衣装は buildIdolCostume が担当。 */
     BODIES.idol=(()=>{
       const P=derive({
         CROWN:0.998, CHIN:0.850, SKULL_BASE:0.898, NECK:0.883,
@@ -278,10 +277,10 @@
         ABDOMEN:0.672, WAIST:0.640, HIP:0.535, CROTCH:0.478,
         ELBOW:0.632, WRIST:0.492, KNEE:0.292, ANKLE:0.040,
         SHOULDER_X:0.070, HIP_X:0.050,
-        HEAD_W:0.0500, HEAD_D:0.0625,
-        HAND:0.083, FOOT_LEN:0.126, HEEL_LEN:0.025, FOOT_W:0.028
+        HEAD_W:0.0600, HEAD_D:0.0540,
+        HAND:0.068, FOOT_LEN:0.126, HEEL_LEN:0.025, FOOT_W:0.028
       });
-      return {id:'idol',label:'アイドル',height:1.62,faceRelief:0.55,costume:'idol',P,
+      return {id:'idol',label:'アイドル',height:1.562,faceRelief:0.55,costume:'idol',P,
       TRUNK:[
         { y:P.CROTCH,    z: 0.004, w:0.0800,dF:0.041, dB:0.044, n:2.1, sep:0.044, pinch:0.76 },
         { y:0.494,       z: 0.002, w:0.0910,dF:0.051, dB:0.058, n:2.1, sep:0.038, pinch:0.55 },
@@ -294,9 +293,9 @@
         { y:P.ABDOMEN,   z: 0.005, w:0.0665,dF:0.056, dB:0.047, n:2.4 },
         { y:P.RIB,       z: 0.000, w:0.0745,dF:0.063, dB:0.052, n:2.5 },
         { y:P.CHEST,     z:-0.004, w:0.0805,dF:0.075, dB:0.055, n:2.5 },  // 胸から腰への差を明確化
-        { y:0.788,       z:-0.008, w:0.0795,dF:0.062, dB:0.058, n:2.5 },
-        { y:0.812,       z:-0.009, w:0.0700,dF:0.053, dB:0.054, n:2.5 },
-        { y:P.GIRDLE,    z:-0.010, w:0.0605,dF:0.047, dB:0.051, n:2.4 },  // なで肩を維持
+        { y:0.788,       z:-0.004, w:0.0760,dF:0.060, dB:0.050, n:2.2 },
+        { y:0.812,       z:-0.003, w:0.0660,dF:0.049, dB:0.043, n:2.1 },
+        { y:P.GIRDLE,    z:-0.002, w:0.0560,dF:0.040, dB:0.036, n:2.0 },
         // 首は「顎より下でも細いまま」であることが自然さを決める。旧値は顎の高さ
         // (0.850) で直径が頭幅の96%あり、頭が太い柱に載って見えていた。僧帽筋の
         // 斜面を 0.845 まで下げ、顎の高さでは頭幅の約58%に収める。
@@ -304,11 +303,11 @@
         // 半分だった。間隔が急に詰まると平滑化が効かず横筋・膨らみが出る
         // （このファイル自身が TRUNK 冒頭で警告している条件）。等間隔に置き直す。
         // 前面・首幅・高さは保ち、後方厚みだけを局所的に減らして首後ろの山を抑える。
-        { y:0.836,       z:-0.011, w:0.0410,dF:0.0342, dB:0.0370, n:2.25 },  // 僧帽筋の斜面
-        { y:P.NECK_ROOT, z:-0.008, w:0.0290,dF:0.0266, dB:0.0290, n:2.2 },   // 首の付け根（顎より下）
-        { y:0.8655,      z:-0.003, w:0.0256,dF:0.0246, dB:0.0276, n:2.15 },
-        { y:P.NECK,      z: 0.002, w:0.0238,dF:0.0232, dB:0.0258, n:2.1 },   // 首
-        { y:P.SKULL_BASE,z: 0.005, w:0.0232,dF:0.0228, dB:0.0250, n:2.0 }
+        { y:0.836,       z:-0.001, w:0.0340,dF:0.0265, dB:0.0260, n:2.0 },
+        { y:P.NECK_ROOT, z: 0.000, w:0.0225,dF:0.0215, dB:0.0215, n:2.0 },
+        { y:0.8655,      z: 0.000, w:0.0205,dF:0.0205, dB:0.0205, n:2.0 },
+        { y:P.NECK,      z: 0.000, w:0.0205,dF:0.0205, dB:0.0210, n:2.0 },
+        { y:P.SKULL_BASE,z: 0.000, w:0.0210,dF:0.0210, dB:0.0215, n:2.0 }
       ],
       LEG:[
         { seg:'thigh', t: 0.05, w:0.0520,dF:0.050, dB:0.066, n:2.2 },
@@ -707,6 +706,7 @@
     // アイドル専用の手。掌と5本の指を分け、遠景でも「ミトン」ではなく手として読ませる。
     function buildIdolHand(J,S){
       const g=new THREE.Group(),wr=J['wrist'+S],tip=J['hand'+S];
+      const handSkin=idolSkinMaterial;
       const u=tip.clone().sub(wr).normalize();
       let depth=(J['handNormal'+S]||V3(0,0,1)).clone();
       depth.addScaledVector(u,-depth.dot(u));
@@ -716,11 +716,11 @@
       const handBasis=new THREE.Matrix4().makeBasis(across,u,depth);
       const handRotation=new THREE.Quaternion().setFromRotationMatrix(handBasis);
       const addPart=(geo,pos,scale)=>{
-        const m=new THREE.Mesh(geo,material);m.position.copy(pos);m.scale.copy(scale);
+        const m=new THREE.Mesh(geo,handSkin);m.position.copy(pos);m.scale.copy(scale);
         m.quaternion.copy(handRotation);m.castShadow=true;g.add(m);return m;
       };
       const palmC=wr.clone().lerp(tip,0.40);
-      addPart(new THREE.SphereGeometry(1,10,7),palmC,V3(0.0105*H,0.026*H,0.0065*H));
+      addPart(new THREE.SphereGeometry(1,24,16),palmC,V3(0.0115*H,0.022*H,0.0065*H));
       const palmEnd=wr.clone().lerp(tip,0.54);
       const lengths=[0.38,0.46,0.50,0.46];
       [-1.5,-0.5,0.5,1.5].forEach((slot,i)=>{
@@ -731,7 +731,7 @@
           {p:a,w:0.00175*H,dF:0.00145*H,dB:0.00145*H,n:2},
           {p:b,w:0.00125*H,dF:0.00110*H,dB:0.00110*H,n:2}
         ];
-        const m=new THREE.Mesh(loft(finger,{radial:7,seg:7}),material);m.castShadow=true;g.add(m);
+        const m=new THREE.Mesh(loft(finger,{radial:10,seg:10}),handSkin);m.castShadow=true;g.add(m);
       });
       const thumbA=wr.clone().lerp(tip,0.32).addScaledVector(across,(S==='L'?-1:1)*0.008*H);
       const thumbB=thumbA.clone().addScaledVector(u,0.020*H)
@@ -739,7 +739,7 @@
       const thumb=new THREE.Mesh(loft([
         {p:thumbA,w:0.0025*H,dF:0.0022*H,dB:0.0022*H,n:2},
         {p:thumbB,w:0.0015*H,dF:0.0013*H,dB:0.0013*H,n:2}
-      ],{radial:7,seg:7}),material);thumb.castShadow=true;g.add(thumb);
+      ],{radial:10,seg:10}),handSkin);thumb.castShadow=true;g.add(thumb);
       return g;
     }
 
@@ -888,7 +888,7 @@
     // 目の中心はbuildHead()の眼窩(fx≈±0.42,fy≈0)の実頂点をサンプリングして決めた実測値。
     function buildGlasses(){
       const g=new THREE.Group();
-      const EYE_X=0.040, EYE_Y=0.022, EYE_Z=0.098;   // 目の中心（実測ベース）
+      const EYE_X=BODY.costume==='idol'?.024*H:.040, EYE_Y=BODY.costume==='idol'?-.007*H:.022, EYE_Z=BODY.costume==='idol'?.058*H:.098;
       const LENS_R=0.021, TUBE_R=0.0016;
       const HW=P.HEAD_W*H;                            // 頭部の左右半幅（buildHeadと同じ定義）
       const mat=glassesMaterial;
@@ -925,7 +925,7 @@
     // 角丸長方形の輪郭でボストン型（丸みを帯びた四角形）のレンズ・フレームを組み立てる。
     function buildSunglasses(){
       const g=new THREE.Group();
-      const EYE_X=0.040, EYE_Y=0.022, EYE_Z=0.098;
+      const EYE_X=BODY.costume==='idol'?.024*H:.040, EYE_Y=BODY.costume==='idol'?-.007*H:.022, EYE_Z=BODY.costume==='idol'?.058*H:.098;
       const LENS_W=0.050, LENS_H=0.040, LENS_RADIUS=0.014;   // レンズの幅・高さ・角丸半径
       const FRAME_T=0.005, FRAME_D=0.006, TUBE_R=0.0038;      // フレームの太さ・厚み、テンプル/ブリッジの太さ
       const HW=P.HEAD_W*H;
@@ -975,8 +975,8 @@
        アイドル衣装 — 細部は作らず、シルエットで「女性アイドル」と読ませる
        骨格 J から組み立てるので全ポーズに追従する。ロフトは既存の loft() を使う。
        ====================================================================== */
-    const costumeMaterial=new THREE.MeshStandardMaterial({color:'#f2e9f4',roughness:.62,metalness:.02,side:THREE.DoubleSide});
-    const costumeAccentMaterial=new THREE.MeshStandardMaterial({color:'#cfb0c3',roughness:.57,metalness:.025,side:THREE.DoubleSide});
+    const costumeMaterial=new THREE.MeshStandardMaterial({color:'#f3dbe7',roughness:.68,metalness:0,side:THREE.DoubleSide});
+    const costumeAccentMaterial=new THREE.MeshStandardMaterial({color:'#cf7d9f',roughness:.60,metalness:0,side:THREE.DoubleSide});
     const sockMaterial=new THREE.MeshStandardMaterial({color:'#eee8ef',roughness:.68,metalness:.01});
     const hairMaterial=new THREE.MeshStandardMaterial({color:'#33262d',roughness:.58,metalness:.025});
     const idolEyeWhiteMaterial=new THREE.MeshStandardMaterial({color:'#eeeae7',roughness:.42,metalness:0});
@@ -1038,7 +1038,9 @@
     }
 
     let idolFaceTemplate=null;
-    try{
+    // 旧GLBは保存互換のためデータだけ残す。新モデルでは読み込まず、顔・髪を一から生成する。
+    const USE_LEGACY_IDOL_FACE=false;
+    if(USE_LEGACY_IDOL_FACE)try{
       const bytes=Uint8Array.from(atob(IDOL_FACE_GLB_BASE64),c=>c.charCodeAt(0));
       // GLTFLoader は GLB 内の画像を blob: URL 経由で読む。iOS Safari / 埋め込み
       // ビューアではこの blob が解決できず「Couldn't load texture blob-request://」
@@ -1202,8 +1204,8 @@
       /* --- パフスリーブ: ノースリーブの肩に載る膨らみ --------------------- */
       ['L','R'].forEach(S=>{
         const sh=J['shoulder'+S], el=J['elbow'+S];
-        const puff=addM(new THREE.DodecahedronGeometry(1,1),costumeMaterial);
-        puff.scale.set(0.037*H,0.031*H,0.036*H);
+        const puff=addM(new THREE.SphereGeometry(1,32,24),costumeMaterial);
+        puff.scale.set(0.034*H,0.030*H,0.032*H);
         puff.position.copy(sh.clone().lerp(el,0.10));
       });
 
@@ -1350,6 +1352,123 @@
       return g;
     }
 
+    /* New idol v1: 曲面頭部＋顔に沿う目＋左右のツインテール。
+       実在人物の雰囲気を参考にしたデフォルメ造形で、精密な本人再現ではない。
+       顔全体を覆う板・旧GLB・旧ノーマルマップは使わない。 */
+    function idolEase(a,b,x){const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);}
+    function idolFaceWidth(y){
+      const v=Math.max(-1,Math.min(1,y/.074));
+      return .060*Math.sqrt(Math.max(0,1-v*v))*(1-.24*idolEase(.0,.95,-v));
+    }
+    function idolFaceZ(x,y){
+      const v=Math.max(-1,Math.min(1,y/.074)),w=idolFaceWidth(y);
+      const side=Math.sqrt(Math.max(0,1-(x/Math.max(w,1e-8))**2));
+      const base=.054*Math.sqrt(Math.max(0,1-v*v))*side;
+      const ga=(x0,y0,sx,sy)=>Math.exp(-(((x-x0)/sx)**2+((y-y0)/sy)**2));
+      const relief=.0070*ga(0,-.016,.0075,.010)+.0020*ga(0,.001,.0055,.016)
+        +.0014*(ga(-.027,-.023,.014,.011)+ga(.027,-.023,.014,.011))
+        +.0012*ga(0,-.036,.014,.007);
+      return base+relief*side*side;
+    }
+    // UV境界を保持したまま、同じ座標の頂点へ同じ法線を与える。
+    function idolSmoothNormals(geo){
+      geo.computeVertexNormals();
+      const p=geo.attributes.position,n=geo.attributes.normal,groups=new Map();
+      for(let i=0;i<p.count;i++){
+        const key=[p.getX(i),p.getY(i),p.getZ(i)].map(v=>Math.round(v*1e7)).join(',');
+        let rec=groups.get(key);if(!rec){rec={sum:V3(),ids:[]};groups.set(key,rec);}
+        rec.sum.add(V3(n.getX(i),n.getY(i),n.getZ(i)));rec.ids.push(i);
+      }
+      groups.forEach(({sum,ids})=>{sum.normalize();ids.forEach(i=>n.setXYZ(i,sum.x,sum.y,sum.z));});
+      n.needsUpdate=true;return geo;
+    }
+    const newIdolHairMaterial=new THREE.MeshStandardMaterial({color:'#432f37',roughness:.66,metalness:0});
+    const newIdolEyeWhite=new THREE.MeshStandardMaterial({color:'#fff4ed',roughness:.48});
+    const newIdolIris=new THREE.MeshStandardMaterial({color:'#63433f',roughness:.48});
+    const newIdolInk=new THREE.MeshStandardMaterial({color:'#281a22',roughness:.65});
+    const newIdolLip=new THREE.MeshStandardMaterial({color:'#b7657c',roughness:.75});
+    const newIdolIvory=new THREE.MeshStandardMaterial({color:'#fff4ee',roughness:.68});
+    let newIdolHeadTemplate=null;
+    function buildNewIdolHead(J){
+      if(!newIdolHeadTemplate){
+        const g=new THREE.Group();g.name='SoftTwinTailIdolHead';
+        const add=(geo,mat,name)=>{const m=new THREE.Mesh(geo,mat);m.name=name;m.castShadow=true;g.add(m);return m;};
+        const geo=new THREE.SphereGeometry(1,96,64),p=geo.attributes.position;
+        for(let i=0;i<p.count;i++){
+          const uy=p.getY(i),x=p.getX(i)*.060*(1-.24*idolEase(0,.95,-uy));
+          const y=uy*.074,z=p.getZ(i)>=0?idolFaceZ(x,y):p.getZ(i)*.054;
+          p.setXYZ(i,x,y,z);
+        }
+        p.needsUpdate=true;idolSmoothNormals(geo);
+        add(geo,idolSkinMaterial,'ContinuousSmoothFace');
+        // 目・虹彩は顔面の曲率に沿う薄い面。球体の眼球を外から貼り付けない。
+        const patch=(cx,cy,rx,ry,offset,mat,name)=>{
+          const pos=[],ids=[],R=9,A=48;
+          for(let r=0;r<=R;r++)for(let a=0;a<=A;a++){
+            const t=a/A*Math.PI*2,x=cx+rx*(r/R)*Math.cos(t),y=cy+ry*(r/R)*Math.sin(t);
+            pos.push(x,y,idolFaceZ(x,y)+offset);
+          }
+          for(let r=0;r<R;r++)for(let a=0;a<A;a++){
+            const k=r*(A+1)+a,l=k+A+1;ids.push(k,l,l+1,k,l+1,k+1);
+          }
+          const q=new THREE.BufferGeometry();q.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));q.setIndex(ids);
+          idolSmoothNormals(q);const m=add(q,mat,name);m.castShadow=false;return m;
+        };
+        const line=(pts,r,mat,name)=>add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),32,r,8,false),mat,name);
+        [-1,1].forEach(sg=>{
+          const ex=sg*.024,ey=-.007;
+          patch(ex,ey,.0150,.0090,.00035,newIdolInk,'EyeOutline');
+          patch(ex,ey-.0003,.0139,.0078,.00065,newIdolEyeWhite,'EyeWhite');
+          patch(ex-sg*.0006,ey-.0002,.0061,.0071,.00095,newIdolIris,'WarmBrownIris');
+          patch(ex-sg*.0006,ey+.0003,.0034,.0050,.00120,newIdolInk,'Pupil');
+          patch(ex-.0019,ey+.0031,.0016,.0017,.00145,newIdolEyeWhite,'EyeHighlight');
+          const lid=[];
+          for(let i=0;i<=20;i++){const t=Math.PI*i/20,x=ex+.0144*Math.cos(t),y=ey+.0080*Math.sin(t);lid.push(V3(x,y,idolFaceZ(x,y)+.001));}
+          line(lid,.0007,newIdolInk,'UpperLid');
+          const brow=[];for(let i=0;i<=8;i++){const x=ex+(i/8-.5)*.024,y=.009+.002*Math.sin(Math.PI*i/8);brow.push(V3(x,y,idolFaceZ(x,y)+.0005));}
+          line(brow,.00065,newIdolHairMaterial,'SoftBrow');
+          const ear=add(new THREE.SphereGeometry(1,24,18),idolSkinMaterial,'Ear');
+          ear.scale.set(.007,.014,.008);ear.position.set(sg*.055,-.009,-.001);
+        });
+        const smile=[];for(let i=0;i<=16;i++){const x=(i/16-.5)*.019,y=-.037+.0022*(x/.0095)**2;smile.push(V3(x,y,idolFaceZ(x,y)+.0005));}
+        line(smile,.00085,newIdolLip,'SmallSmile');
+        // 頭皮キャップ：前だけ浅く切り上げ、側頭部と後頭部を連続させる。
+        const pos=[],idx=[],U=96,V=40;
+        for(let j=0;j<=V;j++)for(let i=0;i<=U;i++){
+          const a=i/U*Math.PI*2,front=Math.max(0,Math.cos(a));
+          const end=2.38-1.24*front**3,t=end*j/V;
+          pos.push(.0625*Math.sin(t)*Math.sin(a),.080*Math.cos(t)+.004,.060*Math.sin(t)*Math.cos(a)-.003);
+        }
+        for(let j=0;j<V;j++)for(let i=0;i<U;i++){const k=j*(U+1)+i,l=k+U+1;idx.push(k,l,k+1,k+1,l,l+1);}
+        const cap=new THREE.BufferGeometry();cap.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));cap.setIndex(idx);
+        add(idolSmoothNormals(cap),newIdolHairMaterial,'SmoothHairCap');
+        const lock=(points,widths,depths,name)=>add(loft(points.map((p,i)=>({p:V3(...p),w:widths[i],dF:depths[i],dB:depths[i],n:2})),{radial:14,seg:44}),newIdolHairMaterial,name);
+        for(let i=-4;i<=4;i++){
+          const x=i*.0108,edge=Math.abs(i)/4;
+          lock([[x*.45,.073,.024],[x*.86,.044,.050],[x,.023+edge*.004,.057-edge*.008],[x+.0015,.014+edge*.003,.055-edge*.008]],
+            [.0082,.0085,.0066,.0009],[.0037,.0038,.0032,.0009],'FeatheredFringe');
+        }
+        [-1,1].forEach(sg=>{
+          lock([[sg*.049,.031,.026],[sg*.058,-.007,.019],[sg*.049,-.051,.032],[sg*.043,-.066,.025]],
+            [.008,.007,.0048,.0009],[.005,.0045,.003,.001],'FaceFramingLock');
+          // 三束を重ね、平板ポニーではなく厚みのあるS字ツインテールへ。
+          for(let strand=-1;strand<=1;strand++){
+            const dx=strand*.006,dz=strand*.004;
+            lock([[sg*.057,.028,-.031],[sg*(.081+dx),.015,-.049+dz],[sg*(.086+dx),-.049,-.055+dz],
+              [sg*(.076+dx),-.113,-.051+dz],[sg*(.092+dx),-.155,-.031+dz],[sg*(.080+dx),-.184,-.019+dz]],
+              [.009,.013,.014,.012,.008,.0012],[.008,.010,.010,.008,.006,.0012],'TwinTail');
+          }
+          const tie=V3(sg*.064,.025,-.032);
+          [-1,1].forEach(wing=>{const m=add(new THREE.SphereGeometry(1,24,16),costumeAccentMaterial,'HairRibbon');
+            m.scale.set(.013,.018,.0045);m.position.copy(tie).add(V3(wing*.011,.002,.003));m.rotation.z=wing*.48;});
+          const knot=add(new THREE.SphereGeometry(.0055,20,16),newIdolIvory,'RibbonKnot');knot.position.copy(tie).add(V3(0,0,.007));
+        });
+        newIdolHeadTemplate=g;
+      }
+      const head=newIdolHeadTemplate.clone(true);head.scale.setScalar(H);
+      head.position.copy(J.head);head.rotation.x=J.headAngle;return head;
+    }
+
     function buildMannequin(poseName){
       const g=new THREE.Group(), J=buildSkeleton(poseName);
       // 影は落とすが自身では受けない（曲面が細かいため、受影にするとシャドウアクネが出る）
@@ -1360,23 +1479,15 @@
         add(buildLeg(J,S));add(buildFoot(J,S));add(buildArm(J,S));
         if(BODY.costume==='idol')g.add(buildIdolHand(J,S));
       });
-      // アイドルは埋め込みGLBの顔・髪を優先する。通常体型とGLB失敗時は従来頭部へ戻す。
-      if(BODY.costume==='idol'&&idolFaceTemplate){
-        const head=idolFaceTemplate.clone(true);
-        const scale=(P.CROWN-P.CHIN)*H/IDOL_FACE_SOURCE_HEAD_HEIGHT;
-        head.scale.setScalar(scale);
-        // 顔の大きさは変えず、上昇量を約1.5cmへ戻して首を長く見せすぎない。
-        head.position.copy(J.head).add(V3(0,0.0095*H,0));head.rotation.x=J.headAngle;
-        head.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=false;}});
-        g.add(head);
+      if(BODY.costume==='idol'){
+        g.add(buildNewIdolHead(J));
       }else{
-        const head=new THREE.Mesh(BODY.costume==='idol'?buildIdolHead():buildHead(),bodyMaterial);
+        const head=new THREE.Mesh(buildHead(),bodyMaterial);
         head.position.copy(J.head);head.rotation.x=J.headAngle;
         head.castShadow=true;g.add(head);
       }
       if(BODY.costume==='idol'){
-        g.add(buildIdolCostume(J,!idolFaceTemplate));
-        if(!idolFaceTemplate)g.add(buildIdolFaceDetails(J));
+        g.add(buildIdolCostume(J,false));
       }
       // 接地: どのポーズでも最下点が床(y=0)に来るようにする
       const box=new THREE.Box3().setFromObject(g);
