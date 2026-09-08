@@ -48,6 +48,11 @@
           <div class="hint" id="expoReadout"></div>
           <div class="warn" id="expoWarn"></div>
         </section>
+        <section class="section"><div class="label"><span>撮影位置とレンズ</span><small>POSITION / LENS</small></div>
+          <div class="two" id="cameraPresets"><button class="mode active" data-camera="audience">客席中央</button><button class="mode" data-camera="frontrow">最前列</button><button class="mode" data-camera="stageleft">下手側</button><button class="mode" data-camera="stageright">上手側</button></div>
+          <div class="slider" style="margin-top:8px"><div><span>焦点距離</span><strong id="v-focal">50mm</strong></div><input type="range" id="focalR" min="24" max="85" step="1" value="50" /></div>
+          <div class="hint">客席床はステージより75cm低く、撮影位置の高さもその段差を反映します。ドラッグ後はプリセットで元の位置へ戻せます。</div>
+        </section>
         <section class="section"><div class="label"><span>被写体</span><small>SUBJECT</small></div>
           <div class="two" id="bodies"><button class="mode" data-body="neutral">標準</button><button class="mode active" data-body="idol">アイドル</button></div>
           <div class="slider hidden" id="costumeColorRow"><div><span>衣装の色</span><strong id="v-costumeColor">#f2e9f4</strong></div><input type="color" id="costumeColor" value="#f2e9f4" /></div>
@@ -79,6 +84,7 @@
           <div class="slider"><div><span>明るさ</span><strong id="v-bright">70</strong></div><input type="range" id="brightR" min="0" max="100" step="1" value="70" /></div>
           <div class="slider"><div><span>チルト</span><strong id="v-tilt">-25°</strong></div><input type="range" id="tiltR" min="-60" max="10" step="1" value="-25" /></div>
           <div class="slider"><div><span>ビームのやわらかさ</span><strong id="v-soft">62%</strong></div><input type="range" id="softR" min="0" max="100" step="1" value="62" /></div>
+          <div class="slider"><div><span>フロント照明</span><strong id="v-frontFill">58%</strong></div><input type="range" id="frontFillR" min="0" max="100" step="1" value="58" /></div>
           <div class="two" style="margin-top:8px"><button class="mode" id="smokeToggle">○ スモーク</button><button class="mode" id="blackoutToggle">○ ブラックアウト</button></div>
         </section>
         <section class="section"><div class="label"><span>色</span><small>COLOR</small></div>
@@ -145,8 +151,27 @@
        ====================================================================== */
     const host=document.querySelector('#scene'), scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(38,1,.1,120), renderer=new THREE.WebGLRenderer({antialias:true});
     renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFShadowMap; renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; host.append(renderer.domElement);
-    camera.position.set(0,1.75,7.2);
-    const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,1.35,0); controls.enableDamping=true; controls.maxPolarAngle=Math.PI/2.02; controls.minDistance=2; controls.maxDistance=16;
+    camera.position.set(0,.84,6.4);
+    const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,1.10,0); controls.enableDamping=true; controls.maxPolarAngle=Math.PI/2.02; controls.minDistance=1.8; controls.maxDistance=11;
+    const CAMERA_PRESETS={
+      audience:{position:[0,.84,6.4],target:[0,1.10,0]},
+      frontrow:{position:[0,.50,3.25],target:[0,1.12,0]},
+      stageleft:{position:[3.05,.72,4.35],target:[0,1.10,-.05]},
+      stageright:{position:[-3.05,.72,4.35],target:[0,1.10,-.05]}
+    };
+    let cameraPresetId='audience',focalLength=50;
+    camera.setFocalLength(focalLength);
+    function applyCameraPreset(id){
+      const preset=CAMERA_PRESETS[id];if(!preset)return;
+      cameraPresetId=id;camera.position.fromArray(preset.position);controls.target.fromArray(preset.target);controls.update();
+      document.querySelectorAll('[data-camera]').forEach(b=>b.classList.toggle('active',b.dataset.camera===id));
+    }
+    function applyFocalLength(mm){
+      focalLength=THREE.MathUtils.clamp(Number(mm)||50,24,85);
+      camera.setFocalLength(focalLength);camera.updateProjectionMatrix();
+      const out=document.querySelector('#v-focal');if(out)out.textContent=Math.round(focalLength)+'mm';
+      const slider=document.querySelector('#focalR');if(slider)slider.value=focalLength;
+    }
 
     const material=new THREE.MeshStandardMaterial({color:'#d6d7d2',roughness:.76,metalness:.015});
     // 新アイドルの顔・首・手足を同一の肌材質に統一。標準体型の材質は変更しない。
@@ -157,12 +182,42 @@
 
     scene.background=new THREE.Color('#07080a');
     scene.fog=new THREE.FogExp2('#07080a',0.012);
-    // ステージ床。ライブハウスの黒い床は反射が少ないので roughness を高く取る
-    const ground=new THREE.Mesh(new THREE.PlaneGeometry(14,11),new THREE.MeshStandardMaterial({color:'#26262a',roughness:.88}));
-    ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
-    // 背景幕（黒ホリ）。壁にもたれポーズで使うので位置は ligutsetting と同じ z=-1.15 ではなく舞台奥に置く
-    const wall=new THREE.Mesh(new THREE.PlaneGeometry(13,6),new THREE.MeshStandardMaterial({color:'#1a1a1e',roughness:.95}));
-    wall.position.set(0,3,-3.2); wall.receiveShadow=true; scene.add(wall);
+    // 小規模ライブハウス：舞台天端を人体の接地面 y=0 とし、客席を75cm下げる。
+    const STAGE_HEIGHT=.75,STAGE_W=6.8,STAGE_D=4.6,STAGE_Z=-.8,STAGE_FRONT=STAGE_Z+STAGE_D/2;
+    const venue=new THREE.Group();venue.name='SmallLivehouse';scene.add(venue);
+    const stageSideMat=new THREE.MeshStandardMaterial({color:'#111315',roughness:.94});
+    const stageFloorMat=new THREE.MeshStandardMaterial({color:'#25272a',roughness:.89});
+    const audienceFloorMat=new THREE.MeshStandardMaterial({color:'#1d1f22',roughness:.93});
+    const stageBase=new THREE.Mesh(new THREE.BoxGeometry(STAGE_W,STAGE_HEIGHT,STAGE_D),stageSideMat);
+    stageBase.position.set(0,-STAGE_HEIGHT/2,STAGE_Z);stageBase.castShadow=true;stageBase.receiveShadow=true;venue.add(stageBase);
+    const stageFloor=new THREE.Mesh(new THREE.PlaneGeometry(STAGE_W,STAGE_D),stageFloorMat);
+    stageFloor.rotation.x=-Math.PI/2;stageFloor.position.set(0,.006,STAGE_Z);stageFloor.receiveShadow=true;venue.add(stageFloor);
+    const ground=new THREE.Mesh(new THREE.PlaneGeometry(8.4,7.4),audienceFloorMat);
+    ground.rotation.x=-Math.PI/2;ground.position.set(0,-STAGE_HEIGHT,STAGE_FRONT+3.7);ground.receiveShadow=true;venue.add(ground);
+    const stageEdge=new THREE.Mesh(new THREE.BoxGeometry(STAGE_W,.025,.12),new THREE.MeshStandardMaterial({color:'#66532d',roughness:.72,metalness:.06}));
+    stageEdge.position.set(0,.013,STAGE_FRONT-.025);stageEdge.castShadow=true;venue.add(stageEdge);
+    // 背景幕は舞台奥へ配置する。
+    const wall=new THREE.Mesh(new THREE.PlaneGeometry(STAGE_W,4.1),new THREE.MeshStandardMaterial({color:'#151619',roughness:.97,side:THREE.DoubleSide}));
+    wall.position.set(0,1.3,-3.12);wall.receiveShadow=true;venue.add(wall);
+    // 側壁・低い天井・トラスで、広いスタジオではなく小箱の距離感を作る。
+    const sideWallMat=new THREE.MeshStandardMaterial({color:'#121416',roughness:.98,side:THREE.DoubleSide});
+    [-1,1].forEach(side=>{
+      const sideWall=new THREE.Mesh(new THREE.PlaneGeometry(8.7,4.1),sideWallMat);
+      sideWall.rotation.y=side*Math.PI/2;sideWall.position.set(side*3.48,1.3,1.12);sideWall.receiveShadow=true;venue.add(sideWall);
+    });
+    const ceiling=new THREE.Mesh(new THREE.PlaneGeometry(6.96,8.7),new THREE.MeshStandardMaterial({color:'#0e1012',roughness:1,side:THREE.DoubleSide}));
+    ceiling.rotation.x=Math.PI/2;ceiling.position.set(0,3.34,1.12);venue.add(ceiling);
+    const trussMat=new THREE.MeshStandardMaterial({color:'#30343a',roughness:.52,metalness:.68});
+    [-2.35,-1.25,-.15,2.35].forEach(z=>{
+      const trussGeo=new THREE.CylinderGeometry(.025,.025,6.25,10);
+      const truss=new THREE.Mesh(trussGeo,trussMat);
+      truss.rotation.z=Math.PI/2;truss.position.set(0,3.18,z);truss.castShadow=true;venue.add(truss);
+    });
+    const speakerMat=new THREE.MeshStandardMaterial({color:'#090a0b',roughness:.86});
+    [-1,1].forEach(side=>{
+      const speaker=new THREE.Mesh(new THREE.BoxGeometry(.52,1.18,.43),speakerMat);
+      speaker.position.set(side*2.92,.59,-2.73);speaker.castShadow=true;speaker.receiveShadow=true;venue.add(speaker);
+    });
     // 「壁にもたれ」ポーズ専用の袖幕。被写体のすぐ後ろに立てる
     const leanWall=new THREE.Mesh(new THREE.PlaneGeometry(4,3.4),new THREE.MeshStandardMaterial({color:'#1f1f24',roughness:.95}));
     leanWall.position.set(0,1.7,-1.15); leanWall.receiveShadow=true; leanWall.visible=false; scene.add(leanWall);
@@ -1565,16 +1620,19 @@
     let motionBars=[];
 
     /* ======================================================================
-       リグ — 30灯。座標はライブハウス標準トラス配置
-       PAR 6列×4行(天井 y=4) のうち中央4灯がムービング / サイド4灯 / バック足元2灯
+       リグ — 30灯。小規模ライブハウスの低天井トラス配置
+       PAR 6列×4行のうち中央4灯がムービング / サイド4灯 / バック足元2灯。
+       客席側の1列は実在のフロント灯として演者の顔・上半身を狙う。
        ====================================================================== */
     const RIG=(()=>{
-      const xs=[-3,-1.8,-0.6,0.6,1.8,3], zs=[-2,-0.833,0.333,1.5], a=[]; let id=0;
-      for(let r=0;r<4;r++) for(let c=0;c<6;c++) a.push({id:id++,type:'par',pos:V3(xs[c],4,zs[r]),col:c,row:r});
+      const xs=[-2.7,-1.62,-.54,.54,1.62,2.7],zs=[-2.35,-1.25,-.15,2.35],a=[];let id=0;
+      for(let r=0;r<4;r++)for(let c=0;c<6;c++)a.push({
+        id:id++,type:'par',pos:V3(xs[c],r===3?3.05:3.18,zs[r]),col:c,row:r,role:r===3?'foh':'stage'
+      });
       [{r:3,c:2},{r:3,c:3},{r:2,c:2},{r:2,c:3}].forEach(m=>{const j=m.r*6+m.c; if(a[j]) a[j].type='moving';});
-      a.push({id:id++,type:'side',pos:V3(-4.2,2.5,-0.8)},{id:id++,type:'side',pos:V3(-4.2,2.5,0.9)},
-             {id:id++,type:'side',pos:V3( 4.2,2.5,-0.8)},{id:id++,type:'side',pos:V3( 4.2,2.5,0.9)});
-      a.push({id:id++,type:'uplight',pos:V3(-2,0.15,-2.6)},{id:id++,type:'uplight',pos:V3(2,0.15,-2.6)});
+      a.push({id:id++,type:'side',pos:V3(-3.15,2.15,-1.15)},{id:id++,type:'side',pos:V3(-3.15,2.15,.55)},
+             {id:id++,type:'side',pos:V3( 3.15,2.15,-1.15)},{id:id++,type:'side',pos:V3( 3.15,2.15,.55)});
+      a.push({id:id++,type:'uplight',pos:V3(-1.8,.12,-2.75)},{id:id++,type:'uplight',pos:V3(1.8,.12,-2.75)});
       return a;
     })();
     const N=RIG.length;
@@ -1587,18 +1645,18 @@
     const TONE_K=1.2;                                           // 適正露出のとき画面が中庸になるよう決めた係数
 
     const SCENES=[
-      {id:'solo',  name:'弾き語り',  desc:'柔らかウォーム', color:'#ffcc88', bright:45,  tilt:-15, alt:'#ffb060'},
-      {id:'band',  name:'バンド',    desc:'ナチュラル白',   color:'#fff4e0', bright:70,  tilt:-25, alt:'#cfe4ff'},
-      {id:'rock',  name:'ロック',    desc:'赤×金 拡散',    color:'#ff2a2a', bright:85,  tilt:-35, alt:'#ffcc44'},
-      {id:'edm',   name:'EDM',       desc:'青×紫 グロー',   color:'#2a7fff', bright:90,  tilt:-45, alt:'#8a2aff'},
-      {id:'ballad',name:'バラード',  desc:'ピンク霞',       color:'#ff7fca', bright:38,  tilt:-10, alt:'#ff4fa3'},
-      {id:'encore',name:'アンコール',desc:'全開 金',        color:'#ffcc44', bright:100, tilt:-50, alt:'#fff0c0'}
+      {id:'solo',  name:'弾き語り',  desc:'柔らかウォーム', color:'#ffcc88', bright:45,  tilt:-15,frontFill:72,alt:'#ffb060'},
+      {id:'band',  name:'バンド',    desc:'ナチュラル白',   color:'#fff4e0', bright:70,  tilt:-25,frontFill:58,alt:'#cfe4ff'},
+      {id:'rock',  name:'ロック',    desc:'赤×金 拡散',    color:'#ff2a2a', bright:85,  tilt:-35,frontFill:42,alt:'#ffcc44'},
+      {id:'edm',   name:'EDM',       desc:'青×紫 グロー',   color:'#2a7fff', bright:90,  tilt:-45,frontFill:30,alt:'#8a2aff'},
+      {id:'ballad',name:'バラード',  desc:'ピンク霞',       color:'#ff7fca', bright:38,  tilt:-10,frontFill:64,alt:'#ff4fa3'},
+      {id:'encore',name:'アンコール',desc:'全開 金',        color:'#ffcc44', bright:100, tilt:-50,frontFill:78,alt:'#fff0c0'}
     ];
     const SWATCHES=['#fff4e0','#ffcc88','#ff2a2a','#ff7fca','#2a7fff','#8a2aff','#2aff8a','#ffcc44'];
 
     /* --- 卓の状態 -------------------------------------------------------- */
     const board={
-      sceneId:'band', bright:70, tilt:-25, soft:62, blackout:false, smoke:false, rainbow:false,
+      sceneId:'band', bright:70, tilt:-25, soft:62, frontFill:58, blackout:false, smoke:false, rainbow:false,
       group:'all', color:'#fff4e0',
       chase:{mode:'front-back',speed:1.2,fade:0.6,loop:true,playing:false},
       blink:{mode:'all',speed:1.8,playing:false},
@@ -1609,7 +1667,7 @@
     /* --- グループ -------------------------------------------------------- */
     const GROUPS={
       all:      ()=>RIG.map(f=>f.id),
-      front:    ()=>RIG.filter(f=>f.pos.z>0).map(f=>f.id),
+      front:    ()=>RIG.filter(f=>f.role==='foh').map(f=>f.id),
       back:     ()=>RIG.filter(f=>f.pos.z<=0).map(f=>f.id),
       par:      ()=>RIG.filter(f=>f.type==='par').map(f=>f.id),
       moving:   ()=>RIG.filter(f=>f.type==='moving').map(f=>f.id),
@@ -1619,13 +1677,14 @@
     const selectedIds=()=>GROUPS[board.group]();
 
     /* --- 灯体の向き ------------------------------------------------------
-       PAR はチルト角どおりに床を狙う（前列は客席、後列は演者に落ちる）。
-       ムービングは常に演者を追い、サイドは腰から上、バック足元は背景幕を舐める。 */
+       舞台上PARはチルト角どおりに床を狙い、客席側フロント灯は上半身を狙う。
+       ムービングは演者を追い、サイドは腰から上、バック足元は背景幕を舐める。 */
     const D2R_=Math.PI/180;
     function aimOf(f){
       if(f.type==='moving') return SUBJECT.clone();
       if(f.type==='side')   return V3(0,1.5,f.pos.z*0.3);
       if(f.type==='uplight')return V3(f.pos.x*0.6,3,-3.1);
+      if(f.role==='foh')    return V3(f.pos.x*.12,1.28,.05);
       // チルトは「垂直からステージ中央へ倒す角度」。前トラスは奥へ、後トラスは手前へ振る
       const off=Math.tan(-board.tilt*D2R_)*f.pos.y, sign=f.pos.z>0?-1:1;
       let z=f.pos.z+sign*off;
@@ -1662,7 +1721,8 @@
     function levelAt(i,t){
       const s=board.fixtures[i];
       if(!s.on||board.blackout) return 0;
-      return (board.bright/100)*(s.level/100)*chaseMul(i,t)*blinkMul(i,t);
+      const frontScale=RIG[i].role==='foh'?board.frontFill/100:1;
+      return (board.bright/100)*frontScale*(s.level/100)*chaseMul(i,t)*blinkMul(i,t);
     }
     const _c=new THREE.Color();
     function colorAt(i,t){
@@ -1798,6 +1858,8 @@
        ====================================================================== */
     const UP=V3(0,1,0), _q=new THREE.Quaternion(), _v=new THREE.Vector3();
     function updateScene(t){
+      // ブラックアウトでは補助環境光も止め、顔や会場だけが残光しないようにする。
+      hemi.intensity=board.blackout?0:.05;
       const contrib=[];
       for(let i=0;i<N;i++){
         const f=RIG[i], lv=levelAt(i,t), col=colorAt(i,t), aim=aimOf(f), g=gear[i];
@@ -1845,7 +1907,7 @@
       let rest=0; const restCol=new THREE.Color(0,0,0);
       for(let k=REAL_LIGHTS;k<contrib.length;k++){const c=contrib[k];if(c.lux<=0)continue;rest+=c.lux;restCol.r+=c.col.r*c.lux;restCol.g+=c.col.g*c.lux;restCol.b+=c.col.b*c.lux}
       if(rest>0){restCol.multiplyScalar(1/rest);ambient.color.copy(restCol);ambient.intensity=rest*0.35}else{ambient.intensity=0}
-      smoke.visible=board.smoke;
+      smoke.visible=board.smoke&&!board.blackout;
       // 露出。シーン照度は上と同じ luxOf の合計を使う
       calcExposure(t,contrib.reduce((s,c)=>s+c.lux,0));
       renderer.toneMappingExposure=THREE.MathUtils.clamp(TONE_K*Math.pow(2,-expo.evCam),0.005,24);
@@ -1987,6 +2049,7 @@
         isoR:+document.querySelector('#isoR').value,
         fstopR:+document.querySelector('#fstopR').value,
         shutterR:+document.querySelector('#shutterR').value,
+        camera:{preset:cameraPresetId,focalLength,position:camera.position.toArray(),target:controls.target.toArray()},
         board:JSON.parse(JSON.stringify(board))
       };
     }
@@ -2025,6 +2088,7 @@
     }
     function applyBoard(src){
       Object.assign(board,{sceneId:src.sceneId,bright:src.bright,tilt:src.tilt,soft:src.soft,
+        frontFill:Number.isFinite(src.frontFill)?src.frontFill:board.frontFill,
         blackout:!!src.blackout,smoke:!!src.smoke,rainbow:!!src.rainbow,group:GROUPS[src.group]?src.group:'all',color:src.color||'#fff4e0'});
       Object.assign(board.chase,src.chase||{});Object.assign(board.blink,src.blink||{});
       if(Array.isArray(src.fixtures))src.fixtures.forEach((s,i)=>{if(board.fixtures[i])Object.assign(board.fixtures[i],s)});
@@ -2052,16 +2116,25 @@
     }
     function restoreSettings(){
       let s=null;try{s=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null')}catch(e){console.warn('保存設定の読み込みに失敗しました',e)}
-      if(!s)return;
+      if(!s)return false;
       if(BODIES[s.bodyId]){useBody(s.bodyId);rebuildAccessories();}
       if(POSES[s.pose])pose=s.pose;
       showGlasses=!!s.showGlasses;showSunglasses=!!s.showSunglasses;showCatEars=!!s.showCatEars;
       if(s.costumeColor){document.querySelector('#costumeColor').value=s.costumeColor;costumeMaterial.color.set(s.costumeColor);}
       ['isoR','fstopR','shutterR'].forEach(id=>{if(s[id]!==undefined)document.querySelector('#'+id).value=s[id]});
+      if(s.camera){
+        applyFocalLength(s.camera.focalLength);
+        if(CAMERA_PRESETS[s.camera.preset])applyCameraPreset(s.camera.preset);
+        else if(Array.isArray(s.camera.position)&&Array.isArray(s.camera.target)){
+          cameraPresetId='custom';camera.position.fromArray(s.camera.position);controls.target.fromArray(s.camera.target);controls.update();
+          document.querySelectorAll('[data-camera]').forEach(b=>b.classList.remove('active'));
+        }
+      }
       if(s.mannequinColor){document.querySelector('#mannequinColor').value=s.mannequinColor;material.color.set(s.mannequinColor);}
       if(s.board)applyBoard(s.board);
       scene.remove(model);model=mannequin(pose);scene.add(model);
       glasses.visible=showGlasses;sunglasses.visible=showSunglasses;catEars.visible=showCatEars;syncHeadAccessories();
+      return true;
     }
 
     /* ======================================================================
@@ -2071,7 +2144,7 @@
     function setToggle(id,on,label){const b=q('#'+id);b.classList.toggle('active',on);b.textContent=(on?'● ':'○ ')+label}
     function applyScene(id){
       const s=SCENES.find(v=>v.id===id); if(!s)return;
-      board.sceneId=id; board.bright=s.bright; board.tilt=s.tilt;
+      board.sceneId=id; board.bright=s.bright; board.tilt=s.tilt;board.frontFill=s.frontFill;
       RIG.forEach(f=>{board.fixtures[f.id].on=true;board.fixtures[f.id].level=100;
         board.fixtures[f.id].color=(f.type==='side'||f.type==='uplight')?s.alt:s.color});
       board.color=s.color; board.blackout=false;
@@ -2121,6 +2194,7 @@
       q('#brightR').value=board.bright; q('#v-bright').textContent=board.bright;
       q('#tiltR').value=board.tilt;     q('#v-tilt').textContent=board.tilt+'°';
       q('#softR').value=board.soft;     q('#v-soft').textContent=board.soft+'%';
+      q('#frontFillR').value=board.frontFill;q('#v-frontFill').textContent=board.frontFill+'%';
       q('#colorPick').value=board.color;q('#v-color').textContent=board.color;
       q('#groupSelect').value=board.group;
       q('#chaseMode').value=board.chase.mode;
@@ -2150,6 +2224,7 @@
     q('#brightR').oninput=e=>{board.bright=+e.target.value;q('#v-bright').textContent=board.bright;saveSettings();refresh()};
     q('#tiltR').oninput=e=>{board.tilt=+e.target.value;q('#v-tilt').textContent=board.tilt+'°';saveSettings();refresh()};
     q('#softR').oninput=e=>{board.soft=+e.target.value;q('#v-soft').textContent=board.soft+'%';saveSettings();refresh()};
+    q('#frontFillR').oninput=e=>{board.frontFill=+e.target.value;q('#v-frontFill').textContent=board.frontFill+'%';saveSettings();refresh()};
     q('#colorPick').oninput=e=>{board.color=e.target.value;q('#v-color').textContent=board.color;applyColorToSelection()};
     q('#smokeToggle').onclick=()=>{board.smoke=!board.smoke;setToggle('smokeToggle',board.smoke,'スモーク');saveSettings();refresh()};
     q('#blackoutToggle').onclick=()=>{board.blackout=!board.blackout;setToggle('blackoutToggle',board.blackout,'ブラックアウト');saveSettings();refresh()};
@@ -2179,6 +2254,10 @@
 
     // カメラ側
     document.querySelectorAll('#isoR,#fstopR,#shutterR').forEach(e=>e.oninput=()=>{saveSettings();refresh()});
+    document.querySelectorAll('[data-camera]').forEach(b=>b.onclick=()=>{applyCameraPreset(b.dataset.camera);saveSettings()});
+    q('#focalR').oninput=e=>{applyFocalLength(e.target.value);saveSettings()};
+    controls.addEventListener('start',()=>{cameraPresetId='custom';document.querySelectorAll('[data-camera]').forEach(b=>b.classList.remove('active'))});
+    controls.addEventListener('end',saveSettings);
     document.querySelectorAll('#poses button').forEach(b=>b.onclick=()=>{
       pose=b.dataset.pose; scene.remove(model); model=mannequin(pose); scene.add(model); syncHeadAccessories();
       document.querySelectorAll('#poses button').forEach(v=>v.classList.toggle('active',v===b));
@@ -2211,8 +2290,7 @@
     /* ======================================================================
        初期化とループ
        ====================================================================== */
-    applyScene(board.sceneId);
-    restoreSettings();
+    if(!restoreSettings())applyScene(board.sceneId);
     applyPoseProps();
     document.querySelectorAll('#poses button').forEach(v=>v.classList.toggle('active',v.dataset.pose===pose));
     setToggle('glassesToggle',showGlasses,'メガネ');
@@ -2252,7 +2330,9 @@
 
     // 数値検証用。表示に依存せずチェイス／露出／照度を読み出せる
     window.__livehouse={RIG,board,levelAt,luxOf,stageLux,evCamOf,evSceneOf,getExpo:()=>expo,CHALLENGES,updateScene,
-      setClock(t){clock=t;updateScene(t)},setBody:(id)=>setBody(id),getBodyId:()=>bodyId,BODIES,camera,setPose:(n)=>document.querySelector('[data-pose="'+n+'"]').click(),render(){renderer.render(scene,camera)},applyBoard,toneExposure(){return renderer.toneMappingExposure},triangles(){return renderer.info.render.triangles},lightStats(){return{spots:spots.filter(l=>l.visible&&l.intensity>0).length,shadows:spots.filter(l=>l.castShadow).length}}};
+      setClock(t){clock=t;updateScene(t)},setBody:(id)=>setBody(id),getBodyId:()=>bodyId,BODIES,camera,CAMERA_PRESETS,
+      stage:{height:STAGE_HEIGHT,width:STAGE_W,depth:STAGE_D},setCameraPreset:applyCameraPreset,setFocalLength:applyFocalLength,
+      setPose:(n)=>document.querySelector('[data-pose="'+n+'"]').click(),render(){renderer.render(scene,camera)},applyBoard,toneExposure(){return renderer.toneMappingExposure},triangles(){return renderer.info.render.triangles},lightStats(){return{spots:spots.filter(l=>l.visible&&l.intensity>0).length,shadows:spots.filter(l=>l.castShadow).length}}};
   </script>
 </body>
 </html>
