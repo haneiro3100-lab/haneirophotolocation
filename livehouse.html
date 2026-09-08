@@ -39,6 +39,8 @@
     .camera-nudge button{display:grid;place-items:center;border:1px solid rgba(255,255,255,.18);border-radius:7px;background:rgba(17,22,22,.76);color:#edf0ec;font:700 15px ui-monospace,SFMono-Regular,monospace;backdrop-filter:blur(6px)}
     .camera-nudge button:hover,.camera-nudge button:focus-visible{border-color:rgba(224,168,58,.72);color:#ffe3a8;outline:0}
     .camera-nudge [data-pan="up"]{grid-column:2;grid-row:1}.camera-nudge [data-pan="left"]{grid-column:1;grid-row:2}.camera-nudge .nudge-home{grid-column:2;grid-row:2;font-size:12px}.camera-nudge [data-pan="right"]{grid-column:3;grid-row:2}.camera-nudge [data-pan="down"]{grid-column:2;grid-row:3}
+    .position-map-legend{display:none;position:absolute;z-index:2;left:50%;top:16px;transform:translateX(-50%);padding:8px 12px;border:1px solid rgba(255,214,92,.65);border-radius:999px;background:rgba(17,22,22,.86);color:#ffdc79;font:700 11px ui-monospace,SFMono-Regular,monospace;pointer-events:none}
+    .shell.map-view .position-map-legend{display:block}.shell.map-view .camera-nudge{display:none}
     @media(max-width:720px){.drawer.collapsed{transform:translateY(100%)}.drawer-toggle{top:auto;right:12px;bottom:38dvh;width:42px;height:30px;border-right:1px solid rgba(255,255,255,.18);border-bottom:0;border-radius:8px 8px 0 0}.shell.drawer-collapsed .drawer-toggle{right:12px;bottom:10px;border-bottom:1px solid rgba(255,255,255,.18);border-radius:8px}.shell.drawer-collapsed .scene{bottom:0}.camera-nudge{left:12px;bottom:calc(38dvh + 12px)}.shell.drawer-collapsed .camera-nudge{bottom:12px}}
   </style>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"}}</script>
@@ -48,6 +50,7 @@
     <div id="scene" class="scene"></div>
     <header class="bar"><div class="mark">◒</div><div class="title"><p>LIGHTING SKETCHBOOK</p><h1>Livehouse</h1></div><span class="badge" id="sceneBadge">バンド</span></header>
     <div class="readout">📷 <strong id="expoBadge">計算中</strong></div>
+    <div class="position-map-legend">⌖ 黄色＝撮影位置　矢印＝撮影方向</div>
     <nav class="camera-nudge" aria-label="画面内のカメラ移動">
       <button type="button" data-pan="up" aria-label="画面を上へ移動">↑</button>
       <button type="button" data-pan="left" aria-label="画面を左へ移動">←</button>
@@ -70,8 +73,9 @@
         </section>
         <section class="section"><div class="label"><span>撮影位置とレンズ</span><small>POSITION / LENS</small></div>
           <div class="two camera-presets" id="cameraPresets"><button class="mode active" data-camera="audience">客席中央</button><button class="mode" data-camera="backrow">最後列</button><button class="mode" data-camera="frontrow">最前列</button><button class="mode" data-camera="stageleft">下手側</button><button class="mode" data-camera="stageright">上手側</button></div>
+          <button class="mode" id="positionMapToggle" type="button" style="width:100%;margin-top:8px">⌖ 撮影位置を俯瞰</button>
           <div class="slider" style="margin-top:8px"><div><span>焦点距離</span><strong id="v-focal">50mm</strong></div><input type="range" id="focalR" min="0" max="8" step="1" value="3" /></div>
-          <div class="hint">プリセットは撮影の開始位置です。左ドラッグで向き、右ドラッグ／矢印キーで構図を平行移動、ホイール／ピンチで前後移動できます。WASDは床面移動、Q／Eは下降・上昇です。手前の壁や天井は自動で退避します。</div>
+          <div class="hint">プリセットは撮影の開始位置です。左ドラッグ／1本指で、その場からカメラを振ります。右ドラッグ／矢印キーで構図を平行移動、ホイール／ピンチで前後移動。WASDは床面移動、Q／Eは下降・上昇です。</div>
         </section>
         <section class="section"><div class="label"><span>被写体</span><small>SUBJECT</small></div>
           <div class="two" id="bodies"><button class="mode" data-body="neutral">標準</button><button class="mode active" data-body="idol">アイドル</button></div>
@@ -172,7 +176,7 @@
     const host=document.querySelector('#scene'), scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(38,1,.1,120), renderer=new THREE.WebGLRenderer({antialias:true});
     renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFShadowMap; renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; host.append(renderer.domElement);
     camera.position.set(0,.84,6.4);
-    const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,1.10,0); controls.enableDamping=true; controls.enablePan=true; controls.screenSpacePanning=true; controls.zoomToCursor=true; controls.mouseButtons.RIGHT=THREE.MOUSE.PAN; controls.minPolarAngle=THREE.MathUtils.degToRad(8); controls.maxPolarAngle=THREE.MathUtils.degToRad(120); controls.minDistance=.65; controls.maxDistance=28;
+    const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,1.10,0); controls.enableDamping=true; controls.enablePan=true; controls.enableRotate=false; controls.screenSpacePanning=true; controls.zoomToCursor=true; controls.mouseButtons.RIGHT=THREE.MOUSE.PAN; controls.minPolarAngle=THREE.MathUtils.degToRad(8); controls.maxPolarAngle=THREE.MathUtils.degToRad(120); controls.minDistance=.65; controls.maxDistance=28;
     renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
     const CAMERA_PRESETS={
       audience:{position:[0,.84,6.4],target:[0,1.10,0]},
@@ -182,17 +186,18 @@
       stageright:{position:[-3.05,.72,4.35],target:[0,1.10,-.05]}
     };
     const FOCAL_LENGTHS=[24,28,35,50,70,85,105,135,200];
-    let cameraPresetId='audience',focalLength=50;
+    let cameraPresetId='audience',focalLength=50,cameraMode='fps',mapReturnState=null;
     camera.setFocalLength(focalLength);
     function applyCameraPreset(id){
       const preset=CAMERA_PRESETS[id];if(!preset)return;
+      if(cameraMode==='map')exitPositionMap(false);
       cameraPresetId=id;camera.position.fromArray(preset.position);controls.target.fromArray(preset.target);controls.update();
       document.querySelectorAll('[data-camera]').forEach(b=>b.classList.toggle('active',b.dataset.camera===id));
     }
     function applyFocalLength(mm){
       const requested=Number(mm)||50;
       focalLength=FOCAL_LENGTHS.reduce((best,v)=>Math.abs(v-requested)<Math.abs(best-requested)?v:best,FOCAL_LENGTHS[0]);
-      camera.setFocalLength(focalLength);camera.updateProjectionMatrix();
+      camera.setFocalLength(cameraMode==='map'?35:focalLength);camera.updateProjectionMatrix();
       const out=document.querySelector('#v-focal');if(out)out.textContent=Math.round(focalLength)+'mm';
       const slider=document.querySelector('#focalR');if(slider)slider.value=FOCAL_LENGTHS.indexOf(focalLength);
     }
@@ -218,6 +223,35 @@
         .add(forward.multiplyScalar(forwardAmount*step));
       camera.position.add(move);controls.target.add(move);controls.update();markCameraCustom();
     }
+    let lookPointerId=null,lookYaw=0,lookPolar=Math.PI/2,lookDistance=4,lastLookX=0,lastLookY=0;
+    function readLookDirection(){
+      const direction=controls.target.clone().sub(camera.position);
+      lookDistance=THREE.MathUtils.clamp(direction.length(),.65,28);direction.normalize();
+      lookYaw=Math.atan2(direction.x,-direction.z);lookPolar=Math.acos(THREE.MathUtils.clamp(direction.y,-1,1));
+    }
+    function applyLookDirection(){
+      const horizontal=Math.sin(lookPolar);
+      const direction=new THREE.Vector3(Math.sin(lookYaw)*horizontal,Math.cos(lookPolar),-Math.cos(lookYaw)*horizontal);
+      controls.target.copy(camera.position).add(direction.multiplyScalar(lookDistance));controls.update();markCameraCustom();
+    }
+    renderer.domElement.addEventListener('pointerdown',e=>{
+      if(cameraMode!=='fps'||e.button!==0)return;
+      readLookDirection();lookPointerId=e.pointerId;lastLookX=e.clientX;lastLookY=e.clientY;
+      controls.enableDamping=false;renderer.domElement.setPointerCapture(e.pointerId);renderer.domElement.style.cursor='grabbing';
+    });
+    renderer.domElement.addEventListener('pointermove',e=>{
+      if(e.pointerId!==lookPointerId||cameraMode!=='fps')return;
+      const dx=e.clientX-lastLookX,dy=e.clientY-lastLookY;lastLookX=e.clientX;lastLookY=e.clientY;
+      lookYaw+=dx*.004;lookPolar=THREE.MathUtils.clamp(lookPolar+dy*.004,controls.minPolarAngle,controls.maxPolarAngle);
+      applyLookDirection();e.preventDefault();
+    });
+    function finishLook(e){
+      if(e.pointerId!==lookPointerId)return;
+      lookPointerId=null;controls.enableDamping=true;renderer.domElement.style.cursor='';
+      if(renderer.domElement.hasPointerCapture(e.pointerId))renderer.domElement.releasePointerCapture(e.pointerId);
+      saveSettings();
+    }
+    renderer.domElement.addEventListener('pointerup',finishLook);renderer.domElement.addEventListener('pointercancel',finishLook);
 
     const material=new THREE.MeshStandardMaterial({color:'#d6d7d2',roughness:.76,metalness:.015});
     // 新アイドルの顔・首・手足を同一の肌材質に統一。標準体型の材質は変更しない。
@@ -259,6 +293,47 @@
       sideWalls.forEach(({mesh,side})=>{mesh.visible=!(Math.abs(camera.position.x)>1.15&&Math.sign(camera.position.x)===side)});
       ceiling.visible=camera.position.y<2.75;
       wall.visible=camera.position.z>-2.85;
+    }
+    const markerMaterial=new THREE.MeshBasicMaterial({color:'#ffd65c',transparent:true,opacity:.92,depthTest:false,depthWrite:false});
+    const positionMarker=new THREE.Group();positionMarker.name='ShootingPositionMarker';positionMarker.visible=false;scene.add(positionMarker);
+    const markerRing=new THREE.Mesh(new THREE.RingGeometry(.18,.31,32),markerMaterial);markerRing.rotation.x=-Math.PI/2;markerRing.renderOrder=20;positionMarker.add(markerRing);
+    const markerBeam=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,1.25,8),markerMaterial);markerBeam.position.y=.625;markerBeam.renderOrder=20;positionMarker.add(markerBeam);
+    const markerHead=new THREE.Mesh(new THREE.SphereGeometry(.095,16,10),markerMaterial);markerHead.position.y=1.25;markerHead.renderOrder=20;positionMarker.add(markerHead);
+    const positionArrow=new THREE.ArrowHelper(new THREE.Vector3(0,0,-1),new THREE.Vector3(0,.035,0),.82,'#ffd65c',.22,.12);positionMarker.add(positionArrow);
+    positionArrow.line.material.depthTest=false;positionArrow.line.material.transparent=true;positionArrow.line.material.opacity=.92;positionArrow.line.renderOrder=20;
+    positionArrow.cone.material.depthTest=false;positionArrow.cone.material.transparent=true;positionArrow.cone.material.opacity=.92;positionArrow.cone.renderOrder=20;
+    function shootingFloorY(x,z){
+      const onStage=Math.abs(x)<=STAGE_W/2&&z>=STAGE_Z-STAGE_D/2&&z<=STAGE_FRONT;
+      return onStage?.035:-STAGE_HEIGHT+.035;
+    }
+    function syncPositionMapUI(){
+      const shell=document.querySelector('.shell'),button=document.querySelector('#positionMapToggle');
+      if(shell)shell.classList.toggle('map-view',cameraMode==='map');
+      if(button){button.classList.toggle('active',cameraMode==='map');button.textContent=cameraMode==='map'?'↩ 撮影画面へ戻る':'⌖ 撮影位置を俯瞰';}
+    }
+    function enterPositionMap(){
+      if(cameraMode==='map')return;
+      controls.update();
+      mapReturnState={preset:cameraPresetId,position:camera.position.toArray(),target:controls.target.toArray()};
+      const look=controls.target.clone().sub(camera.position);look.y=0;if(look.lengthSq()<1e-6)look.set(0,0,-1);else look.normalize();
+      positionMarker.position.set(camera.position.x,shootingFloorY(camera.position.x,camera.position.z),camera.position.z);
+      positionArrow.setDirection(look);positionMarker.visible=true;
+      const minX=Math.min(-STAGE_W/2,camera.position.x),maxX=Math.max(STAGE_W/2,camera.position.x);
+      const minZ=Math.min(STAGE_Z-STAGE_D/2,camera.position.z),maxZ=Math.max(STAGE_FRONT,camera.position.z);
+      const mapX=(minX+maxX)/2,mapZ=(minZ+maxZ)/2,mapHeight=Math.max(24,(maxZ-minZ)*1.75,(maxX-minX)*1.45);
+      cameraMode='map';controls.enabled=false;camera.up.set(0,0,-1);
+      camera.position.set(mapX,mapHeight,mapZ);controls.target.set(mapX,-.2,mapZ);camera.setFocalLength(35);camera.updateProjectionMatrix();controls.update();syncPositionMapUI();
+    }
+    function exitPositionMap(restore=true){
+      const saved=mapReturnState;
+      cameraMode='fps';controls.enabled=true;camera.up.set(0,1,0);
+      if(restore&&saved){camera.position.fromArray(saved.position);controls.target.fromArray(saved.target);cameraPresetId=saved.preset;}
+      camera.setFocalLength(focalLength);camera.updateProjectionMatrix();controls.update();positionMarker.visible=false;mapReturnState=null;syncPositionMapUI();
+      if(restore)saveSettings();
+    }
+    function updatePositionMarker(now){
+      if(!positionMarker.visible)return;
+      const pulse=1+Math.sin(now*.004)*.16;markerRing.scale.setScalar(pulse);markerMaterial.opacity=.78+Math.sin(now*.004)*.16;
     }
     const trussMat=new THREE.MeshStandardMaterial({color:'#30343a',roughness:.52,metalness:.68});
     [-2.35,-1.25,-.15,2.35].forEach(z=>{
@@ -2098,6 +2173,7 @@
     const STORAGE_KEY='livehouse-settings-v1';
     const CUE_STORAGE_KEY='livehouse-cues-v1';
     function collectSettings(){
+      const cameraState=cameraMode==='map'&&mapReturnState?mapReturnState:{preset:cameraPresetId,position:camera.position.toArray(),target:controls.target.toArray()};
       return{
         bodyId,pose,showGlasses,showSunglasses,showCatEars,
         mannequinColor:document.querySelector('#mannequinColor').value,
@@ -2106,7 +2182,7 @@
         isoValue:ISO_STOPS[+document.querySelector('#isoR').value],
         fstopR:+document.querySelector('#fstopR').value,
         shutterR:+document.querySelector('#shutterR').value,
-        camera:{preset:cameraPresetId,focalLength,focalStopsVersion:1,position:camera.position.toArray(),target:controls.target.toArray()},
+        camera:{preset:cameraState.preset,focalLength,focalStopsVersion:1,position:cameraState.position,target:cameraState.target},
         board:JSON.parse(JSON.stringify(board))
       };
     }
@@ -2318,6 +2394,7 @@
     document.querySelectorAll('#isoR,#fstopR,#shutterR').forEach(e=>e.oninput=()=>{saveSettings();refresh()});
     document.querySelectorAll('[data-camera]').forEach(b=>b.onclick=()=>{applyCameraPreset(b.dataset.camera);saveSettings()});
     q('#focalR').oninput=e=>{applyFocalLength(FOCAL_LENGTHS[+e.target.value]);saveSettings()};
+    q('#positionMapToggle').onclick=()=>cameraMode==='map'?exitPositionMap(true):enterPositionMap();
     controls.addEventListener('start',markCameraCustom);
     controls.addEventListener('end',saveSettings);
     const PAN_DIRECTIONS={up:[0,1],left:[-1,0],right:[1,0],down:[0,-1]};
@@ -2326,6 +2403,10 @@
     addEventListener('keydown',e=>{
       const tag=e.target&&e.target.tagName;
       if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA'||e.metaKey||e.ctrlKey||e.altKey)return;
+      if(cameraMode==='map'){
+        if(e.key==='Escape'){e.preventDefault();exitPositionMap(true);}
+        return;
+      }
       const key=e.key.length===1?e.key.toLowerCase():e.key;
       const pan={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[key];
       const travel={a:[-1,0,0],d:[1,0,0],w:[0,0,1],s:[0,0,-1],q:[0,-1,0],e:[0,1,0]}[key];
@@ -2413,7 +2494,8 @@
       }
       if(board.smoke) updateSmoke(dt);
       if(motionBars.length) updateMotionBars();
-      controls.update();
+      updatePositionMarker(now);
+      if(cameraMode!=='map')controls.update();
       updateVenueCutaway();
       renderer.render(scene,camera);
     }
@@ -2422,7 +2504,7 @@
     // 数値検証用。表示に依存せずチェイス／露出／照度を読み出せる
     window.__livehouse={RIG,board,levelAt,luxOf,stageLux,evCamOf,evSceneOf,getExpo:()=>expo,CHALLENGES,updateScene,
       setClock(t){clock=t;updateScene(t)},setBody:(id)=>setBody(id),getBodyId:()=>bodyId,BODIES,camera,CAMERA_PRESETS,
-      stage:{height:STAGE_HEIGHT,width:STAGE_W,depth:STAGE_D},setCameraPreset:applyCameraPreset,setFocalLength:applyFocalLength,focalLengths:FOCAL_LENGTHS,panCameraView,moveCameraFree,updateVenueCutaway,
+      stage:{height:STAGE_HEIGHT,width:STAGE_W,depth:STAGE_D},setCameraPreset:applyCameraPreset,setFocalLength:applyFocalLength,focalLengths:FOCAL_LENGTHS,panCameraView,moveCameraFree,enterPositionMap,exitPositionMap,getCameraMode:()=>cameraMode,updateVenueCutaway,
       setPose:(n)=>document.querySelector('[data-pose="'+n+'"]').click(),render(){renderer.render(scene,camera)},applyBoard,toneExposure(){return renderer.toneMappingExposure},triangles(){return renderer.info.render.triangles},lightStats(){return{spots:spots.filter(l=>l.visible&&l.intensity>0).length,shadows:spots.filter(l=>l.castShadow).length}}};
   </script>
 </body>
