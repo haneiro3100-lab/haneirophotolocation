@@ -1951,14 +1951,21 @@
       x.fillStyle=g; x.fillRect(0,0,128,128);
       const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
     })();
-    // 光芯の長さ方向だけをぼかす標準材質用マスク。
+    // 光芯の横幅と長さ方向をぼかす標準材質用マスク。
     // 外側シェーダーが使えない環境でも、細い光芯は必ず残る。
     const beamCoreTex=(()=>{
-      const c=document.createElement('canvas');c.width=8;c.height=128;
-      const x=c.getContext('2d'),g=x.createLinearGradient(0,128,0,0);
-      g.addColorStop(0,'rgb(0,0,0)');g.addColorStop(.12,'rgb(105,105,105)');
-      g.addColorStop(.55,'rgb(205,205,205)');g.addColorStop(1,'rgb(255,255,255)');
-      x.fillStyle=g;x.fillRect(0,0,c.width,c.height);
+      const c=document.createElement('canvas');c.width=128;c.height=256;
+      const x=c.getContext('2d'),img=x.createImageData(c.width,c.height);
+      for(let py=0;py<c.height;py++)for(let px=0;px<c.width;px++){
+        const u=px/(c.width-1),v=1-py/(c.height-1);
+        const halfWidth=Math.max(.001,1-v);
+        const localX=Math.abs((u-.5)*2)/halfWidth;
+        const widthFade=Math.pow(Math.max(0,1-localX),2.35);
+        const floorFade=Math.min(1,v/.16),lengthFade=.34+.66*Math.pow(v,.42);
+        const a=Math.round(255*widthFade*floorFade*lengthFade),j=(py*c.width+px)*4;
+        img.data[j]=img.data[j+1]=img.data[j+2]=a;img.data[j+3]=255;
+      }
+      x.putImageData(img,0,0);
       const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.NoColorSpace;return t;
     })();
 
@@ -1975,13 +1982,9 @@
         },
         vertexShader:`
           varying vec2 vUv;
-          varying vec3 vViewNormal;
-          varying vec3 vViewDir;
           void main(){
             vUv=uv;
             vec4 mvPosition=modelViewMatrix*vec4(position,1.0);
-            vViewNormal=normalize(normalMatrix*normal);
-            vViewDir=normalize(-mvPosition.xyz);
             gl_Position=projectionMatrix*mvPosition;
           }
         `,
@@ -1992,13 +1995,14 @@
           uniform float uTime;
           uniform float uSeed;
           varying vec2 vUv;
-          varying vec3 vViewNormal;
-          varying vec3 vViewDir;
           #include <tonemapping_pars_fragment>
           #include <colorspace_pars_fragment>
           void main(){
-            float facing=clamp(abs(dot(normalize(vViewNormal),normalize(vViewDir))),0.0,1.0);
-            float softEdge=pow(facing,mix(1.65,.48,uSoftness));
+            // カメラ正対面の横幅中央から両端へ、散乱光を連続的に0まで落とす。
+            float halfWidth=max(.001,1.0-vUv.y);
+            float localX=abs((vUv.x-.5)*2.0)/halfWidth;
+            float across=max(0.0,1.0-localX);
+            float softEdge=pow(across,mix(2.8,.82,uSoftness));
             float floorFade=smoothstep(0.0,.15,vUv.y);
             float lengthFade=.48+.52*pow(vUv.y,.38);
             float broad=sin(vUv.y*31.0+uTime*.20+uSeed*4.1);
@@ -2023,8 +2027,16 @@
       return mat;
     }
     const bodyGeo=new THREE.BoxGeometry(.16,.2,.16), moverGeo=new THREE.SphereGeometry(.13,14,10);
-    // 60個の光柱メッシュで形状データを共有し、モバイルのメモリ消費を増やさない。
-    const beamGeo=new THREE.ConeGeometry(1,1,32,5,true);
+    // 円錐の表面は描かず、カメラに正対する1枚の光学断面だけを描く。
+    // UVの横幅を使って輪郭を0までぼかすため、硬い三角形の境界が出ない。
+    const beamGeo=new THREE.BufferGeometry();
+    beamGeo.setAttribute('position',new THREE.Float32BufferAttribute([
+      -1,-.5,0, 1,-.5,0, 0,.5,0
+    ],3));
+    beamGeo.setAttribute('uv',new THREE.Float32BufferAttribute([
+      0,0, 1,0, .5,1
+    ],2));
+    beamGeo.computeVertexNormals();
     const gear=RIG.map(f=>{
       const g=new THREE.Group();
       const bodyMat=new THREE.MeshStandardMaterial({color:'#15151a',roughness:.7});
@@ -2050,7 +2062,7 @@
       const lens=new THREE.Mesh(new THREE.SphereGeometry(.055,10,8),lensMat);
       lens.position.copy(f.pos); g.add(lens);
       rigGroup.add(g);
-      return {body,bodyMat,beam,beamMat,core,coreMat,lens,lensMat,pool,poolMat};
+      return {body,bodyMat,beam,beamMat,core,coreMat,lens,lensMat,pool,poolMat,beamAxis:new THREE.Vector3(0,-1,0)};
     });
     const spots=Array.from({length:REAL_LIGHTS},(_,k)=>{
       const l=new THREE.SpotLight('#ffffff',0,0,0.3,0.5,2), t=new THREE.Object3D();
@@ -2092,7 +2104,22 @@
     /* ======================================================================
        毎フレームの更新 — 照度を計算し、上位灯を実光源に割り当て、露出を出す
        ====================================================================== */
-    const UP=V3(0,1,0), _q=new THREE.Quaternion(), _v=new THREE.Vector3();
+    const _v=new THREE.Vector3(),_beamY=new THREE.Vector3(),_beamZ=new THREE.Vector3(),
+      _beamX=new THREE.Vector3(),_beamM=new THREE.Matrix4(),_beamQ=new THREE.Quaternion();
+    function faceBeamToCamera(g){
+      // 光軸を固定したまま、断面の正面だけをカメラへ向ける。
+      _beamY.copy(g.beamAxis).negate();
+      _beamZ.copy(camera.position).sub(g.beam.position);
+      _beamZ.addScaledVector(_beamY,-_beamZ.dot(_beamY));
+      if(_beamZ.lengthSq()<1e-7){
+        _beamZ.set(0,0,1).addScaledVector(_beamY,-_beamY.z);
+        if(_beamZ.lengthSq()<1e-7)_beamZ.set(1,0,0).addScaledVector(_beamY,-_beamY.x);
+      }
+      _beamZ.normalize();_beamX.crossVectors(_beamY,_beamZ).normalize();
+      _beamZ.crossVectors(_beamX,_beamY).normalize();
+      _beamM.makeBasis(_beamX,_beamY,_beamZ);_beamQ.setFromRotationMatrix(_beamM);
+      g.beam.quaternion.copy(_beamQ);g.core.quaternion.copy(_beamQ);
+    }
     function updateScene(t){
       // ブラックアウトでは補助環境光も止め、顔や会場だけが残光しないようにする。
       hemi.intensity=board.blackout?0:.05;
@@ -2113,12 +2140,11 @@
         g.core.visible=g.beam.visible;
         if(g.beam.visible){
           g.beam.position.copy(f.pos).addScaledVector(dir,0.5);
-          _q.setFromUnitVectors(UP,dir.clone().normalize().negate());
-          g.beam.quaternion.copy(_q);
+          g.beamAxis.copy(dir).normalize();
           g.beam.scale.set(rad,len,rad);
           g.core.position.copy(g.beam.position);
-          g.core.quaternion.copy(_q);
           g.core.scale.set(rad*.52,len,rad*.52);
+          faceBeamToCamera(g);
           // スモーク時は照度の平方根に比例して散乱光を出す。
           // RGBに光量を持たせるため、アルファによる二重減衰は起きない。
           g.beamMat.uniforms.uColor.value.copy(col);
@@ -2620,6 +2646,8 @@
       if(motionBars.length) updateMotionBars();
       updatePositionMarker(now);
       if(cameraMode!=='map'&&lookPointerId===null)controls.update();
+      // Keep every soft beam slice facing the moving FPS camera.
+      for(const g of gear)if(g.beam.visible)faceBeamToCamera(g);
       updateVenueCutaway();
       renderer.render(scene,camera);
     }
