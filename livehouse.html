@@ -2168,21 +2168,22 @@
           g.core.position.copy(g.beam.position);
           g.core.scale.set(rad*(diffuseStyle?.96:.52),len,rad*(diffuseStyle?.96:.52));
           faceBeamToCamera(g);
-          // スモーク時は照度の平方根に比例して散乱光を出す。
+          // 散乱光も被写体への入射光と同じく照度に比例させる。
+          // 平方根にすると、カメラを適正露出へ絞った際に光線だけが先に沈むため使わない。
           // RGBに光量を持たせるため、アルファによる二重減衰は起きない。
           g.beamMat.uniforms.uColor.value.copy(col);
           const typeDensity=f.type==='moving'?1.12:(f.type==='side'?.82:1);
-          const scatterLux=Math.sqrt(Math.max(aimLux,0));
+          const scatterLux=Math.max(aimLux,0);
           g.beamMat.uniforms.uStyle.value=diffuseStyle?1:0;
           g.beamMat.uniforms.uScatter.value=(board.smoke
-            ?(diffuseStyle?.055:.145)
+            ?(diffuseStyle?.28:.48)
             :(diffuseStyle?.0015:.004))*scatterLux*typeDensity;
           g.beamMat.uniforms.uSoftness.value=board.soft/100;
           g.beamMat.uniforms.uTime.value=t;
           // 拡散光は幅広マスク、光条は細い光芯マスクを使う。
           const coreTex=diffuseStyle?beamDiffuseTex:beamCoreTex;
           if(g.coreMat.alphaMap!==coreTex)g.coreMat.alphaMap=coreTex;
-          const coreGain=board.smoke?(diffuseStyle?.016:.052):(diffuseStyle?.0008:.003);
+          const coreGain=board.smoke?(diffuseStyle?.055:.11):(diffuseStyle?.0008:.003);
           g.coreMat.color.copy(col).multiplyScalar(coreGain*scatterLux*typeDensity);
         }
         // 床のプール。人物狙いの灯も、延長した光柱が舞台面に当たれば着地光を出す。
