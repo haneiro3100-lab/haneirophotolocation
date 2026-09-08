@@ -28,6 +28,17 @@
     .warn{margin-top:6px;color:#ffb4a2;font-size:11px;line-height:1.5}
     .warn:empty{display:none}
     .ok{color:#9ff0c4}
+    .drawer{transition:transform .24s ease,box-shadow .24s ease}
+    .drawer.collapsed{transform:translateX(100%);box-shadow:none;pointer-events:none}
+    .drawer-toggle{position:absolute;z-index:4;right:338px;top:16px;width:32px;height:42px;border:1px solid rgba(255,255,255,.18);border-right:0;border-radius:8px 0 0 8px;background:rgba(17,22,22,.78);color:#d8dcd6;font-size:19px;opacity:.48;transition:right .24s ease,opacity .18s ease,background .18s ease}
+    .drawer-toggle:hover,.drawer-toggle:focus-visible{opacity:1;background:rgba(17,22,22,.96);outline:1px solid rgba(224,168,58,.7)}
+    .shell.drawer-collapsed .drawer-toggle{right:10px;border-right:1px solid rgba(255,255,255,.18);border-radius:8px}
+    .camera-nudge{position:absolute;z-index:2;left:16px;bottom:16px;display:grid;grid-template-columns:repeat(3,32px);grid-template-rows:repeat(3,32px);gap:3px;opacity:.42;transition:opacity .18s ease}
+    .camera-nudge:hover,.camera-nudge:focus-within{opacity:.92}
+    .camera-nudge button{display:grid;place-items:center;border:1px solid rgba(255,255,255,.18);border-radius:7px;background:rgba(17,22,22,.76);color:#edf0ec;font:700 15px ui-monospace,SFMono-Regular,monospace;backdrop-filter:blur(6px)}
+    .camera-nudge button:hover,.camera-nudge button:focus-visible{border-color:rgba(224,168,58,.72);color:#ffe3a8;outline:0}
+    .camera-nudge [data-pan="up"]{grid-column:2;grid-row:1}.camera-nudge [data-pan="left"]{grid-column:1;grid-row:2}.camera-nudge .nudge-home{grid-column:2;grid-row:2;font-size:12px}.camera-nudge [data-pan="right"]{grid-column:3;grid-row:2}.camera-nudge [data-pan="down"]{grid-column:2;grid-row:3}
+    @media(max-width:720px){.drawer.collapsed{transform:translateY(100%)}.drawer-toggle{top:auto;right:12px;bottom:38dvh;width:42px;height:30px;border-right:1px solid rgba(255,255,255,.18);border-bottom:0;border-radius:8px 8px 0 0}.shell.drawer-collapsed .drawer-toggle{right:12px;bottom:10px;border-bottom:1px solid rgba(255,255,255,.18);border-radius:8px}.shell.drawer-collapsed .scene{bottom:0}.camera-nudge{left:12px;bottom:calc(38dvh + 12px)}.shell.drawer-collapsed .camera-nudge{bottom:12px}}
   </style>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"}}</script>
 </head>
@@ -36,7 +47,15 @@
     <div id="scene" class="scene"></div>
     <header class="bar"><div class="mark">◒</div><div class="title"><p>LIGHTING SKETCHBOOK</p><h1>Livehouse</h1></div><span class="badge" id="sceneBadge">バンド</span></header>
     <div class="readout">📷 <strong id="expoBadge">計算中</strong></div>
-    <aside class="drawer">
+    <nav class="camera-nudge" aria-label="画面内のカメラ移動">
+      <button type="button" data-pan="up" aria-label="画面を上へ移動">↑</button>
+      <button type="button" data-pan="left" aria-label="画面を左へ移動">←</button>
+      <button type="button" class="nudge-home" id="cameraHome" aria-label="客席中央へ戻す" title="客席中央へ戻す">◎</button>
+      <button type="button" data-pan="right" aria-label="画面を右へ移動">→</button>
+      <button type="button" data-pan="down" aria-label="画面を下へ移動">↓</button>
+    </nav>
+    <button class="drawer-toggle" id="drawerToggle" type="button" aria-expanded="true" aria-controls="controlDrawer" title="操作パネルを折りたたむ">›</button>
+    <aside class="drawer" id="controlDrawer">
       <p class="eyebrow">STANDALONE HTML</p><h2>ステージの光を撮る</h2>
       <div class="tabs"><button class="tab active" data-tab="camera">📷 カメラ</button><button class="tab" data-tab="board">🎛 照明卓</button></div>
 
@@ -50,8 +69,8 @@
         </section>
         <section class="section"><div class="label"><span>撮影位置とレンズ</span><small>POSITION / LENS</small></div>
           <div class="two" id="cameraPresets"><button class="mode active" data-camera="audience">客席中央</button><button class="mode" data-camera="frontrow">最前列</button><button class="mode" data-camera="stageleft">下手側</button><button class="mode" data-camera="stageright">上手側</button></div>
-          <div class="slider" style="margin-top:8px"><div><span>焦点距離</span><strong id="v-focal">50mm</strong></div><input type="range" id="focalR" min="0" max="5" step="1" value="3" /></div>
-          <div class="hint">客席床はステージより75cm低く、撮影位置の高さもその段差を反映します。ドラッグ後はプリセットで元の位置へ戻せます。</div>
+          <div class="slider" style="margin-top:8px"><div><span>焦点距離</span><strong id="v-focal">50mm</strong></div><input type="range" id="focalR" min="0" max="8" step="1" value="3" /></div>
+          <div class="hint">客席床はステージより75cm低く設定。右ドラッグ、矢印キー／WASD、左下の十字キーで構図を平行移動できます。横・後ろ・上へ回り込むと、手前の壁や天井は自動で退避します。</div>
         </section>
         <section class="section"><div class="label"><span>被写体</span><small>SUBJECT</small></div>
           <div class="two" id="bodies"><button class="mode" data-body="neutral">標準</button><button class="mode active" data-body="idol">アイドル</button></div>
@@ -152,14 +171,15 @@
     const host=document.querySelector('#scene'), scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(38,1,.1,120), renderer=new THREE.WebGLRenderer({antialias:true});
     renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFShadowMap; renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; host.append(renderer.domElement);
     camera.position.set(0,.84,6.4);
-    const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,1.10,0); controls.enableDamping=true; controls.maxPolarAngle=Math.PI/2.02; controls.minDistance=1.8; controls.maxDistance=11;
+    const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,1.10,0); controls.enableDamping=true; controls.enablePan=true; controls.screenSpacePanning=true; controls.mouseButtons.RIGHT=THREE.MOUSE.PAN; controls.maxPolarAngle=Math.PI/2.02; controls.minDistance=1.8; controls.maxDistance=11;
+    renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
     const CAMERA_PRESETS={
       audience:{position:[0,.84,6.4],target:[0,1.10,0]},
       frontrow:{position:[0,.50,3.25],target:[0,1.12,0]},
       stageleft:{position:[3.05,.72,4.35],target:[0,1.10,-.05]},
       stageright:{position:[-3.05,.72,4.35],target:[0,1.10,-.05]}
     };
-    const FOCAL_LENGTHS=[24,28,35,50,70,85];
+    const FOCAL_LENGTHS=[24,28,35,50,70,85,105,135,200];
     let cameraPresetId='audience',focalLength=50;
     camera.setFocalLength(focalLength);
     function applyCameraPreset(id){
@@ -173,6 +193,18 @@
       camera.setFocalLength(focalLength);camera.updateProjectionMatrix();
       const out=document.querySelector('#v-focal');if(out)out.textContent=Math.round(focalLength)+'mm';
       const slider=document.querySelector('#focalR');if(slider)slider.value=FOCAL_LENGTHS.indexOf(focalLength);
+    }
+    function markCameraCustom(){
+      cameraPresetId='custom';
+      document.querySelectorAll('[data-camera]').forEach(b=>b.classList.remove('active'));
+    }
+    function panCameraView(dx,dy){
+      const forward=controls.target.clone().sub(camera.position).normalize();
+      const right=forward.clone().cross(camera.up).normalize();
+      const up=right.clone().cross(forward).normalize();
+      const step=THREE.MathUtils.clamp(camera.position.distanceTo(controls.target)*.035,.035,.28);
+      const move=right.multiplyScalar(dx*step).add(up.multiplyScalar(dy*step));
+      camera.position.add(move);controls.target.add(move);controls.update();markCameraCustom();
     }
 
     const material=new THREE.MeshStandardMaterial({color:'#d6d7d2',roughness:.76,metalness:.015});
@@ -203,12 +235,19 @@
     wall.position.set(0,1.3,-3.12);wall.receiveShadow=true;venue.add(wall);
     // 側壁・低い天井・トラスで、広いスタジオではなく小箱の距離感を作る。
     const sideWallMat=new THREE.MeshStandardMaterial({color:'#121416',roughness:.98,side:THREE.DoubleSide});
+    const sideWalls=[];
     [-1,1].forEach(side=>{
       const sideWall=new THREE.Mesh(new THREE.PlaneGeometry(8.7,4.1),sideWallMat);
       sideWall.rotation.y=side*Math.PI/2;sideWall.position.set(side*3.48,1.3,1.12);sideWall.receiveShadow=true;venue.add(sideWall);
+      sideWalls.push({mesh:sideWall,side});
     });
     const ceiling=new THREE.Mesh(new THREE.PlaneGeometry(6.96,8.7),new THREE.MeshStandardMaterial({color:'#0e1012',roughness:1,side:THREE.DoubleSide}));
     ceiling.rotation.x=Math.PI/2;ceiling.position.set(0,3.34,1.12);venue.add(ceiling);
+    function updateVenueCutaway(){
+      sideWalls.forEach(({mesh,side})=>{mesh.visible=!(Math.abs(camera.position.x)>1.15&&Math.sign(camera.position.x)===side)});
+      ceiling.visible=camera.position.y<2.75;
+      wall.visible=camera.position.z>-2.85;
+    }
     const trussMat=new THREE.MeshStandardMaterial({color:'#30343a',roughness:.52,metalness:.68});
     [-2.35,-1.25,-.15,2.35].forEach(z=>{
       const trussGeo=new THREE.CylinderGeometry(.025,.025,6.25,10);
@@ -2267,8 +2306,33 @@
     document.querySelectorAll('#isoR,#fstopR,#shutterR').forEach(e=>e.oninput=()=>{saveSettings();refresh()});
     document.querySelectorAll('[data-camera]').forEach(b=>b.onclick=()=>{applyCameraPreset(b.dataset.camera);saveSettings()});
     q('#focalR').oninput=e=>{applyFocalLength(FOCAL_LENGTHS[+e.target.value]);saveSettings()};
-    controls.addEventListener('start',()=>{cameraPresetId='custom';document.querySelectorAll('[data-camera]').forEach(b=>b.classList.remove('active'))});
+    controls.addEventListener('start',markCameraCustom);
     controls.addEventListener('end',saveSettings);
+    const PAN_DIRECTIONS={up:[0,1],left:[-1,0],right:[1,0],down:[0,-1]};
+    document.querySelectorAll('[data-pan]').forEach(b=>b.onclick=()=>{const [dx,dy]=PAN_DIRECTIONS[b.dataset.pan];panCameraView(dx,dy);saveSettings()});
+    q('#cameraHome').onclick=()=>{applyCameraPreset('audience');saveSettings()};
+    addEventListener('keydown',e=>{
+      const tag=e.target&&e.target.tagName;
+      if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA'||e.metaKey||e.ctrlKey||e.altKey)return;
+      const key=e.key.length===1?e.key.toLowerCase():e.key;
+      const direction={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,1],ArrowDown:[0,-1],a:[-1,0],d:[1,0],w:[0,1],s:[0,-1]}[key];
+      if(!direction)return;
+      e.preventDefault();panCameraView(direction[0],direction[1]);saveSettings();
+    });
+    const drawer=q('#controlDrawer'),drawerToggle=q('#drawerToggle'),shell=q('.shell'),drawerMedia=matchMedia('(max-width:720px)');
+    function setDrawerCollapsed(collapsed){
+      drawer.classList.toggle('collapsed',collapsed);shell.classList.toggle('drawer-collapsed',collapsed);
+      drawerToggle.textContent=collapsed?(drawerMedia.matches?'▴':'‹'):(drawerMedia.matches?'▾':'›');
+      drawerToggle.setAttribute('aria-expanded',String(!collapsed));
+      drawerToggle.title=collapsed?'操作パネルを開く':'操作パネルを折りたたむ';
+      try{localStorage.setItem('livehouse-drawer-collapsed',collapsed?'1':'0')}catch(e){console.warn('パネル状態の保存に失敗しました',e)}
+      setTimeout(resize,260);
+    }
+    drawerToggle.onclick=()=>setDrawerCollapsed(!drawer.classList.contains('collapsed'));
+    const refreshDrawerToggle=()=>setDrawerCollapsed(drawer.classList.contains('collapsed'));
+    if(drawerMedia.addEventListener)drawerMedia.addEventListener('change',refreshDrawerToggle);else drawerMedia.addListener(refreshDrawerToggle);
+    let drawerCollapsed=false;try{drawerCollapsed=localStorage.getItem('livehouse-drawer-collapsed')==='1'}catch(e){console.warn('パネル状態の読み込みに失敗しました',e)}
+    setDrawerCollapsed(drawerCollapsed);
     document.querySelectorAll('#poses button').forEach(b=>b.onclick=()=>{
       pose=b.dataset.pose; scene.remove(model); model=mannequin(pose); scene.add(model); syncHeadAccessories();
       document.querySelectorAll('#poses button').forEach(v=>v.classList.toggle('active',v===b));
@@ -2335,6 +2399,7 @@
       if(board.smoke) updateSmoke(dt);
       if(motionBars.length) updateMotionBars();
       controls.update();
+      updateVenueCutaway();
       renderer.render(scene,camera);
     }
     requestAnimationFrame(loop);
@@ -2342,7 +2407,7 @@
     // 数値検証用。表示に依存せずチェイス／露出／照度を読み出せる
     window.__livehouse={RIG,board,levelAt,luxOf,stageLux,evCamOf,evSceneOf,getExpo:()=>expo,CHALLENGES,updateScene,
       setClock(t){clock=t;updateScene(t)},setBody:(id)=>setBody(id),getBodyId:()=>bodyId,BODIES,camera,CAMERA_PRESETS,
-      stage:{height:STAGE_HEIGHT,width:STAGE_W,depth:STAGE_D},setCameraPreset:applyCameraPreset,setFocalLength:applyFocalLength,
+      stage:{height:STAGE_HEIGHT,width:STAGE_W,depth:STAGE_D},setCameraPreset:applyCameraPreset,setFocalLength:applyFocalLength,focalLengths:FOCAL_LENGTHS,panCameraView,updateVenueCutaway,
       setPose:(n)=>document.querySelector('[data-pose="'+n+'"]').click(),render(){renderer.render(scene,camera)},applyBoard,toneExposure(){return renderer.toneMappingExposure},triangles(){return renderer.info.render.triangles},lightStats(){return{spots:spots.filter(l=>l.visible&&l.intensity>0).length,shadows:spots.filter(l=>l.castShadow).length}}};
   </script>
 </body>
