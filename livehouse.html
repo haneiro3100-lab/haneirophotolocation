@@ -28,6 +28,7 @@
     .warn{margin-top:6px;color:#ffb4a2;font-size:11px;line-height:1.5}
     .warn:empty{display:none}
     .ok{color:#9ff0c4}
+    .camera-presets{grid-template-columns:repeat(3,1fr)}
     .drawer{transition:transform .24s ease,box-shadow .24s ease}
     .drawer.collapsed{transform:translateX(100%);box-shadow:none;pointer-events:none}
     .drawer-toggle{position:absolute;z-index:4;right:338px;top:16px;width:32px;height:42px;border:1px solid rgba(255,255,255,.18);border-right:0;border-radius:8px 0 0 8px;background:rgba(17,22,22,.78);color:#d8dcd6;font-size:19px;opacity:.48;transition:right .24s ease,opacity .18s ease,background .18s ease}
@@ -68,9 +69,9 @@
           <div class="warn" id="expoWarn"></div>
         </section>
         <section class="section"><div class="label"><span>撮影位置とレンズ</span><small>POSITION / LENS</small></div>
-          <div class="two" id="cameraPresets"><button class="mode active" data-camera="audience">客席中央</button><button class="mode" data-camera="frontrow">最前列</button><button class="mode" data-camera="stageleft">下手側</button><button class="mode" data-camera="stageright">上手側</button></div>
+          <div class="two camera-presets" id="cameraPresets"><button class="mode active" data-camera="audience">客席中央</button><button class="mode" data-camera="backrow">最後列</button><button class="mode" data-camera="frontrow">最前列</button><button class="mode" data-camera="stageleft">下手側</button><button class="mode" data-camera="stageright">上手側</button></div>
           <div class="slider" style="margin-top:8px"><div><span>焦点距離</span><strong id="v-focal">50mm</strong></div><input type="range" id="focalR" min="0" max="8" step="1" value="3" /></div>
-          <div class="hint">客席床はステージより75cm低く設定。左ドラッグで上下左右を向き、右ドラッグ、矢印キー／WASD、左下の十字キーで構図を平行移動できます。横・後ろ・上へ回り込むと、手前の壁や天井は自動で退避します。</div>
+          <div class="hint">プリセットは撮影の開始位置です。左ドラッグで向き、右ドラッグ／矢印キーで構図を平行移動、ホイール／ピンチで前後移動できます。WASDは床面移動、Q／Eは下降・上昇です。手前の壁や天井は自動で退避します。</div>
         </section>
         <section class="section"><div class="label"><span>被写体</span><small>SUBJECT</small></div>
           <div class="two" id="bodies"><button class="mode" data-body="neutral">標準</button><button class="mode active" data-body="idol">アイドル</button></div>
@@ -171,10 +172,11 @@
     const host=document.querySelector('#scene'), scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(38,1,.1,120), renderer=new THREE.WebGLRenderer({antialias:true});
     renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFShadowMap; renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; host.append(renderer.domElement);
     camera.position.set(0,.84,6.4);
-    const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,1.10,0); controls.enableDamping=true; controls.enablePan=true; controls.screenSpacePanning=true; controls.mouseButtons.RIGHT=THREE.MOUSE.PAN; controls.minPolarAngle=THREE.MathUtils.degToRad(8); controls.maxPolarAngle=THREE.MathUtils.degToRad(105); controls.minDistance=1.8; controls.maxDistance=11;
+    const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,1.10,0); controls.enableDamping=true; controls.enablePan=true; controls.screenSpacePanning=true; controls.zoomToCursor=true; controls.mouseButtons.RIGHT=THREE.MOUSE.PAN; controls.minPolarAngle=THREE.MathUtils.degToRad(8); controls.maxPolarAngle=THREE.MathUtils.degToRad(120); controls.minDistance=.65; controls.maxDistance=28;
     renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
     const CAMERA_PRESETS={
       audience:{position:[0,.84,6.4],target:[0,1.10,0]},
+      backrow:{position:[0,.84,12.8],target:[0,1.10,0]},
       frontrow:{position:[0,.50,3.25],target:[0,1.12,0]},
       stageleft:{position:[3.05,.72,4.35],target:[0,1.10,-.05]},
       stageright:{position:[-3.05,.72,4.35],target:[0,1.10,-.05]}
@@ -206,6 +208,16 @@
       const move=right.multiplyScalar(dx*step).add(up.multiplyScalar(dy*step));
       camera.position.add(move);controls.target.add(move);controls.update();markCameraCustom();
     }
+    function moveCameraFree(strafe,vertical,forwardAmount){
+      const forward=controls.target.clone().sub(camera.position);forward.y=0;
+      if(forward.lengthSq()<1e-6)forward.set(0,0,-1);else forward.normalize();
+      const right=forward.clone().cross(camera.up).normalize();
+      const step=THREE.MathUtils.clamp(camera.position.distanceTo(controls.target)*.055,.08,.65);
+      const move=right.multiplyScalar(strafe*step)
+        .add(camera.up.clone().multiplyScalar(vertical*step))
+        .add(forward.multiplyScalar(forwardAmount*step));
+      camera.position.add(move);controls.target.add(move);controls.update();markCameraCustom();
+    }
 
     const material=new THREE.MeshStandardMaterial({color:'#d6d7d2',roughness:.76,metalness:.015});
     // 新アイドルの顔・首・手足を同一の肌材質に統一。標準体型の材質は変更しない。
@@ -226,8 +238,8 @@
     stageBase.position.set(0,-STAGE_HEIGHT/2,STAGE_Z);stageBase.castShadow=true;stageBase.receiveShadow=true;venue.add(stageBase);
     const stageFloor=new THREE.Mesh(new THREE.PlaneGeometry(STAGE_W,STAGE_D),stageFloorMat);
     stageFloor.rotation.x=-Math.PI/2;stageFloor.position.set(0,.006,STAGE_Z);stageFloor.receiveShadow=true;venue.add(stageFloor);
-    const ground=new THREE.Mesh(new THREE.PlaneGeometry(8.4,7.4),audienceFloorMat);
-    ground.rotation.x=-Math.PI/2;ground.position.set(0,-STAGE_HEIGHT,STAGE_FRONT+3.7);ground.receiveShadow=true;venue.add(ground);
+    const ground=new THREE.Mesh(new THREE.PlaneGeometry(8.4,14.8),audienceFloorMat);
+    ground.rotation.x=-Math.PI/2;ground.position.set(0,-STAGE_HEIGHT,STAGE_FRONT+7.4);ground.receiveShadow=true;venue.add(ground);
     const stageEdge=new THREE.Mesh(new THREE.BoxGeometry(STAGE_W,.025,.12),new THREE.MeshStandardMaterial({color:'#66532d',roughness:.72,metalness:.06}));
     stageEdge.position.set(0,.013,STAGE_FRONT-.025);stageEdge.castShadow=true;venue.add(stageEdge);
     // 背景幕は舞台奥へ配置する。
@@ -237,12 +249,12 @@
     const sideWallMat=new THREE.MeshStandardMaterial({color:'#121416',roughness:.98,side:THREE.DoubleSide});
     const sideWalls=[];
     [-1,1].forEach(side=>{
-      const sideWall=new THREE.Mesh(new THREE.PlaneGeometry(8.7,4.1),sideWallMat);
-      sideWall.rotation.y=side*Math.PI/2;sideWall.position.set(side*3.48,1.3,1.12);sideWall.receiveShadow=true;venue.add(sideWall);
+      const sideWall=new THREE.Mesh(new THREE.PlaneGeometry(18,4.1),sideWallMat);
+      sideWall.rotation.y=side*Math.PI/2;sideWall.position.set(side*3.48,1.3,5.88);sideWall.receiveShadow=true;venue.add(sideWall);
       sideWalls.push({mesh:sideWall,side});
     });
-    const ceiling=new THREE.Mesh(new THREE.PlaneGeometry(6.96,8.7),new THREE.MeshStandardMaterial({color:'#0e1012',roughness:1,side:THREE.DoubleSide}));
-    ceiling.rotation.x=Math.PI/2;ceiling.position.set(0,3.34,1.12);venue.add(ceiling);
+    const ceiling=new THREE.Mesh(new THREE.PlaneGeometry(6.96,18),new THREE.MeshStandardMaterial({color:'#0e1012',roughness:1,side:THREE.DoubleSide}));
+    ceiling.rotation.x=Math.PI/2;ceiling.position.set(0,3.34,5.88);venue.add(ceiling);
     function updateVenueCutaway(){
       sideWalls.forEach(({mesh,side})=>{mesh.visible=!(Math.abs(camera.position.x)>1.15&&Math.sign(camera.position.x)===side)});
       ceiling.visible=camera.position.y<2.75;
@@ -2315,9 +2327,12 @@
       const tag=e.target&&e.target.tagName;
       if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA'||e.metaKey||e.ctrlKey||e.altKey)return;
       const key=e.key.length===1?e.key.toLowerCase():e.key;
-      const direction={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,1],ArrowDown:[0,-1],a:[-1,0],d:[1,0],w:[0,1],s:[0,-1]}[key];
-      if(!direction)return;
-      e.preventDefault();panCameraView(direction[0],direction[1]);saveSettings();
+      const pan={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[key];
+      const travel={a:[-1,0,0],d:[1,0,0],w:[0,0,1],s:[0,0,-1],q:[0,-1,0],e:[0,1,0]}[key];
+      if(!pan&&!travel)return;
+      e.preventDefault();
+      if(pan)panCameraView(pan[0],pan[1]);else moveCameraFree(travel[0],travel[1],travel[2]);
+      saveSettings();
     });
     const drawer=q('#controlDrawer'),drawerToggle=q('#drawerToggle'),shell=q('.shell'),drawerMedia=matchMedia('(max-width:720px)');
     function setDrawerCollapsed(collapsed){
@@ -2407,7 +2422,7 @@
     // 数値検証用。表示に依存せずチェイス／露出／照度を読み出せる
     window.__livehouse={RIG,board,levelAt,luxOf,stageLux,evCamOf,evSceneOf,getExpo:()=>expo,CHALLENGES,updateScene,
       setClock(t){clock=t;updateScene(t)},setBody:(id)=>setBody(id),getBodyId:()=>bodyId,BODIES,camera,CAMERA_PRESETS,
-      stage:{height:STAGE_HEIGHT,width:STAGE_W,depth:STAGE_D},setCameraPreset:applyCameraPreset,setFocalLength:applyFocalLength,focalLengths:FOCAL_LENGTHS,panCameraView,updateVenueCutaway,
+      stage:{height:STAGE_HEIGHT,width:STAGE_W,depth:STAGE_D},setCameraPreset:applyCameraPreset,setFocalLength:applyFocalLength,focalLengths:FOCAL_LENGTHS,panCameraView,moveCameraFree,updateVenueCutaway,
       setPose:(n)=>document.querySelector('[data-pose="'+n+'"]').click(),render(){renderer.render(scene,camera)},applyBoard,toneExposure(){return renderer.toneMappingExposure},triangles(){return renderer.info.render.triangles},lightStats(){return{spots:spots.filter(l=>l.visible&&l.intensity>0).length,shadows:spots.filter(l=>l.castShadow).length}}};
   </script>
 </body>
