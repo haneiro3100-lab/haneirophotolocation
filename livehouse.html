@@ -1365,7 +1365,7 @@
       const side=Math.sqrt(Math.max(0,1-(x/Math.max(w,1e-8))**2));
       const base=.054*Math.sqrt(Math.max(0,1-v*v))*side;
       const ga=(x0,y0,sx,sy)=>Math.exp(-(((x-x0)/sx)**2+((y-y0)/sy)**2));
-      const relief=.0070*ga(0,-.016,.0075,.010)+.0020*ga(0,.001,.0055,.016)
+      const relief=.0035*ga(0,-.016,.0095,.012)+.0016*ga(0,.001,.0070,.016)
         +.0014*(ga(-.027,-.023,.014,.011)+ga(.027,-.023,.014,.011))
         +.0012*ga(0,-.036,.014,.007);
       return base+relief*side*side;
@@ -1402,10 +1402,11 @@
         p.needsUpdate=true;idolSmoothNormals(geo);
         add(geo,idolSkinMaterial,'ContinuousSmoothFace');
         // 目・虹彩は顔面の曲率に沿う薄い面。球体の眼球を外から貼り付けない。
-        const patch=(cx,cy,rx,ry,offset,mat,name)=>{
+        const patch=(cx,cy,rx,ry,offset,mat,name,upperScale=1)=>{
           const pos=[],ids=[],R=9,A=48;
           for(let r=0;r<=R;r++)for(let a=0;a<=A;a++){
-            const t=a/A*Math.PI*2,x=cx+rx*(r/R)*Math.cos(t),y=cy+ry*(r/R)*Math.sin(t);
+            const t=a/A*Math.PI*2,s=Math.sin(t),x=cx+rx*(r/R)*Math.cos(t);
+            const y=cy+ry*(r/R)*s*(s>0?upperScale:1);
             pos.push(x,y,idolFaceZ(x,y)+offset);
           }
           for(let r=0;r<R;r++)for(let a=0;a<A;a++){
@@ -1417,21 +1418,22 @@
         const line=(pts,r,mat,name)=>add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),32,r,8,false),mat,name);
         [-1,1].forEach(sg=>{
           const ex=sg*.024,ey=-.007;
-          patch(ex,ey,.0150,.0090,.00035,newIdolInk,'EyeOutline');
-          patch(ex,ey-.0003,.0139,.0078,.00065,newIdolEyeWhite,'EyeWhite');
-          patch(ex-sg*.0006,ey-.0002,.0061,.0071,.00095,newIdolIris,'WarmBrownIris');
-          patch(ex-sg*.0006,ey+.0003,.0034,.0050,.00120,newIdolInk,'Pupil');
-          patch(ex-.0019,ey+.0031,.0016,.0017,.00145,newIdolEyeWhite,'EyeHighlight');
+          // 上側を浅くし、白目・虹彩も同じまぶたの開きに収める。
+          patch(ex,ey,.0150,.0072,.00035,newIdolInk,'EyeOutline',.70);
+          patch(ex,ey-.0003,.0139,.0063,.00065,newIdolEyeWhite,'EyeWhite',.74);
+          patch(ex-sg*.0006,ey-.0005,.0061,.0057,.00095,newIdolIris,'WarmBrownIris',.70);
+          patch(ex-sg*.0006,ey-.0005,.0034,.0045,.00120,newIdolInk,'Pupil',.70);
+          patch(ex-.0019,ey+.0016,.0012,.0012,.00145,newIdolEyeWhite,'EyeHighlight');
           const lid=[];
-          for(let i=0;i<=20;i++){const t=Math.PI*i/20,x=ex+.0144*Math.cos(t),y=ey+.0080*Math.sin(t);lid.push(V3(x,y,idolFaceZ(x,y)+.001));}
+          for(let i=0;i<=20;i++){const t=Math.PI*i/20,x=ex+.0144*Math.cos(t),y=ey+.0047*Math.sin(t);lid.push(V3(x,y,idolFaceZ(x,y)+.001));}
           line(lid,.0007,newIdolInk,'UpperLid');
-          const brow=[];for(let i=0;i<=8;i++){const x=ex+(i/8-.5)*.024,y=.009+.002*Math.sin(Math.PI*i/8);brow.push(V3(x,y,idolFaceZ(x,y)+.0005));}
+          const brow=[];for(let i=0;i<=8;i++){const x=ex+(i/8-.5)*.024,y=.007+.0015*Math.sin(Math.PI*i/8);brow.push(V3(x,y,idolFaceZ(x,y)+.0005));}
           line(brow,.00065,newIdolHairMaterial,'SoftBrow');
           const ear=add(new THREE.SphereGeometry(1,24,18),idolSkinMaterial,'Ear');
           ear.scale.set(.007,.014,.008);ear.position.set(sg*.055,-.009,-.001);
         });
-        const smile=[];for(let i=0;i<=16;i++){const x=(i/16-.5)*.019,y=-.037+.0022*(x/.0095)**2;smile.push(V3(x,y,idolFaceZ(x,y)+.0005));}
-        line(smile,.00085,newIdolLip,'SmallSmile');
+        const smile=[];for(let i=0;i<=16;i++){const x=(i/16-.5)*.022,y=-.037+.0028*(x/.011)**2;smile.push(V3(x,y,idolFaceZ(x,y)+.0009));}
+        line(smile,.0010,newIdolLip,'SmallSmile');
         // 頭皮キャップ：前だけ浅く切り上げ、側頭部と後頭部を連続させる。
         const pos=[],idx=[],U=96,V=40;
         for(let j=0;j<=V;j++)for(let i=0;i<=U;i++){
