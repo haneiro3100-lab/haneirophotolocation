@@ -1405,6 +1405,26 @@
     const newIdolBrow=new THREE.MeshStandardMaterial({color:'#68504e',roughness:.80});
     const newIdolLowerLid=new THREE.MeshStandardMaterial({color:'#aa8981',roughness:.80});
     const newIdolIvory=new THREE.MeshStandardMaterial({color:'#fff4ee',roughness:.68});
+    // 顔だけに作用する撮影用のソフトフィル。照明結果を残したまま、正面の暗部が
+    // 灰色の一枚面へ落ち込む部分だけを暖かな最低輝度へ緩やかに持ち上げる。
+    function addIdolFaceShadowFill(mat){
+      mat.onBeforeCompile=shader=>{
+        shader.fragmentShader=shader.fragmentShader.replace('#include <colorspace_fragment>',`
+          float idolFacing=smoothstep(.15,.82,normal.z);
+          float idolLuma=dot(gl_FragColor.rgb,vec3(.2126,.7152,.0722));
+          float idolDark=1.0-smoothstep(.12,.48,idolLuma);
+          vec3 idolWarmFloor=vec3(.24,.17,.15);
+          vec3 idolLifted=max(gl_FragColor.rgb,idolWarmFloor);
+          gl_FragColor.rgb=mix(gl_FragColor.rgb,idolLifted,.38*idolFacing*idolDark);
+          #include <colorspace_fragment>
+        `);
+      };
+      mat.customProgramCacheKey=()=> 'idol-face-shadow-fill-v1';
+      return mat;
+    }
+    const newIdolFaceMaterial=addIdolFaceShadowFill(new THREE.MeshStandardMaterial({
+      color:'#f1dfd6',roughness:.84,metalness:0
+    }));
     let newIdolHeadTemplate=null;
     function buildNewIdolHead(J){
       if(!newIdolHeadTemplate){
@@ -1421,7 +1441,7 @@
           p.setXYZ(i,x,y,z);
         }
         p.needsUpdate=true;idolSmoothNormals(geo);
-        add(geo,idolSkinMaterial,'ContinuousSmoothFace');
+        add(geo,newIdolFaceMaterial,'ContinuousSmoothFace');
         // 目・虹彩は顔面の曲率に沿う薄い面。球体の眼球を外から貼り付けない。
         const patch=(cx,cy,rx,ry,offset,mat,name,upperScale=1,clip=null)=>{
           const pos=[],ids=[],R=9,A=48;
@@ -1463,7 +1483,7 @@
           const lowerMesh=line(lower,.00020,newIdolLowerLid,'SoftLowerLid');lowerMesh.castShadow=false;
           const brow=[];for(let i=0;i<=12;i++){const t=i/12,x=ex+sg*(t-.5)*.022,y=.0065+.0022*Math.sin(Math.PI*t)-.0010*t;brow.push(V3(x,y,idolFaceZ(x,y)+.0004));}
           const browMesh=line(brow,.00045,newIdolBrow,'SoftBrow');browMesh.castShadow=false;
-          const ear=add(new THREE.SphereGeometry(1,24,18),idolSkinMaterial,'Ear');
+          const ear=add(new THREE.SphereGeometry(1,24,18),newIdolFaceMaterial,'Ear');
           ear.scale.set(.007,.014,.008);ear.position.set(sg*.055,-.009,-.001);
         });
         const smile=[];for(let i=0;i<=16;i++){const x=(i/16-.5)*.020,y=-.040+.0011*(x/.010)**2;smile.push(V3(x,y,idolFaceZ(x,y)+.0004));}
