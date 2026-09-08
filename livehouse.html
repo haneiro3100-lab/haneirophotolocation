@@ -42,7 +42,7 @@
 
       <div class="panel" id="panel-camera">
         <section class="section"><div class="label"><span>カメラの露出</span><small>ISO / F / SHUTTER</small></div>
-          <div class="slider"><div><span>ISO感度</span><strong id="v-iso">1600</strong></div><input type="range" id="isoR" min="0" max="9" step="1" value="5" /></div>
+          <div class="slider"><div><span>ISO感度</span><strong id="v-iso">1600</strong></div><input type="range" id="isoR" min="0" max="27" step="1" value="15" /></div>
           <div class="slider"><div><span>絞り</span><strong id="v-fstop">F2.8</strong></div><input type="range" id="fstopR" min="0" max="10" step="1" value="3" /></div>
           <div class="slider"><div><span>シャッター速度</span><strong id="v-shutter">1/250</strong></div><input type="range" id="shutterR" class="sun-range" min="0" max="11" step="1" value="6" /></div>
           <div class="hint" id="expoReadout"></div>
@@ -50,7 +50,7 @@
         </section>
         <section class="section"><div class="label"><span>撮影位置とレンズ</span><small>POSITION / LENS</small></div>
           <div class="two" id="cameraPresets"><button class="mode active" data-camera="audience">客席中央</button><button class="mode" data-camera="frontrow">最前列</button><button class="mode" data-camera="stageleft">下手側</button><button class="mode" data-camera="stageright">上手側</button></div>
-          <div class="slider" style="margin-top:8px"><div><span>焦点距離</span><strong id="v-focal">50mm</strong></div><input type="range" id="focalR" min="24" max="85" step="1" value="50" /></div>
+          <div class="slider" style="margin-top:8px"><div><span>焦点距離</span><strong id="v-focal">50mm</strong></div><input type="range" id="focalR" min="0" max="5" step="1" value="3" /></div>
           <div class="hint">客席床はステージより75cm低く、撮影位置の高さもその段差を反映します。ドラッグ後はプリセットで元の位置へ戻せます。</div>
         </section>
         <section class="section"><div class="label"><span>被写体</span><small>SUBJECT</small></div>
@@ -159,6 +159,7 @@
       stageleft:{position:[3.05,.72,4.35],target:[0,1.10,-.05]},
       stageright:{position:[-3.05,.72,4.35],target:[0,1.10,-.05]}
     };
+    const FOCAL_LENGTHS=[24,28,35,50,70,85];
     let cameraPresetId='audience',focalLength=50;
     camera.setFocalLength(focalLength);
     function applyCameraPreset(id){
@@ -167,10 +168,11 @@
       document.querySelectorAll('[data-camera]').forEach(b=>b.classList.toggle('active',b.dataset.camera===id));
     }
     function applyFocalLength(mm){
-      focalLength=THREE.MathUtils.clamp(Number(mm)||50,24,85);
+      const requested=Number(mm)||50;
+      focalLength=FOCAL_LENGTHS.reduce((best,v)=>Math.abs(v-requested)<Math.abs(best-requested)?v:best,FOCAL_LENGTHS[0]);
       camera.setFocalLength(focalLength);camera.updateProjectionMatrix();
       const out=document.querySelector('#v-focal');if(out)out.textContent=Math.round(focalLength)+'mm';
-      const slider=document.querySelector('#focalR');if(slider)slider.value=focalLength;
+      const slider=document.querySelector('#focalR');if(slider)slider.value=FOCAL_LENGTHS.indexOf(focalLength);
     }
 
     const material=new THREE.MeshStandardMaterial({color:'#d6d7d2',roughness:.76,metalness:.015});
@@ -1749,7 +1751,10 @@
        露出 — 舞台灯は連続光なのでガイドナンバー方式は使わない。
        入射光式 EV100 = log2(E/2.5) と、カメラ側 EV100 = log2(F²/T) - log2(ISO/100) の差を段数で出す。
        ====================================================================== */
-    const ISO_STOPS=[50,100,200,400,800,1600,3200,6400,12800,25600];
+    // 実機の1/3段表示値。中間の任意数値は作らず、この配列だけを切り替える。
+    const ISO_STOPS=[50,64,80,100,125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,4000,5000,6400,8000,10000,12800,16000,20000,25600];
+    const LEGACY_ISO_STOPS=[50,100,200,400,800,1600,3200,6400,12800,25600];
+    const nearestIsoIndex=value=>ISO_STOPS.reduce((best,v,i)=>Math.abs(v-value)<Math.abs(ISO_STOPS[best]-value)?i:best,0);
     const F_STOPS=[1,1.4,2,2.8,4,5.6,8,11,16,22,32];
     const SHUTTER_STOPS=[1/4,1/8,1/15,1/30,1/60,1/125,1/250,1/500,1/1000,1/2000,1/4000,1/8000];
     const BLUR_LIMIT=1/60;          // これより遅いと被写体ブレ
@@ -2047,9 +2052,10 @@
         mannequinColor:document.querySelector('#mannequinColor').value,
         costumeColor:document.querySelector('#costumeColor').value,
         isoR:+document.querySelector('#isoR').value,
+        isoValue:ISO_STOPS[+document.querySelector('#isoR').value],
         fstopR:+document.querySelector('#fstopR').value,
         shutterR:+document.querySelector('#shutterR').value,
-        camera:{preset:cameraPresetId,focalLength,position:camera.position.toArray(),target:controls.target.toArray()},
+        camera:{preset:cameraPresetId,focalLength,focalStopsVersion:1,position:camera.position.toArray(),target:controls.target.toArray()},
         board:JSON.parse(JSON.stringify(board))
       };
     }
@@ -2121,9 +2127,14 @@
       if(POSES[s.pose])pose=s.pose;
       showGlasses=!!s.showGlasses;showSunglasses=!!s.showSunglasses;showCatEars=!!s.showCatEars;
       if(s.costumeColor){document.querySelector('#costumeColor').value=s.costumeColor;costumeMaterial.color.set(s.costumeColor);}
-      ['isoR','fstopR','shutterR'].forEach(id=>{if(s[id]!==undefined)document.querySelector('#'+id).value=s[id]});
+      ['fstopR','shutterR'].forEach(id=>{if(s[id]!==undefined)document.querySelector('#'+id).value=s[id]});
+      if(Number.isFinite(s.isoValue))document.querySelector('#isoR').value=nearestIsoIndex(s.isoValue);
+      else if(s.isoR!==undefined){
+        const legacyValue=LEGACY_ISO_STOPS[Math.max(0,Math.min(LEGACY_ISO_STOPS.length-1,+s.isoR))];
+        document.querySelector('#isoR').value=nearestIsoIndex(legacyValue);
+      }
       if(s.camera){
-        applyFocalLength(s.camera.focalLength);
+        applyFocalLength(s.camera.focalStopsVersion===1?s.camera.focalLength:50);
         if(CAMERA_PRESETS[s.camera.preset])applyCameraPreset(s.camera.preset);
         else if(Array.isArray(s.camera.position)&&Array.isArray(s.camera.target)){
           cameraPresetId='custom';camera.position.fromArray(s.camera.position);controls.target.fromArray(s.camera.target);controls.update();
@@ -2255,7 +2266,7 @@
     // カメラ側
     document.querySelectorAll('#isoR,#fstopR,#shutterR').forEach(e=>e.oninput=()=>{saveSettings();refresh()});
     document.querySelectorAll('[data-camera]').forEach(b=>b.onclick=()=>{applyCameraPreset(b.dataset.camera);saveSettings()});
-    q('#focalR').oninput=e=>{applyFocalLength(e.target.value);saveSettings()};
+    q('#focalR').oninput=e=>{applyFocalLength(FOCAL_LENGTHS[+e.target.value]);saveSettings()};
     controls.addEventListener('start',()=>{cameraPresetId='custom';document.querySelectorAll('[data-camera]').forEach(b=>b.classList.remove('active'))});
     controls.addEventListener('end',saveSettings);
     document.querySelectorAll('#poses button').forEach(b=>b.onclick=()=>{
