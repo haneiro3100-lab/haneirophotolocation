@@ -1871,15 +1871,21 @@
     }
     function blinkMul(i,t){
       const b=board.blink; if(!b.playing) return 1;
-      const ph = b.mode==='all' ? 0 : randPhase[i]*3;
-      return Math.sin(t*b.speed*Math.PI*2+ph)>0?1:0.06;
+      if(b.mode==='all') return Math.sin(t*b.speed*Math.PI*2)>0?1:0.06;
+      // ランダムは固定位相の周期点滅にせず、灯体ごと・時間区間ごとに独立してON/OFFを抽選する。
+      const tick=Math.floor(t*Math.max(.1,b.speed));
+      const raw=Math.sin((i+1)*91.345+(tick+1)*474.123)*43758.5453;
+      const random=raw-Math.floor(raw);
+      return random>.55?1:0;
     }
     // 0〜1。マスター明るさ・灯体レベル・ブラックアウト・チェイス・ブリンクをすべて含む
     function levelAt(i,t){
       const s=board.fixtures[i];
       if(!s.on||board.blackout) return 0;
       const frontScale=RIG[i].role==='foh'?board.frontFill/100:1;
-      return (board.bright/100)*frontScale*(s.level/100)*chaseMul(i,t)*blinkMul(i,t);
+      // ステージ中央の逆光ムービング2灯は、他灯より実効出力を10%抑える。
+      const centralBackScale=RIG[i].type==='moving'&&RIG[i].role==='stage'?.9:1;
+      return (board.bright/100)*frontScale*centralBackScale*(s.level/100)*chaseMul(i,t)*blinkMul(i,t);
     }
     const _c=new THREE.Color();
     function colorAt(i,t){
@@ -2243,7 +2249,7 @@
         if(onFloor){
           g.pool.position.set(beamEnd.x,0.02,beamEnd.z);
           g.pool.scale.set(rad,rad,1);
-          g.poolMat.color.copy(col).multiplyScalar(aimLux*0.22);   // 床の拡散反射の輝度
+          g.poolMat.color.copy(col).multiplyScalar(aimLux*0.198);  // 床の拡散反射を10%抑制
         }
       }
       const meter=faceExposureOf(contrib),hazeOn=board.smoke&&!board.blackout;
