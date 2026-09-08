@@ -1370,10 +1370,10 @@
     function idolFaceZ(x,y){
       const v=Math.max(-1,Math.min(1,y/.074)),w=idolFaceWidth(y);
       const side=Math.sqrt(Math.max(0,1-(x/Math.max(w,1e-8))**2));
-      // 参照顔は口元から顎直前まで法線がほぼ正面を向く。球面から段階的に
-      // q=5.4 の曲面へ移し、上方照明で下顔面全体が灰色になるのを抑える。
+      // 参照顔の平坦さを残しつつ、口元から顎までを僅かに丸める。
+      // q=4.4 は球面へ戻し過ぎず、横顔の顎が膨らまない範囲に留める。
       const ovalFront=Math.sqrt(Math.max(0,1-v*v)),u=Math.max(0,-v);
-      const referenceFront=Math.pow(Math.max(0,1-Math.pow(u,5.4)),1/5.4);
+      const referenceFront=Math.pow(Math.max(0,1-Math.pow(u,4.4)),1/4.4);
       const referenceMix=idolEase(.05,.46,u);
       const frontCurve=v<0?ovalFront+(referenceFront-ovalFront)*referenceMix:ovalFront;
       const base=.054*frontCurve*side;
@@ -1397,6 +1397,25 @@
       groups.forEach(({sum,ids})=>{sum.normalize();ids.forEach(i=>n.setXYZ(i,sum.x,sum.y,sum.z));});
       n.needsUpdate=true;return geo;
     }
+    // 口元から顎上部の中央だけ、下向き法線を最大26%弱める。
+    // 明るさは加算しないので、ブラックアウトでは顔もほかの部位と同じく暗くなる。
+    function idolSoftenLowerFaceNormals(geo){
+      idolSmoothNormals(geo);
+      const p=geo.attributes.position,n=geo.attributes.normal;
+      for(let i=0;i<p.count;i++){
+        const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
+        if(z<=0||y>=-.006)continue;
+        const u=Math.max(0,Math.min(1,-y/.074)),w=Math.max(idolFaceWidth(y),1e-8);
+        const vertical=idolEase(.12,.36,u)*(1-idolEase(.76,.94,u));
+        const central=1-idolEase(.55,.92,Math.abs(x)/w);
+        const strength=.26*vertical*central,ny=n.getY(i);
+        if(ny>=0||strength<=0)continue;
+        const nx=n.getX(i),nz=n.getZ(i),sy=ny*(1-strength);
+        const len=Math.hypot(nx,sy,nz)||1;
+        n.setXYZ(i,nx/len,sy/len,nz/len);
+      }
+      n.needsUpdate=true;return geo;
+    }
     const newIdolHairMaterial=new THREE.MeshStandardMaterial({color:'#432f37',roughness:.66,metalness:0});
     const newIdolEyeWhite=new THREE.MeshStandardMaterial({color:'#fff4ed',roughness:.48});
     const newIdolIris=new THREE.MeshStandardMaterial({color:'#63433f',roughness:.48});
@@ -1405,26 +1424,6 @@
     const newIdolBrow=new THREE.MeshStandardMaterial({color:'#68504e',roughness:.80});
     const newIdolLowerLid=new THREE.MeshStandardMaterial({color:'#aa8981',roughness:.80});
     const newIdolIvory=new THREE.MeshStandardMaterial({color:'#fff4ee',roughness:.68});
-    // 顔だけに作用する撮影用のソフトフィル。照明結果を残したまま、正面の暗部が
-    // 灰色の一枚面へ落ち込む部分だけを暖かな最低輝度へ緩やかに持ち上げる。
-    function addIdolFaceShadowFill(mat){
-      mat.onBeforeCompile=shader=>{
-        shader.fragmentShader=shader.fragmentShader.replace('#include <colorspace_fragment>',`
-          float idolFacing=smoothstep(.15,.82,normal.z);
-          float idolLuma=dot(gl_FragColor.rgb,vec3(.2126,.7152,.0722));
-          float idolDark=1.0-smoothstep(.12,.48,idolLuma);
-          vec3 idolWarmFloor=vec3(.24,.17,.15);
-          vec3 idolLifted=max(gl_FragColor.rgb,idolWarmFloor);
-          gl_FragColor.rgb=mix(gl_FragColor.rgb,idolLifted,.38*idolFacing*idolDark);
-          #include <colorspace_fragment>
-        `);
-      };
-      mat.customProgramCacheKey=()=> 'idol-face-shadow-fill-v1';
-      return mat;
-    }
-    const newIdolFaceMaterial=addIdolFaceShadowFill(new THREE.MeshStandardMaterial({
-      color:'#f1dfd6',roughness:.84,metalness:0
-    }));
     let newIdolHeadTemplate=null;
     function buildNewIdolHead(J){
       if(!newIdolHeadTemplate){
@@ -1440,8 +1439,8 @@
           const z=p.getZ(i)>=0?idolFaceZ(x,y):p.getZ(i)*.054;
           p.setXYZ(i,x,y,z);
         }
-        p.needsUpdate=true;idolSmoothNormals(geo);
-        add(geo,newIdolFaceMaterial,'ContinuousSmoothFace');
+        p.needsUpdate=true;idolSoftenLowerFaceNormals(geo);
+        add(geo,idolSkinMaterial,'ContinuousSmoothFace');
         // 目・虹彩は顔面の曲率に沿う薄い面。球体の眼球を外から貼り付けない。
         const patch=(cx,cy,rx,ry,offset,mat,name,upperScale=1,clip=null)=>{
           const pos=[],ids=[],R=9,A=48;
@@ -1483,7 +1482,7 @@
           const lowerMesh=line(lower,.00020,newIdolLowerLid,'SoftLowerLid');lowerMesh.castShadow=false;
           const brow=[];for(let i=0;i<=12;i++){const t=i/12,x=ex+sg*(t-.5)*.022,y=.0065+.0022*Math.sin(Math.PI*t)-.0010*t;brow.push(V3(x,y,idolFaceZ(x,y)+.0004));}
           const browMesh=line(brow,.00045,newIdolBrow,'SoftBrow');browMesh.castShadow=false;
-          const ear=add(new THREE.SphereGeometry(1,24,18),newIdolFaceMaterial,'Ear');
+          const ear=add(new THREE.SphereGeometry(1,24,18),idolSkinMaterial,'Ear');
           ear.scale.set(.007,.014,.008);ear.position.set(sg*.055,-.009,-.001);
         });
         const smile=[];for(let i=0;i<=16;i++){const x=(i/16-.5)*.020,y=-.040+.0011*(x/.010)**2;smile.push(V3(x,y,idolFaceZ(x,y)+.0004));}
