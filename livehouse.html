@@ -149,6 +149,9 @@
     const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,1.35,0); controls.enableDamping=true; controls.maxPolarAngle=Math.PI/2.02; controls.minDistance=2; controls.maxDistance=16;
 
     const material=new THREE.MeshStandardMaterial({color:'#d6d7d2',roughness:.76,metalness:.015});
+    // 埋め込み顔テクスチャの素肌色（約 #ece8e5）へ、アイドルの首・腕・脚だけを合わせる。
+    // 標準マネキンの材質は material のまま残し、顔テクスチャ自体には手を加えない。
+    const idolSkinMaterial=new THREE.MeshStandardMaterial({color:'#ece8e5',roughness:.80,metalness:.015});
     const glassesMaterial=new THREE.MeshStandardMaterial({color:'#2b2e30',roughness:.28,metalness:.85});
     const sunglassFrameMaterial=new THREE.MeshStandardMaterial({color:'#141414',roughness:.55,metalness:.05});
     const sunglassLensMaterial=new THREE.MeshStandardMaterial({color:'#0a0a0c',roughness:.15,metalness:.3,side:THREE.DoubleSide});
@@ -300,8 +303,9 @@
         // 旧値はここだけ 0.008 刻みで、前後のステーション間隔 (0.015〜0.021) の
         // 半分だった。間隔が急に詰まると平滑化が効かず横筋・膨らみが出る
         // （このファイル自身が TRUNK 冒頭で警告している条件）。等間隔に置き直す。
-        { y:0.836,       z:-0.011, w:0.0410,dF:0.0342, dB:0.0402, n:2.25 },  // 僧帽筋の斜面
-        { y:P.NECK_ROOT, z:-0.008, w:0.0290,dF:0.0266, dB:0.0312, n:2.2 },   // 首の付け根（顎より下）
+        // 前面・首幅・高さは保ち、後方厚みだけを局所的に減らして首後ろの山を抑える。
+        { y:0.836,       z:-0.011, w:0.0410,dF:0.0342, dB:0.0370, n:2.25 },  // 僧帽筋の斜面
+        { y:P.NECK_ROOT, z:-0.008, w:0.0290,dF:0.0266, dB:0.0290, n:2.2 },   // 首の付け根（顎より下）
         { y:0.8655,      z:-0.003, w:0.0256,dF:0.0246, dB:0.0276, n:2.15 },
         { y:P.NECK,      z: 0.002, w:0.0238,dF:0.0232, dB:0.0258, n:2.1 },   // 首
         { y:P.SKULL_BASE,z: 0.005, w:0.0232,dF:0.0228, dB:0.0250, n:2.0 }
@@ -1045,6 +1049,18 @@
       idolFaceTemplate=gltf.scene;
       idolFaceTemplate.traverse(o=>{
         if(!o.isMesh)return;
+        const mats=Array.isArray(o.material)?o.material:[o.material];
+        mats.forEach(mat=>{
+          if(!mat||mat.name!=='IdolFaceSkin')return;
+          mat.roughness=.80;
+          // GLTFLoader が保持する normalScale のY符号を壊さず、最大強度だけ0.35へ落とす。
+          if(mat.normalMap&&mat.normalScale){
+            const peak=Math.max(Math.abs(mat.normalScale.x),Math.abs(mat.normalScale.y));
+            if(peak>1e-6)mat.normalScale.multiplyScalar(.35/peak);
+            else mat.normalScale.set(.35,.35);
+          }
+          mat.needsUpdate=true;
+        });
         o.castShadow=true;
         o.receiveShadow=false;
       });
@@ -1337,7 +1353,8 @@
     function buildMannequin(poseName){
       const g=new THREE.Group(), J=buildSkeleton(poseName);
       // 影は落とすが自身では受けない（曲面が細かいため、受影にするとシャドウアクネが出る）
-      const add=geo=>{const m=new THREE.Mesh(geo,material);m.castShadow=true;g.add(m);};
+      const bodyMaterial=BODY.costume==='idol'?idolSkinMaterial:material;
+      const add=geo=>{const m=new THREE.Mesh(geo,bodyMaterial);m.castShadow=true;g.add(m);};
       add(buildTrunk(J));
       ['L','R'].forEach(S=>{
         add(buildLeg(J,S));add(buildFoot(J,S));add(buildArm(J,S));
@@ -1353,7 +1370,7 @@
         head.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=false;}});
         g.add(head);
       }else{
-        const head=new THREE.Mesh(BODY.costume==='idol'?buildIdolHead():buildHead(),material);
+        const head=new THREE.Mesh(BODY.costume==='idol'?buildIdolHead():buildHead(),bodyMaterial);
         head.position.copy(J.head);head.rotation.x=J.headAngle;
         head.castShadow=true;g.add(head);
       }
