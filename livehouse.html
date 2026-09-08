@@ -1951,13 +1951,24 @@
       x.fillStyle=g; x.fillRect(0,0,128,128);
       const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
     })();
-    // カメラに正対する面だけが濃くなるヘイズ用シェーダー。
-    // 輪郭でアルファが 0 へ落ちるため、従来の「半透明の三角板」が見えない。
+    // 光芯の長さ方向だけをぼかす標準材質用マスク。
+    // 外側シェーダーが使えない環境でも、細い光芯は必ず残る。
+    const beamCoreTex=(()=>{
+      const c=document.createElement('canvas');c.width=8;c.height=128;
+      const x=c.getContext('2d'),g=x.createLinearGradient(0,128,0,0);
+      g.addColorStop(0,'rgb(0,0,0)');g.addColorStop(.12,'rgb(105,105,105)');
+      g.addColorStop(.55,'rgb(205,205,205)');g.addColorStop(1,'rgb(255,255,255)');
+      x.fillStyle=g;x.fillRect(0,0,c.width,c.height);
+      const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.NoColorSpace;return t;
+    })();
+
+    // カメラに正対する面が濃く、輪郭が消える外側ヘイズ。
+    // 散乱強度はRGB側に入れ、透明度と二重に掛けない。
     function makeBeamMaterial(seed){
       const mat=new THREE.ShaderMaterial({
         uniforms:{
           uColor:{value:new THREE.Color('#ffffff')},
-          uDensity:{value:0},
+          uScatter:{value:0},
           uSoftness:{value:.6},
           uTime:{value:0},
           uSeed:{value:seed}
@@ -1976,7 +1987,7 @@
         `,
         fragmentShader:`
           uniform vec3 uColor;
-          uniform float uDensity;
+          uniform float uScatter;
           uniform float uSoftness;
           uniform float uTime;
           uniform float uSeed;
@@ -1993,9 +2004,10 @@
             float broad=sin(vUv.y*31.0+uTime*.20+uSeed*4.1);
             float fine=sin(vUv.y*83.0-uTime*.11+vUv.x*12.566+uSeed*9.3);
             float wisps=.78+.14*broad+.08*fine;
-            float alpha=uDensity*softEdge*floorFade*lengthFade*clamp(wisps,.42,1.0);
-            if(alpha<.001) discard;
-            gl_FragColor=vec4(uColor,alpha);
+            float scatter=uScatter*softEdge*floorFade*lengthFade*clamp(wisps,.42,1.0);
+            if(scatter<.001) discard;
+            // 散乱量をRGBに直接持たせ、加算合成でアルファが二度掛けされるのを防ぐ。
+            gl_FragColor=vec4(uColor*scatter,1.0);
             #include <tonemapping_fragment>
             #include <colorspace_fragment>
           }
@@ -2011,15 +2023,24 @@
       return mat;
     }
     const bodyGeo=new THREE.BoxGeometry(.16,.2,.16), moverGeo=new THREE.SphereGeometry(.13,14,10);
+    // 60個の光柱メッシュで形状データを共有し、モバイルのメモリ消費を増やさない。
+    const beamGeo=new THREE.ConeGeometry(1,1,32,5,true);
     const gear=RIG.map(f=>{
       const g=new THREE.Group();
       const bodyMat=new THREE.MeshStandardMaterial({color:'#15151a',roughness:.7});
       const body=new THREE.Mesh(f.type==='moving'?moverGeo:bodyGeo,bodyMat);
       body.position.copy(f.pos); g.add(body);
-      // ビーム: 十分に丸い開放円錐と視線依存の濃度で、容積を持つ光柱に見せる。
+      // 外側の淡いヘイズ。輪郭と密度ムラを担当する。
       const beamMat=makeBeamMaterial(f.id/N);
-      const beam=new THREE.Mesh(new THREE.ConeGeometry(1,1,32,5,true),beamMat);
+      const beam=new THREE.Mesh(beamGeo,beamMat);
       g.add(beam);
+      // 内側の細い光芯。標準材質なので独自シェーダー不調時にも消えない。
+      const coreMat=new THREE.MeshBasicMaterial({
+        color:'#000000',alphaMap:beamCoreTex,transparent:true,opacity:1,
+        blending:THREE.AdditiveBlending,depthTest:true,depthWrite:false,side:THREE.DoubleSide
+      });
+      coreMat.forceSinglePass=true;
+      const core=new THREE.Mesh(beamGeo,coreMat);g.add(core);
       // 床のプール（実光源は上位8灯までなので、床の当たりはこの加算ディスクが担う）
       const poolMat=new THREE.MeshBasicMaterial({color:'#000000',map:poolTex,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false});
       const pool=new THREE.Mesh(new THREE.PlaneGeometry(2,2),poolMat);
@@ -2029,7 +2050,7 @@
       const lens=new THREE.Mesh(new THREE.SphereGeometry(.055,10,8),lensMat);
       lens.position.copy(f.pos); g.add(lens);
       rigGroup.add(g);
-      return {body,bodyMat,beam,beamMat,lens,lensMat,pool,poolMat};
+      return {body,bodyMat,beam,beamMat,core,coreMat,lens,lensMat,pool,poolMat};
     });
     const spots=Array.from({length:REAL_LIGHTS},(_,k)=>{
       const l=new THREE.SpotLight('#ffffff',0,0,0.3,0.5,2), t=new THREE.Object3D();
@@ -2046,7 +2067,18 @@
     }
     const smokeGeo=new THREE.BufferGeometry();
     smokeGeo.setAttribute('position',new THREE.BufferAttribute(smokePos,3));
-    const smoke=new THREE.Points(smokeGeo,new THREE.PointsMaterial({color:'#8fa3b8',size:.34,transparent:true,opacity:.05,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
+    // 四角い点ではなく、輪郭の消える小さなヘイズ粒として描く。
+    const smokeTex=(()=>{
+      const c=document.createElement('canvas');c.width=c.height=64;
+      const x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);
+      g.addColorStop(0,'rgba(255,255,255,.72)');g.addColorStop(.42,'rgba(255,255,255,.28)');
+      g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);
+      const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.NoColorSpace;return t;
+    })();
+    const smoke=new THREE.Points(smokeGeo,new THREE.PointsMaterial({
+      color:'#93a2b2',map:smokeTex,size:.42,transparent:true,opacity:.032,
+      blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true
+    }));
     smoke.visible=false; scene.add(smoke);
     function updateSmoke(dt){
       if(!board.smoke) return;
@@ -2078,18 +2110,25 @@
         g.lens.visible=lv>0.001;
         if(g.lens.visible) g.lensMat.color.copy(col).multiplyScalar(FIX_LUX[f.type]*lv*30);
         g.beam.visible=lv>0.001;
+        g.core.visible=g.beam.visible;
         if(g.beam.visible){
           g.beam.position.copy(f.pos).addScaledVector(dir,0.5);
           _q.setFromUnitVectors(UP,dir.clone().normalize().negate());
           g.beam.quaternion.copy(_q);
           g.beam.scale.set(rad,len,rad);
-          // スモークがなければ空気中の散乱はほとんど見えない。
-          // 照度は平方根で圧縮し、多灯が重なっても白飛びしにくくする。
+          g.core.position.copy(g.beam.position);
+          g.core.quaternion.copy(_q);
+          g.core.scale.set(rad*.52,len,rad*.52);
+          // スモーク時は照度の平方根に比例して散乱光を出す。
+          // RGBに光量を持たせるため、アルファによる二重減衰は起きない。
           g.beamMat.uniforms.uColor.value.copy(col);
           const typeDensity=f.type==='moving'?1.12:(f.type==='side'?.82:1);
-          g.beamMat.uniforms.uDensity.value=(board.smoke?.060:.0035)*Math.sqrt(lv)*typeDensity;
+          const scatterLux=Math.sqrt(Math.max(aimLux,0));
+          g.beamMat.uniforms.uScatter.value=(board.smoke?.145:.004)*scatterLux*typeDensity;
           g.beamMat.uniforms.uSoftness.value=board.soft/100;
           g.beamMat.uniforms.uTime.value=t;
+          // 光芯は標準材質で常に確保。外側ヘイズより細く、強さも控える。
+          g.coreMat.color.copy(col).multiplyScalar((board.smoke?.052:.003)*scatterLux*typeDensity);
         }
         // 床のプール。人物狙いの灯も、延長した光柱が舞台面に当たれば着地光を出す。
         const onStageFloor=beamEnd.y<.06&&Math.abs(beamEnd.x)<=STAGE_W/2+.2&&
