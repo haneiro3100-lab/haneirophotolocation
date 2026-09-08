@@ -70,7 +70,7 @@
         <section class="section"><div class="label"><span>撮影位置とレンズ</span><small>POSITION / LENS</small></div>
           <div class="two" id="cameraPresets"><button class="mode active" data-camera="audience">客席中央</button><button class="mode" data-camera="frontrow">最前列</button><button class="mode" data-camera="stageleft">下手側</button><button class="mode" data-camera="stageright">上手側</button></div>
           <div class="slider" style="margin-top:8px"><div><span>焦点距離</span><strong id="v-focal">50mm</strong></div><input type="range" id="focalR" min="0" max="8" step="1" value="3" /></div>
-          <div class="hint">客席床はステージより75cm低く設定。右ドラッグ、矢印キー／WASD、左下の十字キーで構図を平行移動できます。横・後ろ・上へ回り込むと、手前の壁や天井は自動で退避します。</div>
+          <div class="hint">客席床はステージより75cm低く設定。左ドラッグで上下左右を向き、右ドラッグ、矢印キー／WASD、左下の十字キーで構図を平行移動できます。横・後ろ・上へ回り込むと、手前の壁や天井は自動で退避します。</div>
         </section>
         <section class="section"><div class="label"><span>被写体</span><small>SUBJECT</small></div>
           <div class="two" id="bodies"><button class="mode" data-body="neutral">標準</button><button class="mode active" data-body="idol">アイドル</button></div>
@@ -171,7 +171,7 @@
     const host=document.querySelector('#scene'), scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(38,1,.1,120), renderer=new THREE.WebGLRenderer({antialias:true});
     renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFShadowMap; renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; host.append(renderer.domElement);
     camera.position.set(0,.84,6.4);
-    const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,1.10,0); controls.enableDamping=true; controls.enablePan=true; controls.screenSpacePanning=true; controls.mouseButtons.RIGHT=THREE.MOUSE.PAN; controls.maxPolarAngle=Math.PI/2.02; controls.minDistance=1.8; controls.maxDistance=11;
+    const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,1.10,0); controls.enableDamping=true; controls.enablePan=true; controls.screenSpacePanning=true; controls.mouseButtons.RIGHT=THREE.MOUSE.PAN; controls.minPolarAngle=THREE.MathUtils.degToRad(8); controls.maxPolarAngle=THREE.MathUtils.degToRad(105); controls.minDistance=1.8; controls.maxDistance=11;
     renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
     const CAMERA_PRESETS={
       audience:{position:[0,.84,6.4],target:[0,1.10,0]},
