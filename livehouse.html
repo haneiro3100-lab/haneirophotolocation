@@ -1365,11 +1365,11 @@
       const v=Math.max(-1,Math.min(1,y/.074)),w=idolFaceWidth(y);
       const side=Math.sqrt(Math.max(0,1-(x/Math.max(w,1e-8))**2));
       // 下顔面は球面より緩やかに回り込ませ、口元から顎に出る暗い一枚面を分ける。
-      const lowerFront=Math.pow(Math.max(0,1-Math.pow(Math.max(0,-v),2.4)),1/2.4);
+      const lowerFront=Math.pow(Math.max(0,1-Math.pow(Math.max(0,-v),2.8)),1/2.8);
       const frontCurve=v<0?lowerFront:Math.sqrt(Math.max(0,1-v*v));
       const base=.054*frontCurve*side;
       const ga=(x0,y0,sx,sy)=>Math.exp(-(((x-x0)/sx)**2+((y-y0)/sy)**2));
-      const relief=.0028*ga(0,-.014,.0110,.019)+.0018*ga(0,.001,.0075,.022)
+      const relief=.0025*ga(0,-.017,.0125,.016)+.0023*ga(0,.001,.0068,.026)
         +.0017*(ga(-.025,-.024,.020,.022)+ga(.025,-.024,.020,.022))
         +.0010*ga(0,-.040,.026,.020)+.0013*ga(0,-.057,.020,.014);
       // 球の上下端では前面と後面を同じ一点へ閉じ、顎下の切り口を作らない。
@@ -1403,8 +1403,10 @@
         const add=(geo,mat,name)=>{const m=new THREE.Mesh(geo,mat);m.name=name;m.castShadow=true;g.add(m);return m;};
         const geo=new THREE.SphereGeometry(1,96,64),p=geo.attributes.position;
         for(let i=0;i<p.count;i++){
-          const uy=p.getY(i),x=p.getX(i)*.060*(1-.24*idolEase(0,.95,-uy));
-          const y=uy*.074,z=p.getZ(i)>=0?idolFaceZ(x,y):p.getZ(i)*.054;
+          const uy=p.getY(i),y=uy*.074;
+          // 頭部の輪郭と顔面深度で同じ頬・顎幅を使い、前面だけが浮く継ぎ目を防ぐ。
+          const x=p.getX(i)*.060*(1-.17*idolEase(.18,.96,-uy));
+          const z=p.getZ(i)>=0?idolFaceZ(x,y):p.getZ(i)*.054;
           p.setXYZ(i,x,y,z);
         }
         p.needsUpdate=true;idolSmoothNormals(geo);
@@ -1437,16 +1439,16 @@
         [-1,1].forEach(sg=>{
           const ex=sg*.024,ey=-.007;
           // 虹彩をまぶたで切り、白目の中に丸い玉が浮く見え方を抑える。
-          const eyeClip={cx:ex,cy:ey,rx:.0140,top:.0061,bottom:.0063};
-          patch(ex,ey,.0142,.0065,.00065,newIdolEyeWhite,'EyeWhite',.0063/.0065);
-          patch(ex,ey,.0067,.0074,.00095,newIdolIris,'WarmBrownIris',1,eyeClip);
-          patch(ex,ey,.0032,.0048,.00120,newIdolInk,'Pupil',1,eyeClip);
+          const eyeClip={cx:ex,cy:ey,rx:.0140,top:.0067,bottom:.0069};
+          patch(ex,ey,.0142,.0071,.00065,newIdolEyeWhite,'EyeWhite',.0069/.0071);
+          patch(ex,ey-.0002,.0069,.0076,.00095,newIdolIris,'WarmBrownIris',1,eyeClip);
+          patch(ex,ey-.0002,.0033,.0050,.00120,newIdolInk,'Pupil',1,eyeClip);
           patch(ex-.0018,ey+.0020,.0011,.0013,.00145,newIdolEyeWhite,'EyeHighlight',1,eyeClip);
           const lid=[];
-          for(let i=0;i<=20;i++){const t=Math.PI*i/20,x=ex+.0142*Math.cos(t),y=ey+.0063*Math.sin(t);lid.push(V3(x,y,idolFaceZ(x,y)+.001));}
+          for(let i=0;i<=20;i++){const t=Math.PI*i/20,x=ex+.0142*Math.cos(t),y=ey+.0069*Math.sin(t);lid.push(V3(x,y,idolFaceZ(x,y)+.001));}
           const upperMesh=line(lid,.00055,newIdolInk,'UpperLid');upperMesh.castShadow=false;
           const lower=[];
-          for(let i=0;i<=20;i++){const t=Math.PI*i/20,x=ex+.0142*Math.cos(t),y=ey-.0065*Math.sin(t);lower.push(V3(x,y,idolFaceZ(x,y)+.0007));}
+          for(let i=0;i<=20;i++){const t=Math.PI*i/20,x=ex+.0142*Math.cos(t),y=ey-.0071*Math.sin(t);lower.push(V3(x,y,idolFaceZ(x,y)+.0007));}
           const lowerMesh=line(lower,.00020,newIdolLowerLid,'SoftLowerLid');lowerMesh.castShadow=false;
           const brow=[];for(let i=0;i<=12;i++){const t=i/12,x=ex+sg*(t-.5)*.022,y=.0065+.0022*Math.sin(Math.PI*t)-.0010*t;brow.push(V3(x,y,idolFaceZ(x,y)+.0004));}
           const browMesh=line(brow,.00045,newIdolBrow,'SoftBrow');browMesh.castShadow=false;
