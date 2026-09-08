@@ -1864,7 +1864,9 @@
     function chaseMul(i,t){
       const c=board.chase; if(!c.playing) return 1;
       const k=orderIdx[i];
-      if(c.mode==='chase'){ const p=(t*c.speed)%N; return Math.floor(p)===k?1:0.08; }
+      // 追っかけは選ばれた1灯だけを点灯し、それ以外は残光を残さず完全消灯する。
+      // ランダムブリンクと併用したときは、点灯対象が外れた区間も含めて暗闇を作れる。
+      if(c.mode==='chase'){ const p=(t*c.speed)%N; return Math.floor(p)===k?1:0; }
       const phase = c.mode==='random' ? randPhase[i] : k/Math.max(1,N-1)*Math.PI*1.2;
       const y=(Math.sin(t*c.speed-phase*3)+1)/2;
       return Math.max(0.08,(1-c.fade)+c.fade*y);
