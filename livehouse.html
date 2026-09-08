@@ -2019,19 +2019,19 @@
           #include <colorspace_pars_fragment>
           void main(){
             // カメラ正対面の横幅中央から両端へ、散乱光を連続的に0まで落とす。
-            float halfWidth=max(.001,1.0-vUv.y);
-            float localX=abs((vUv.x-.5)*2.0)/halfWidth;
+            float halfWidth=max(0.001,1.0-vUv.y);
+            float localX=abs((vUv.x-0.5)*2.0)/halfWidth;
             float across=max(0.0,1.0-localX);
-            float rayEdge=pow(across,mix(2.8,.82,uSoftness));
-            float diffuseEdge=smoothstep(0.0,mix(.42,.68,uSoftness),across)*pow(across,mix(.42,.18,uSoftness));
-            float rayLength=smoothstep(0.0,.15,vUv.y)*(.48+.52*pow(vUv.y,.38));
-            float diffuseLength=smoothstep(0.0,.10,vUv.y)*pow(vUv.y,.72);
-            float broad=sin(vUv.y*31.0+uTime*.20+uSeed*4.1);
-            float fine=sin(vUv.y*83.0-uTime*.11+vUv.x*12.566+uSeed*9.3);
-            float rayShape=rayEdge*rayLength*clamp(.78+.14*broad+.08*fine,.42,1.0);
-            float diffuseShape=diffuseEdge*diffuseLength*clamp(.90+.07*broad+.03*fine,.68,1.0);
+            float rayEdge=pow(across,mix(2.8,0.82,uSoftness));
+            float diffuseEdge=smoothstep(0.0,mix(0.42,0.68,uSoftness),across)*pow(across,mix(0.42,0.18,uSoftness));
+            float rayLength=smoothstep(0.0,0.15,vUv.y)*(0.48+0.52*pow(vUv.y,0.38));
+            float diffuseLength=smoothstep(0.0,0.10,vUv.y)*pow(vUv.y,0.72);
+            float broad=sin(vUv.y*31.0+uTime*0.20+uSeed*4.1);
+            float fine=sin(vUv.y*83.0-uTime*0.11+vUv.x*12.566+uSeed*9.3);
+            float rayShape=rayEdge*rayLength*clamp(0.78+0.14*broad+0.08*fine,0.42,1.0);
+            float diffuseShape=diffuseEdge*diffuseLength*clamp(0.90+0.07*broad+0.03*fine,0.68,1.0);
             float scatter=uScatter*mix(rayShape,diffuseShape,uStyle);
-            if(scatter<.001) discard;
+            if(scatter<0.001) discard;
             // 散乱量をRGBに直接持たせ、加算合成でアルファが二度掛けされるのを防ぐ。
             gl_FragColor=vec4(uColor*scatter,1.0);
             #include <tonemapping_fragment>
