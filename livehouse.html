@@ -139,6 +139,23 @@
           <div class="fixrow" id="fixRow"></div>
           <div class="two" style="margin-top:8px"><button class="mode" id="groupOn">選択をON</button><button class="mode" id="groupOff">選択をOFF</button></div>
         </section>
+        <section class="section"><div class="label"><span>演出パターン</span><small>LIGHTING SHOW</small></div>
+          <select id="showMode" aria-label="演出パターン">
+            <option value="blinder">オーディエンス・ブラインダー</option>
+            <option value="silhouette">バックシルエット</option>
+            <option value="fan">ファンオープン</option>
+            <option value="cross">クロスビーム</option>
+            <option value="wash-white">カラーウォッシュ＋白アクセント</option>
+            <option value="blackout-hit">ブラックアウト・ヒット</option>
+          </select>
+          <div class="slider"><div><span>強さ</span><strong id="v-showLevel">80%</strong></div><input type="range" id="showLevel" min="0" max="100" step="1" value="80" /></div>
+          <div class="slider"><div><span>速度</span><strong id="v-showSpeed">1.0</strong></div><input type="range" id="showSpeed" min="0.2" max="4" step="0.1" value="1" /></div>
+          <div class="slider"><div><span>フェード</span><strong id="v-showFade">0.55</strong></div><input type="range" id="showFade" min="0" max="1" step="0.05" value="0.55" /></div>
+          <div class="slider"><div><span>広がり</span><strong id="v-showSpread">70%</strong></div><input type="range" id="showSpread" min="20" max="100" step="1" value="70" /></div>
+          <button class="mode active" id="showKeepSpot" type="button" style="width:100%;margin-bottom:8px">● 被写体スポットを維持</button>
+          <div class="two"><button class="mode" id="showPlay">▶ 再生</button><button class="mode active" id="showLoop">ループ</button></div>
+          <div class="hint" id="showHint">ステージ奥から客席へ向けて白色光を放ち、レンズへ強いアクセントを作ります。</div>
+        </section>
         <section class="section"><div class="label"><span>チェイス</span><small>SEQUENCE</small></div>
           <select id="chaseMode" aria-label="チェイスの方向">
             <option value="front-back">前→後ろウェーブ</option>
@@ -1805,10 +1822,12 @@
       sceneId:'band', bright:70, tilt:-25, soft:62, frontFill:58, blackout:false, smoke:false, rainbow:false,beamStyle:'diffuse',
       group:'all', color:'#fff4e0',
       subjectSpot:{on:true,level:45},
+      show:{mode:'blinder',speed:1,level:80,fade:.55,spread:70,loop:true,keepSpot:true,playing:false},
       chase:{mode:'front-back',speed:1.2,fade:0.6,loop:true,playing:false},
       blink:{mode:'all',speed:1.8,playing:false},
       fixtures:RIG.map(()=>({on:true,color:'#fff4e0',level:100}))
     };
+    let showStart=0,showResume=null;
     const randPhase=RIG.map(()=>Math.random()*Math.PI*2);   // ランダムモード用。灯体ごとに固定
 
     /* --- グループ -------------------------------------------------------- */
@@ -1886,6 +1905,48 @@
       const random=raw-Math.floor(raw);
       return random>.55?1:0;
     }
+    /* --- 6種類の演出パターン -------------------------------------------
+       再生中はチェイス／ブリンクの値を書き換えず、出力段だけを一時的に置き換える。
+       停止すると保存済みの灯体レベル・色・再生状態へ戻る。 */
+    const SHOW_HINTS={
+      blinder:'ステージ奥から客席へ白色光を放ち、レンズへ強いアクセントを作ります。',
+      silhouette:'正面を落として背面灯だけを残し、演者の輪郭を浮かび上がらせます。',
+      fan:'4台のムービングが中央から扇状に開き、閉じる動きを繰り返します。',
+      cross:'左右のムービングを反対側へ振り、演者の後ろに動くX字を作ります。',
+      'wash-white':'現在の色を面で残し、中央とフロントへ白色の短いアクセントを入れます。',
+      'blackout-hit':'完全な暗転を挟み、一瞬の白色全灯を打って再び暗転します。'
+    };
+    const SHOW_DURATIONS={blinder:1.05,silhouette:3.8,fan:3.7,cross:3.7,'wash-white':2.1,'blackout-hit':1.65};
+    const showElapsed=t=>Math.max(0,t-showStart)*Math.max(.1,board.show.speed);
+    function showWindow(t,start,end,period){
+      const phase=showElapsed(t)%period,soft=Math.max(.012,board.show.fade*.14);
+      const rise=THREE.MathUtils.smoothstep(phase,start-soft,start);
+      const fall=1-THREE.MathUtils.smoothstep(phase,end,end+soft);
+      return THREE.MathUtils.clamp(Math.min(rise,fall),0,1);
+    }
+    function showBlinderPulse(t){
+      return Math.max(showWindow(t,.05,.20,2.4),showWindow(t,.34,.52,2.4));
+    }
+    function showWhitePulse(t){return showWindow(t,.06,.23,2.0)}
+    function showBlackoutPulse(t){return showWindow(t,.58,.76,1.65)}
+    function showLevelAt(i,t){
+      if(!board.show.playing)return 1;
+      const f=RIG[i],amount=board.show.level/100,mode=board.show.mode;
+      if(mode==='blinder')return 1-amount*.48;
+      if(mode==='silhouette'){
+        const back=f.type==='uplight'||(f.role==='stage'&&f.pos.z<=-.15);
+        const breathe=.86+.14*Math.sin(showElapsed(t)*1.15+f.id*.19);
+        return back?amount*breathe:0;
+      }
+      if(mode==='fan')return f.type==='moving'?amount:amount*.055;
+      if(mode==='cross')return f.type==='moving'?amount:(f.type==='side'?amount*.14:amount*.04);
+      if(mode==='wash-white'){
+        const accent=f.type==='moving'||(f.role==='foh'&&f.col>=2&&f.col<=3);
+        return amount*(accent?(.24+.76*showWhitePulse(t)):.44);
+      }
+      if(mode==='blackout-hit')return amount*showBlackoutPulse(t);
+      return 1;
+    }
     // 0〜1。マスター明るさ・灯体レベル・ブラックアウト・チェイス・ブリンクをすべて含む
     function levelAt(i,t){
       const s=board.fixtures[i];
@@ -1893,18 +1954,42 @@
       const frontScale=RIG[i].role==='foh'?board.frontFill/100:1;
       // ステージ中央の逆光ムービング2灯は、他灯より実効出力を10%抑える。
       const centralBackScale=RIG[i].type==='moving'&&RIG[i].role==='stage'?.9:1;
-      return (board.bright/100)*frontScale*centralBackScale*(s.level/100)*chaseMul(i,t)*blinkMul(i,t);
+      const sequence=board.show.playing?showLevelAt(i,t):chaseMul(i,t)*blinkMul(i,t);
+      return (board.bright/100)*frontScale*centralBackScale*(s.level/100)*sequence;
     }
     // 独立フォロースポット。チェイス／ブリンクは通さず、マスターとブラックアウトだけに従う。
     const SUBJECT_SPOT_LUX=110;
     function subjectSpotLux(){
-      return board.subjectSpot.on&&!board.blackout
+      const showAllowsSpot=!board.show.playing||board.show.keepSpot;
+      return board.subjectSpot.on&&!board.blackout&&showAllowsSpot
         ?SUBJECT_SPOT_LUX*(board.bright/100)*(board.subjectSpot.level/100):0;
     }
     const _c=new THREE.Color();
     function colorAt(i,t){
-      if(board.rainbow) return _c.setHSL(((t*0.18)+orderIdx[i]/N*0.3)%1,0.85,0.6).clone();
-      return new THREE.Color(board.fixtures[i].color);
+      const f=RIG[i],base=board.rainbow
+        ?_c.setHSL(((t*.18)+orderIdx[i]/N*.3)%1,.85,.6).clone()
+        :new THREE.Color(board.fixtures[i].color);
+      if(board.show.playing&&board.show.mode==='wash-white'){
+        const accent=f.type==='moving'||(f.role==='foh'&&f.col>=2&&f.col<=3);
+        if(accent&&showWhitePulse(t)>.08)return new THREE.Color('#fff8e8');
+      }
+      if(board.show.playing&&board.show.mode==='blackout-hit'&&showBlackoutPulse(t)>.01)return new THREE.Color('#fff8ee');
+      return base;
+    }
+
+    function showAimOf(i,t){
+      const f=RIG[i],base=aimOf(f);
+      if(!board.show.playing||f.type!=='moving')return base;
+      const spread=board.show.spread/100,e=showElapsed(t);
+      if(board.show.mode==='fan'){
+        const open=board.show.loop ? .5-.5*Math.cos(e*Math.PI*.55) : THREE.MathUtils.clamp(e*.55,0,1);
+        return V3((f.col-2.5)*4.2*spread*open,.16,-.72+(f.row===3?.18:0));
+      }
+      if(board.show.mode==='cross'){
+        const opposite=f.pos.x<0?1:-1,sweep=Math.sin(e*1.15+f.row*.8)*.38*spread;
+        return V3(opposite*(1.05+1.05*spread)+sweep,.42,-.58);
+      }
+      return base;
     }
 
     /* --- 被写体面の照度 --------------------------------------------------
@@ -1913,7 +1998,7 @@
       const f=RIG[i], lv=levelAt(i,t);
       if(lv<=0) return 0;
       const toSub=SUBJECT.clone().sub(f.pos), d=Math.max(0.5,toSub.length());
-      const axis=aimOf(f).sub(f.pos).normalize();
+      const axis=showAimOf(i,t).sub(f.pos).normalize();
       const ang=Math.acos(THREE.MathUtils.clamp(toSub.normalize().dot(axis),-1,1));
       const cone=CONE[f.type], pen=THREE.MathUtils.lerp(0.25,0.9,board.soft/100);
       const beam=1-THREE.MathUtils.smoothstep(ang,cone*(1-pen),cone);
@@ -2178,6 +2263,23 @@
     const subjectSpotGear={beam:subjectSpotBeam,beamMat:subjectSpotBeamMat,core:subjectSpotCore,
       coreMat:subjectSpotCoreMat,beamAxis:new THREE.Vector3(0,-1,0)};
 
+    // ステージ奥から客席へ向ける2灯のブラインダー。被写体照明とは別に、光源・光柱・レンズグローを持つ。
+    const BLINDER_COLOR=new THREE.Color('#fff2cf');
+    const blinderGear=[V3(-1.55,2.72,-2.82),V3(1.55,2.72,-2.82)].map((pos,k)=>{
+      const target=new THREE.Object3D();target.position.set(pos.x*.18,.48,5.7);scene.add(target);
+      const light=new THREE.SpotLight(BLINDER_COLOR,0,0,.24,.72,2);light.position.copy(pos);light.target=target;scene.add(light);
+      const beamMat=makeBeamMaterial(.71+k*.13),beam=new THREE.Mesh(beamGeo,beamMat);
+      const coreMat=new THREE.MeshBasicMaterial({color:'#000000',alphaMap:beamDiffuseTex,transparent:true,opacity:1,
+        blending:THREE.AdditiveBlending,depthTest:true,depthWrite:false,side:THREE.DoubleSide});
+      coreMat.forceSinglePass=true;
+      const core=new THREE.Mesh(beamGeo,coreMat);
+      const flareMat=new THREE.SpriteMaterial({map:poolTex,color:'#000000',transparent:true,opacity:0,
+        blending:THREE.AdditiveBlending,depthWrite:false,depthTest:true,toneMapped:true});
+      const flare=new THREE.Sprite(flareMat);flare.position.copy(pos);flare.scale.setScalar(.9);
+      scene.add(beam,core,flare);
+      return{pos,target,light,beam,beamMat,core,coreMat,flare,flareMat,beamAxis:new THREE.Vector3(0,0,1)};
+    });
+
     /* --- スモーク（漂うパーティクル。静止画でもヘイズとして見える） -------- */
     const SMOKE_N=420;
     const smokePos=new Float32Array(SMOKE_N*3), smokeVel=new Float32Array(SMOKE_N*3);
@@ -2246,12 +2348,30 @@
       subjectSpotCoreMat.color.copy(SUBJECT_SPOT_COLOR).multiplyScalar((board.smoke?.035:.0006)*lux);
       faceBeamToCamera(subjectSpotGear);
     }
+    function updateBlinders(t){
+      const pulse=board.show.playing&&board.show.mode==='blinder'&&!board.blackout
+        ?showBlinderPulse(t)*(board.bright/100)*(board.show.level/100):0;
+      for(const g of blinderGear){
+        const on=pulse>.001;g.light.visible=on;g.light.intensity=on?1550*pulse:0;
+        g.beam.visible=on;g.core.visible=on;g.flare.visible=on;
+        if(!on)continue;
+        const end=g.target.position,dir=end.clone().sub(g.pos),len=dir.length(),rad=Math.tan(.24)*len;
+        g.beam.position.copy(g.pos).addScaledVector(dir,.5);g.beam.scale.set(rad,len,rad);
+        g.core.position.copy(g.beam.position);g.core.scale.set(rad*.68,len,rad*.68);g.beamAxis.copy(dir).normalize();
+        g.beamMat.uniforms.uColor.value.copy(BLINDER_COLOR);g.beamMat.uniforms.uStyle.value=1;
+        g.beamMat.uniforms.uSoftness.value=board.show.fade;g.beamMat.uniforms.uTime.value=t;
+        g.beamMat.uniforms.uScatter.value=(board.smoke?.22:.0014)*95*pulse;
+        g.coreMat.color.copy(BLINDER_COLOR).multiplyScalar((board.smoke?.042:.0008)*95*pulse);
+        g.flareMat.color.copy(BLINDER_COLOR).multiplyScalar(5+18*pulse);g.flareMat.opacity=.35+.65*pulse;
+        g.flare.scale.setScalar(.7+1.05*pulse);faceBeamToCamera(g);
+      }
+    }
     function updateScene(t){
       // ブラックアウトでは補助環境光も止め、顔や会場だけが残光しないようにする。
       hemi.intensity=board.blackout?0:.05;
       const contrib=[];
       for(let i=0;i<N;i++){
-        const f=RIG[i], lv=levelAt(i,t), col=colorAt(i,t), aim=aimOf(f), g=gear[i];
+        const f=RIG[i], lv=levelAt(i,t), col=colorAt(i,t), aim=showAimOf(i,t), g=gear[i];
         const lux=luxOf(i,t);
         // 筐体・レンズ・ビーム・床のプール。照明の狙いと光柱の終点は分離する。
         // 実光源は aim で人物を照らし、可視光柱は beamEnd の床／天井まで通す。
@@ -2301,7 +2421,7 @@
           g.poolMat.color.copy(col).multiplyScalar(aimLux*0.198);  // 床の拡散反射を10%抑制
         }
       }
-      const followLux=subjectSpotLux();updateSubjectSpot(t,followLux);
+      const followLux=subjectSpotLux();updateSubjectSpot(t,followLux);updateBlinders(t);
       const meter=faceExposureOf(contrib),hazeOn=board.smoke&&!board.blackout;
       if(followLux>0){
         _meterNormal.copy(camera.position).sub(SUBJECT);if(_meterNormal.lengthSq()<1e-6)_meterNormal.set(0,.15,1);
@@ -2341,6 +2461,9 @@
         smoke.material.color.set('#93a2b2');smoke.material.opacity=.032;
         hemi.color.set('#3a4756');hemi.intensity=board.blackout?0:.05;
       }
+      // 暗転を主役にする演出では、固定の環境光も同じタイミングまで落とす。
+      if(board.show.playing&&board.show.mode==='blackout-hit')hemi.intensity*=showBlackoutPulse(t)*(board.show.level/100);
+      else if(board.show.playing&&board.show.mode==='silhouette')hemi.intensity*=.28*(board.show.level/100);
 
       // 前壁・床・ヘイズからの反射を、カメラ側から来る弱い実光源として近似する。
       // 強さは顔面測光にも同じ値で含め、表示だけを持ち上げる偽の発光にはしない。
@@ -2554,6 +2677,7 @@
         group:GROUPS[src.group]?src.group:'all',color:src.color||'#fff4e0'});
       Object.assign(board.chase,src.chase||{});Object.assign(board.blink,src.blink||{});
       Object.assign(board.subjectSpot,src.subjectSpot||{});
+      Object.assign(board.show,src.show||{});
       if(Array.isArray(src.fixtures))src.fixtures.forEach((s,i)=>{if(board.fixtures[i])Object.assign(board.fixtures[i],s)});
       rebuildOrder();syncBoardUI();saveSettings();refresh();
     }
@@ -2664,6 +2788,11 @@
       q('#softR').value=board.soft;     q('#v-soft').textContent=board.soft+'%';
       q('#frontFillR').value=board.frontFill;q('#v-frontFill').textContent=board.frontFill+'%';
       q('#subjectSpotLevel').value=board.subjectSpot.level;q('#v-subjectSpotLevel').textContent=board.subjectSpot.level+'%';
+      q('#showMode').value=board.show.mode;
+      q('#showLevel').value=board.show.level;q('#v-showLevel').textContent=board.show.level+'%';
+      q('#showSpeed').value=board.show.speed;q('#v-showSpeed').textContent=board.show.speed.toFixed(1);
+      q('#showFade').value=board.show.fade;q('#v-showFade').textContent=board.show.fade.toFixed(2);
+      q('#showSpread').value=board.show.spread;q('#v-showSpread').textContent=board.show.spread+'%';
       q('#colorPick').value=board.color;q('#v-color').textContent=board.color;
       q('#groupSelect').value=board.group;
       q('#chaseMode').value=board.chase.mode;
@@ -2674,6 +2803,7 @@
       setToggle('smokeToggle',board.smoke,'スモーク');
       setToggle('blackoutToggle',board.blackout,'ブラックアウト');
       setToggle('subjectSpotToggle',board.subjectSpot.on,'被写体スポット');
+      setToggle('showKeepSpot',board.show.keepSpot,'被写体スポットを維持');
       setToggle('rainbowToggle',board.rainbow,'レインボー');
       document.querySelectorAll('[data-beam-style]').forEach(b=>b.classList.toggle('active',b.dataset.beamStyle===board.beamStyle));
       q('#beamStyleHint').textContent=board.beamStyle==='diffuse'
@@ -2684,6 +2814,10 @@
       q('#chaseLoop').classList.toggle('active',board.chase.loop);
       q('#blinkPlay').textContent=board.blink.playing?'■ 停止':'▶ 再生';
       q('#blinkPlay').classList.toggle('active',board.blink.playing);
+      q('#showPlay').textContent=board.show.playing?'■ 停止':'▶ 再生';
+      q('#showPlay').classList.toggle('active',board.show.playing);
+      q('#showLoop').classList.toggle('active',board.show.loop);
+      q('#showHint').textContent=SHOW_HINTS[board.show.mode]||'';
       renderScenes(); renderSwatches(); renderFixtures();
     }
 
@@ -2712,16 +2846,40 @@
     q('#groupOn').onclick=()=>{selectedIds().forEach(i=>board.fixtures[i].on=true);renderFixtures();saveSettings();refresh()};
     q('#groupOff').onclick=()=>{selectedIds().forEach(i=>board.fixtures[i].on=false);renderFixtures();saveSettings();refresh()};
 
+    // 演出パターン。再生中はいったん通常チェイス／ブリンクを休止し、停止時に元の再生状態へ戻す。
+    function stopLightingShow(resume=true){
+      board.show.playing=false;
+      if(resume&&showResume){board.chase.playing=showResume.chase;board.blink.playing=showResume.blink;}
+      showResume=null;
+    }
+    function startLightingShow(){
+      showResume={chase:board.chase.playing,blink:board.blink.playing};
+      board.chase.playing=false;board.blink.playing=false;board.show.playing=true;showStart=clock;
+    }
+    q('#showMode').onchange=e=>{
+      board.show.mode=e.target.value;
+      board.show.keepSpot=!['silhouette','blackout-hit'].includes(board.show.mode);
+      if(board.show.playing)showStart=clock;
+      syncBoardUI();saveSettings();refresh();
+    };
+    q('#showLevel').oninput=e=>{board.show.level=+e.target.value;q('#v-showLevel').textContent=board.show.level+'%';saveSettings();refresh()};
+    q('#showSpeed').oninput=e=>{board.show.speed=+e.target.value;q('#v-showSpeed').textContent=board.show.speed.toFixed(1);saveSettings()};
+    q('#showFade').oninput=e=>{board.show.fade=+e.target.value;q('#v-showFade').textContent=board.show.fade.toFixed(2);saveSettings();refresh()};
+    q('#showSpread').oninput=e=>{board.show.spread=+e.target.value;q('#v-showSpread').textContent=board.show.spread+'%';saveSettings();refresh()};
+    q('#showKeepSpot').onclick=()=>{board.show.keepSpot=!board.show.keepSpot;setToggle('showKeepSpot',board.show.keepSpot,'被写体スポットを維持');saveSettings();refresh()};
+    q('#showPlay').onclick=()=>{board.show.playing?stopLightingShow(true):startLightingShow();syncBoardUI();saveSettings();refresh()};
+    q('#showLoop').onclick=()=>{board.show.loop=!board.show.loop;q('#showLoop').classList.toggle('active',board.show.loop);saveSettings()};
+
     // チェイス／ブリンク
     let chaseStart=0;
     q('#chaseMode').onchange=e=>{board.chase.mode=e.target.value;rebuildOrder();saveSettings();refresh()};
     q('#chaseSpeed').oninput=e=>{board.chase.speed=+e.target.value;q('#v-chaseSpeed').textContent=board.chase.speed.toFixed(1);saveSettings()};
     q('#chaseFade').oninput=e=>{board.chase.fade=+e.target.value;q('#v-chaseFade').textContent=board.chase.fade.toFixed(2);saveSettings()};
-    q('#chasePlay').onclick=()=>{board.chase.playing=!board.chase.playing;chaseStart=clock;syncBoardUI();saveSettings();refresh()};
+    q('#chasePlay').onclick=()=>{if(board.show.playing)stopLightingShow(false);board.chase.playing=!board.chase.playing;chaseStart=clock;syncBoardUI();saveSettings();refresh()};
     q('#chaseLoop').onclick=()=>{board.chase.loop=!board.chase.loop;q('#chaseLoop').classList.toggle('active',board.chase.loop);saveSettings()};
     q('#blinkMode').onchange=e=>{board.blink.mode=e.target.value;saveSettings();refresh()};
     q('#blinkSpeed').oninput=e=>{board.blink.speed=+e.target.value;q('#v-blinkSpeed').textContent=board.blink.speed.toFixed(1);saveSettings()};
-    q('#blinkPlay').onclick=()=>{board.blink.playing=!board.blink.playing;syncBoardUI();saveSettings();refresh()};
+    q('#blinkPlay').onclick=()=>{if(board.show.playing)stopLightingShow(false);board.blink.playing=!board.blink.playing;syncBoardUI();saveSettings();refresh()};
 
     // キュー・入出力
     q('#saveCue').onclick=saveCue; q('#loadCue').onclick=loadCue; q('#deleteCue').onclick=deleteCue;
@@ -2824,12 +2982,15 @@
     function loop(now){
       requestAnimationFrame(loop);
       const dt=Math.min((now-last)/1000,0.05); last=now;
-      const animating=board.chase.playing||board.blink.playing||board.rainbow;
+      const animating=board.chase.playing||board.blink.playing||board.show.playing||board.rainbow;
       if(animating){
         clock+=dt;
         // ループOFFのときは1周したら止める
         if(board.chase.playing&&!board.chase.loop&&(clock-chaseStart)*board.chase.speed>N*0.6){
           board.chase.playing=false; syncBoardUI();
+        }
+        if(board.show.playing&&!board.show.loop&&showElapsed(clock)>=SHOW_DURATIONS[board.show.mode]){
+          stopLightingShow(true);syncBoardUI();saveSettings();
         }
         updateScene(clock);
       }
@@ -2839,6 +3000,7 @@
         const hazeTime=now*.001;
         for(const g of gear)if(g.beam.visible)g.beamMat.uniforms.uTime.value=hazeTime;
         if(subjectSpotBeam.visible)subjectSpotBeamMat.uniforms.uTime.value=hazeTime;
+        for(const g of blinderGear)if(g.beam.visible)g.beamMat.uniforms.uTime.value=hazeTime;
       }
       if(motionBars.length) updateMotionBars();
       updatePositionMarker(now);
@@ -2846,13 +3008,14 @@
       // Keep every soft beam slice facing the moving FPS camera.
       for(const g of gear)if(g.beam.visible)faceBeamToCamera(g);
       if(subjectSpotBeam.visible)faceBeamToCamera(subjectSpotGear);
+      for(const g of blinderGear)if(g.beam.visible)faceBeamToCamera(g);
       updateVenueCutaway();
       renderer.render(scene,camera);
     }
     requestAnimationFrame(loop);
 
     // 数値検証用。表示に依存せずチェイス／露出／照度を読み出せる
-    window.__livehouse={RIG,board,levelAt,luxOf,stageLux,subjectSpotLux,evCamOf,evSceneOf,getExpo:()=>expo,CHALLENGES,updateScene,
+    window.__livehouse={RIG,board,levelAt,luxOf,stageLux,subjectSpotLux,showLevelAt,showAimOf,showBlinderPulse,showWhitePulse,showBlackoutPulse,evCamOf,evSceneOf,getExpo:()=>expo,CHALLENGES,updateScene,
       setClock(t){clock=t;updateScene(t)},setBody:(id)=>setBody(id),getBodyId:()=>bodyId,BODIES,camera,CAMERA_PRESETS,
       stage:{height:STAGE_HEIGHT,width:STAGE_W,depth:STAGE_D},setCameraPreset:applyCameraPreset,setFocalLength:applyFocalLength,focalLengths:FOCAL_LENGTHS,panCameraView,moveCameraFree,enterPositionMap,exitPositionMap,getCameraMode:()=>cameraMode,updateVenueCutaway,faceExposureOf,selectRenderLights,
       setPose:(n)=>document.querySelector('[data-pose="'+n+'"]').click(),render(){renderer.render(scene,camera)},applyBoard,toneExposure(){return renderer.toneMappingExposure},triangles(){return renderer.info.render.triangles},lightStats(){return{spots:spots.filter(l=>l.visible&&l.intensity>0).length,shadows:spots.filter(l=>l.castShadow).length}}};
